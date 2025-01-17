@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知慧flow - 验证您的邮箱</title>
+    <style>
+        /* 重置样式 */
+        body, p, div, h1, h2, h3, h4, h5, h6 {
+            margin: 0;
+            padding: 0;
+        }
+        /* 主体样式 */
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .email-box {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo img {
+            height: 40px;
+        }
+        .header {
+            margin-bottom: 30px;
+        }
+        .title {
+            color: #1a1a1a;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .code-box {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .code {
+            font-size: 32px;
+            font-weight: bold;
+            color: #3b82f6;
+            letter-spacing: 4px;
+        }
+        .notice {
+            font-size: 14px;
+            color: #666;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="email-box">
+            <div class="logo">
+                <!-- 这里可以放置您的logo -->
+                <h1 style="color: #3b82f6;">知慧flow</h1>
+            </div>
+            
+            <div class="header">
+                <h2 class="title">验证您的邮箱</h2>
+                <p>亲爱的 {{USERNAME}}，</p>
+                <p>感谢您注册知慧flow！请使用以下验证码完成邮箱验证：</p>
+            </div>
+
+            <div class="code-box">
+                <div class="code">{{OTP}}</div>
+            </div>
+
+            <p>验证码将在10分钟内有效。如果您没有进行此操作，请忽略此邮件。</p>
+
+            <div class="notice">
+                <p>为了保障您的账号安全：</p>
+                <ul>
+                    <li>请勿将验证码泄露给他人</li>
+                    <li>本邮件由系统自动发送，请勿回复</li>
+                </ul>
+            </div>
+
+            <div class="footer">
+                <p>© 2024 - {{YEAR}} 知慧flow. 保留所有权利。</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

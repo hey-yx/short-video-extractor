@@ -1,0 +1,51 @@
+{
+  "name": "typescript-elysia-prisma-starter",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "dotenvx run -f .env.development -- bun --watch src/index.ts",
+    "preview": "dotenvx run -f .env.production -- bun --watch src/index.ts",
+    "start": "dotenvx run -f .env.production --overload --debug -- bun --watch src/index.ts",
+    "test": "dotenvx run -f .env.development -- bun test",
+    "prepare-fallback": "husky install",
+    "format": "prettier --write .",
+    "studio-local": "dotenvx run -f .env.development -- prisma studio",
+    "encrypt-dev": "dotenvx encrypt -f .env.development",
+    "encrypt-prod": "dotenvx encrypt -f .env.production",
+    "decrypt-dev": "dotenvx decrypt -f .env.development",
+    "decrypt-prod": "dotenvx decrypt -f .env.production",
+    "dotenvx-help": "sh -c 'echo \"Current dotenvx version number: $(dotenvx --version)\" && dotenvx help'",
+    "migrate-dev": "dotenvx run -f .env.development -- prisma migrate dev --name",
+    "migrate-depl": "dotenvx run -f .env.production -- prisma migrate deploy"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.12",
+    "@types/crypto-js": "^4.2.2",
+    "husky": "^8.0.0",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "prisma": "^5.21.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "lint-staged": {
+    "*.{js,cjs,mjs,md,ts,vue,json,css}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@dotenvx/dotenvx": "^1.21.0",
+    "@elysiajs/cors": "^1.1.1",
+    "@elysiajs/cron": "^1.1.1",
+    "@elysiajs/jwt": "^1.1.1",
+    "@elysiajs/static": "^1.1.2",
+    "@prisma/client": "^5.21.1",
+    "axios": "^1.7.7",
+    "crypto-js": "^4.2.0",
+    "dayjs": "^1.11.13",
+    "elysia": "^1.1.23",
+    "svg-captcha": "^1.4.0",
+    "uuid": "^11.0.2"
+  }
+}

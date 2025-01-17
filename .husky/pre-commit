@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+. "$(dirname "$0")/_/husky.sh"
+
+
+npx lint-staged
+
+# Get the list of files to be committed
+files=$(git diff --cached --name-only --diff-filter=ACM | tr '\n' ' ')
+
+# Add the previously added file again
+git add $files
+
+# Allow the commit to proceed
+exit 0
