@@ -5,6 +5,7 @@ const authWhitelist = [
   "/user/register",
   "/wxpay/notify",
   /^\/public\/(.*)$/,
+  "/puppeteer/parse",
 ];
 
 /**

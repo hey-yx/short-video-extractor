@@ -1,182 +1,83 @@
-# typescript-elysia-prisma-starter
+# Video Parser Service
 
-这是一个基于 Bun + Elysia + Prisma 的后端项目框架。
+一个强大的短视频解析服务，支持主流短视频平台的无水印视频提取。
 
-## 主要目录结构
+支持： 快手 抖音 哔哩哔哩 全民小视频 今日头条 好看视频 看点视频 全民K歌 酷狗音乐 酷我音乐 看看视频 梨视频 网易云音乐 看点视频 看点快报 西瓜 微视 QQ看点 陌陌 唱吧 小咖秀 糖豆 配音秀 大众点评 虎牙视频 懂车帝 火山 皮皮虾 皮皮搞笑 最左 小影 趣头条 微博 迅雷 美图秀秀 秒拍 美拍 美拍 得物 京东 微信公众号 火锅视频 轻视频 百度视频 uc浏览器 QQ浏览器 oppo浏览器 油果浏览器 新片场 万能钥匙WiFi 知乎 腾讯新闻 人民日报 开眼 剪影 等等
 
-```markdown
-.
-├── src/ # 源代码目录
-│ ├── bootstrap/ # 启动相关配置
-│ ├── controllers/ # 控制器层
-│ ├── emails/ # 邮件模板
-│ ├── hooks/ # 中间件钩子
-│ ├── models/ # 数据模型定义
-│ ├── routes/ # 路由定义
-│ ├── types/ # TypeScript 类型定义
-│ └── utils/ # 工具函数
-├── prisma/ # Prisma ORM 相关
-└── public/ # 静态资源目录
-```
+![](./screenshot.png)
 
-## 核心功能模块
+## 核心功能
 
-1. **认证系统**
+### 无水印视频解析
 
-- JWT 认证实现 (`@elysiajs/jwt`)
-- 路由白名单机制 (`auth-whitelist.ts`)
-- 验证码功能:
-  - 图形验证码 (`captcha.ts`)
-  - 邮箱验证码 (`emailCaptcha.ts`)
+- 支持抖音、快手等主流短视频平台
+- 自动提取视频原始地址
+- 快速获取高清视频下载链接
+- 支持批量解析（开发中）
 
-2. **数据库集成**
+## API 使用说明
 
-- 使用 Prisma ORM
-- PostgreSQL 数据库支持
-- 自动时区设置为上海时区
+### 视频解析接口
 
-3. **邮件系统**
+```http
+POST /puppeteer/parse
+Content-Type: application/json
 
-- 基于 ZeptoMail 的邮件发送
-- HTML 邮件模板支持
-- 验证码邮件功能
-
-4. **API 路由**
-
-- RESTful API 设计
-- 路由前缀管理
-- 统一的错误处理
-
-5. **开发工具链**
-
-- Prettier 代码格式化
-- Husky Git hooks
-- dotenvx 环境变量管理
-- TypeScript 支持
-
-## 特色功能
-
-1. **环境变量管理**
-
-- 支持开发和生产环境配置
-- 环境变量加密功能
-- dotenvx 集成
-
-2. **定时任务**
-
-- 使用 `@elysiajs/cron` 实现
-- 验证码清理等维护任务
-
-3. **Docker 支持**
-
-- 完整的 Dockerfile 配置
-- 多平台构建支持
-
-4. **统一响应格式**
-
-```typescript
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  errorCode?: number;
+{
+  "url": "https://v.douyin.com/xxxxx/"
 }
 ```
 
-## 技术栈亮点
+响应示例：
 
-1. **现代化运行时**
-
-- 使用 Bun 作为 JavaScript/TypeScript 运行时
-- 高性能特性
-
-2. **类型安全**
-
-- 完整的 TypeScript 支持
-- 自定义类型定义
-
-3. **开发体验**
-
-- 热重载支持
-- 完整的开发工具链
-- 统一的代码风格
-
-4. **安全性**
-
-- JWT 认证
-- 验证码机制
-- 环境变量加密
-
-这是一个结构完善的后端项目框架，适合作为中小型项目的起点。它提供了常见的基础设施和最佳实践，同时保持了良好的可扩展性。
-
-## 使用说明
-
-### 安装依赖
-
-> 本项目使用 bun v1.1.21 通过 `bun init` 创建。[Bun](https://bun.sh) 是一个快速的全能 JavaScript 运行时。
-
-```bash
-bun install
-```
-
-### 环境变量
-
-项目采用dotenvx管理环境变量，你在拉取此项目后，请先修改`.env.development`和`.env.production`文件，添加你的环境变量。
-
-1. DATABASE_URL： 数据库连接字符串，请根据你的数据库类型，修改此字符串，他在`prisma/schema.prisma`中被引用。
-2. SERVER_PORT： 服务端口，请根据你的需要，修改此端口。
-3. EMAIL：发送功能依赖于ZeptoMail，请先在ZeptoMail注册账号，并添加你的API Token以及其他信息。你也可以移除此模块，使用你自己的邮件发送服务，文件位置：`src/utils/email-sender.ts`。
-
-### 加密和解密说明
-
-注意：请不要将环境变量以明文的形式上传到公开仓库，你可使用`bun run encrypt-dev/encrypt-prod`命令，加密`.env.development/.env.production`文件。
-
-另外，请不要将生成的`.env.keys`文件上传到公开仓库，此文件包含你的加密私钥，请妥善保管。
-
-[dotenvx文档](https://dotenvx.com/)
-
-### Git 提交代码格式化
-
-运行以下命令安装husky
-
-```bash
-bun run prepare-fallback
-```
-
-### Prisma 配置
-
-请先在`prisma/schema.prisma`中创建model，如下：
-
-```prisma
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+```json
+{
+  "success": true,
+  "data": {
+    "videoUrl": "https://xxx.com/video.mp4"
+  },
+  "message": "视频解析成功"
 }
 ```
 
-现在你还要留意环境变量`DATABASE_URL`，他需要配置你的数据库连接字符串，请根据你的数据库类型，修改此字符串。
+### 错误处理
 
-当你每次配置完`schema.prisma`，都要运行命令`bun run migrate-[dev/depl]`，一个是开发环境一个是生产环境。在运行后他会自动执行`bun run generate`这样就可以通过@prisma/client获取到类型提示信息。
-
-> 关于binaryTargets的更多信息，请参考[Prisma文档](https://www.prisma.io/docs/orm/overview/prisma-schema-file-structure/prisma-schema-file-structure#binarytargets)。
-
-### 运行项目
-
-```bash
-bun run dev
+```json
+{
+  "success": false,
+  "data": {
+    "videoUrl": ""
+  },
+  "message": "解析失败，未找到视频链接",
+  "errorCode": 1201
+}
 ```
 
-### 构建 Docker 镜像
+## 使用特点
 
-构建Docker镜像：
+- 解析速度快：通常在3-5秒内完成解析
+- 稳定可靠：采用先进的浏览器自动化技术
+- 高清原片：提供最高质量的视频源链接
+- 使用简单：仅需提供视频分享链接即可解析
 
-```bash
-docker buildx build --push --platform linux/amd64 -t domain/project-name:latest .
-```
+## 开始使用
 
-运行镜像：
+1. 克隆项目
+2. 安装依赖
+3. 启动服务
+4. 调用API
 
-```bash
-docker run -d -e DOTENV_PRIVATE_KEY_PRODUCTION="***" -v volume-name:/usr/src/app/media --restart unless-stopped --privileged -p 10010:7777 --name image-name  domain/project-name:latest
-```
+详细的安装和配置说明请参考下方使用文档。
+
+## 注意事项
+
+- 请合理使用，遵守相关平台的使用规范
+- 建议增加请求频率限制，避免接口滥用
+- 视频链接有效期可能受平台限制，建议及时下载
+
+## 联系我们
+
+如有任何问题或建议，请随时联系我们：
+
+- 邮箱：support@itcox.cn
+- 网站：https://www.itcox.cn
