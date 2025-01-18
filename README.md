@@ -12,6 +12,7 @@
 
 - 支持抖音、快手等主流短视频平台
 - 自动提取视频原始地址
+- 获取视频标题和封面图
 - 快速获取高清视频下载链接
 - 支持批量解析（开发中）
 
@@ -34,7 +35,9 @@ Content-Type: application/json
 {
   "success": true,
   "data": {
-    "videoUrl": "https://xxx.com/video.mp4"
+    "videoUrl": "https://xxx.com/video.mp4",
+    "title": "这是视频标题",
+    "cover": "https://xxx.com/cover.jpg"
   },
   "message": "视频解析成功"
 }
@@ -46,7 +49,9 @@ Content-Type: application/json
 {
   "success": false,
   "data": {
-    "videoUrl": ""
+    "videoUrl": "",
+    "title": "",
+    "cover": ""
   },
   "message": "解析失败，未找到视频链接",
   "errorCode": 1201
@@ -58,6 +63,7 @@ Content-Type: application/json
 - 解析速度快：通常在3-5秒内完成解析
 - 稳定可靠：采用先进的浏览器自动化技术
 - 高清原片：提供最高质量的视频源链接
+- 完整信息：同时获取视频标题和封面图
 - 使用简单：仅需提供视频分享链接即可解析
 
 ## 开始使用
@@ -67,7 +73,7 @@ Content-Type: application/json
 3. 启动服务
 4. 调用API
 
-详细的安装和配置说明请参考下方使用文档。
+详细的安装和配置说明请参考 [部署文档](./DEPLOYMENT.md)。
 
 ## 注意事项
 
@@ -80,4 +86,3 @@ Content-Type: application/json
 如有任何问题或建议，请随时联系我们：
 
 - 邮箱：support@itcox.cn
-- 网站：https://www.itcox.cn
