@@ -13,8 +13,8 @@
 1. 克隆项目
 
 ```bash
-git clone <repository-url>
-cd video-parser
+git clone git@github.com:yassine-zhang/short-video-extractor.git
+cd short-video-extractor
 ```
 
 2. 安装依赖
@@ -70,27 +70,7 @@ docker logs -f video-parser
 
 必需的环境变量：
 
-- `PORT`: 服务器端口号（默认：3000）
-- `NODE_ENV`: 环境模式 (development/production)
-
-## 注意事项
-
-1. Puppeteer 相关
-
-- Docker 环境中使用了 Alpine 的 Chromium
-- 已配置所需的中文字体和依赖
-- 无需额外安装 Chromium
-
-2. 性能优化
-
-- 建议使用 PM2 或类似工具进行进程管理
-- 可配置 Nginx 进行反向代理
-
-3. 安全建议
-
-- 建议配置请求频率限制
-- 建议启用 CORS 保护
-- 生产环境需配置 SSL 证书
+- `PORT`: 服务器端口号（开发环境：10010, 生产环境：7777），具体可在环境变量文件查看
 
 ## 故障排除
 
@@ -123,5 +103,43 @@ bun install
 docker build -t video-parser:latest .
 docker stop video-parser
 docker rm video-parser
-docker run -d -p 3000:3000 --name video-parser video-parser:latest
+docker run -d -p 10017:7777 --name video-parser video-parser:latest
 ```
+
+## 构建特定架构的 Docker 镜像
+
+在某些情况下，您可能需要为特定的 CPU 架构构建 Docker 镜像。以下是一些常见场景：
+
+1. 构建 linux/amd64 架构的镜像并推送到私有仓库
+
+```bash
+# 构建并推送到私有仓库
+docker build --push --platform linux/amd64 -t docker-registry.itcox.cn/video-parser:latest .
+
+# 拉取镜像
+docker pull docker-registry.itcox.cn/video-parser:latest
+
+# 运行容器
+docker run -d \
+  -p 10017:7777 \
+  --name video-parser \
+  docker-registry.itcox.cn/video-parser:latest
+```
+
+2. 构建多架构支持的镜像
+
+```bash
+# 使用 buildx 创建多架构构建器
+docker buildx create --use
+
+# 构建并推送多架构镜像
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t docker-registry.itcox.cn/video-parser:latest \
+  --push .
+```
+
+注意事项：
+
+- 确保 Docker 已启用实验性功能以支持 buildx
+- 私有仓库需要提前配置登录认证
+- 多架构构建可能需要更长的构建时间
