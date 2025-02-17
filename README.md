@@ -86,3 +86,10 @@ Content-Type: application/json
 如有任何问题或建议，请随时联系我们：
 
 - 邮箱：support@itcox.cn
+
+## 赞助
+
+<p style="display: flex;">
+    <img src="./wechat-pay.png" alt="赞助码" width="200">
+    <img src="./alipay.png" alt="赞助码" width="200">
+</p>
