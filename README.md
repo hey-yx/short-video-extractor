@@ -1,6 +1,8 @@
 # Video Parser Service
 
-一个强大的短视频解析服务，支持主流短视频平台的无水印视频提取。支持130多个平台视频和图片，抖音去水印，快手去水印，小红书去水印，快速、高质量地移除视频水印或图片水印。
+一个强大的短视频解析服务，支持主流短视频平台的无水印视频提取，快速、高质量地移除视频水印或图片水印。
+
+平台支持：抖音、快手、火山、头条、西瓜、微博、秒拍、微视、美拍、映客、陌陌...
 
 ![](./docs/images/screenshot.png)
 
@@ -16,7 +18,7 @@
 
 ## API 使用说明
 
-### 视频解析接口
+### 解析接口
 
 ```http
 POST /public/parseVideo
@@ -27,41 +29,49 @@ Content-Type: application/json
 }
 ```
 
-响应示例：
+#### 响应示例
+
+解析视频：
 
 ```json
 {
   "success": true,
   "data": {
     "videoUrl": "https://xxx.com/video.mp4",
-    "title": "这是视频标题",
-    "cover": "https://xxx.com/cover.jpg"
+    "title": "这是视频标题"
   },
   "message": "视频解析成功"
 }
 ```
 
-### 错误处理
+解析图集：
 
 ```json
 {
-  "success": false,
-  "data": {
-    "videoUrl": "",
-    "title": "",
-    "cover": ""
-  },
-  "message": "解析失败，未找到视频链接",
-  "errorCode": 1201
+    "success": true,
+    "data": {
+        "videoUrl": "",
+        "title": "已经迫不及待的想要迎接春夏了～|||#冬天过腻了又开始期待夏天[话题]#+#开始期待夏天了[话题]#+#拍出氛围感[话题]#+#来拍照了[话题]#\n我+想+穿+漂亮+裙子+了+咧\n•̥+ˍ+•",
+        "imagesList": [
+            "http://ci.xiaohongshu.com/1040g00831d3skk5b0m004a2v3gkjs94dlto4rfo?imageView2/2/w/1080/format/jpg",
+            "http://ci.xiaohongshu.com/1040g00831d3skk5b0m0g4a2v3gkjs94d48qa69g?imageView2/2/w/1080/format/jpg",
+            "http://ci.xiaohongshu.com/1040g00831d3skk5b0m104a2v3gkjs94dpedumg0?imageView2/2/w/1080/format/jpg"
+            ...
+        ]
+    },
+    "message": "解析成功"
 }
 ```
+
+### 错误处理
+
+文档地址：[错误码](./docs/ERROR_CODE.md)
 
 ## 使用特点
 
 - 解析速度快：通常在3-5秒内完成解析
 - 稳定可靠：采用先进的浏览器自动化技术
 - 高清原片：提供最高质量的视频源链接
-- 完整信息：同时获取视频标题和封面图
 - 使用简单：仅需提供视频分享链接即可解析
 
 ## 开始使用
@@ -73,17 +83,12 @@ Content-Type: application/json
 
 详细的安装和配置说明请参考 [部署文档](./docs/DEPLOYMENT.md)。
 
-## 注意事项
-
-- 请合理使用，遵守相关平台的使用规范
-- 建议增加请求频率限制，避免接口滥用
-- 视频链接有效期可能受平台限制，建议及时下载
-
 ## 联系我们
 
 如有任何问题或建议，请随时联系我们：
 
-- 邮箱：support@itcox.cn
+- 邮箱: support@itcox.cn
+- QQ: 57878778
 
 ## 赞助
 
