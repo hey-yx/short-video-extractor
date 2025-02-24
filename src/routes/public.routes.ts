@@ -6,6 +6,7 @@ import {
   getEmailCaptcha,
   clearExpiredEmailCaptcha,
 } from "@/controllers/public/emailCaptcha";
+import { parseVideo } from "@/controllers/public/parseVideo";
 import { publicModels } from "@/models/public.model";
 
 const plugin = new Elysia({ prefix: "/public" })
@@ -21,6 +22,7 @@ const plugin = new Elysia({ prefix: "/public" })
     }),
   )
   .get("/captcha", getCaptcha)
-  .get("/emailCaptcha", getEmailCaptcha, { query: "getEmailCaptcha" });
+  .get("/emailCaptcha", getEmailCaptcha, { query: "getEmailCaptcha" })
+  .post("/parseVideo", parseVideo, { body: "parseVideo" });
 
 export default plugin;

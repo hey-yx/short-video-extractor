@@ -55,7 +55,7 @@ docker build -t video-parser .
 
 ```bash
 docker run -d \
-  -p 3000:3000 \
+  -p 10010:7777 \
   --name video-parser \
   video-parser
 ```
@@ -103,7 +103,7 @@ bun install
 docker build -t video-parser:latest .
 docker stop video-parser
 docker rm video-parser
-docker run -d -p 10017:7777 --name video-parser video-parser:latest
+docker run -d -p 10010:7777 --name video-parser video-parser:latest
 ```
 
 ## 构建特定架构的 Docker 镜像
@@ -121,7 +121,7 @@ docker pull docker-registry.itcox.cn/video-parser:latest
 
 # 运行容器
 docker run -d \
-  -p 10017:7777 \
+  -p 10010:7777 \
   --name video-parser \
   docker-registry.itcox.cn/video-parser:latest
 ```
@@ -137,9 +137,3 @@ docker buildx build --platform linux/amd64,linux/arm64 \
   -t docker-registry.itcox.cn/video-parser:latest \
   --push .
 ```
-
-注意事项：
-
-- 确保 Docker 已启用实验性功能以支持 buildx
-- 私有仓库需要提前配置登录认证
-- 多架构构建可能需要更长的构建时间

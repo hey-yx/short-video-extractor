@@ -1,10 +1,8 @@
 # Video Parser Service
 
-一个强大的短视频解析服务，支持主流短视频平台的无水印视频提取。
+一个强大的短视频解析服务，支持主流短视频平台的无水印视频提取。支持130多个平台视频和图片，抖音去水印，快手去水印，小红书去水印，快速、高质量地移除视频水印或图片水印。
 
-支持： 快手 抖音 哔哩哔哩 全民小视频 今日头条 好看视频 看点视频 全民K歌 酷狗音乐 酷我音乐 看看视频 梨视频 网易云音乐 看点视频 看点快报 西瓜 微视 QQ看点 陌陌 唱吧 小咖秀 糖豆 配音秀 大众点评 虎牙视频 懂车帝 火山 皮皮虾 皮皮搞笑 最左 小影 趣头条 微博 迅雷 美图秀秀 秒拍 美拍 美拍 得物 京东 微信公众号 火锅视频 轻视频 百度视频 uc浏览器 QQ浏览器 oppo浏览器 油果浏览器 新片场 万能钥匙WiFi 知乎 腾讯新闻 人民日报 开眼 剪影 等等
-
-![](./screenshot.png)
+![](./docs/images/screenshot.png)
 
 ## 核心功能
 
@@ -21,7 +19,7 @@
 ### 视频解析接口
 
 ```http
-POST /puppeteer/parse
+POST /public/parseVideo
 Content-Type: application/json
 
 {
@@ -73,7 +71,7 @@ Content-Type: application/json
 3. 启动服务
 4. 调用API
 
-详细的安装和配置说明请参考 [部署文档](./DEPLOYMENT.md)。
+详细的安装和配置说明请参考 [部署文档](./docs/DEPLOYMENT.md)。
 
 ## 注意事项
 
@@ -90,6 +88,6 @@ Content-Type: application/json
 ## 赞助
 
 <p style="display: flex;">
-    <img src="./wechat-pay.png" alt="赞助码" width="200">
-    <img src="./alipay.png" alt="赞助码" width="200">
+    <img src="./docs/images/wechat-pay.png" alt="赞助码" width="200">
+    <img src="./docs/images/alipay.png" alt="赞助码" width="200">
 </p>
