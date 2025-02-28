@@ -6,7 +6,7 @@
 
 - Node.js >= 18
 - Bun >= 1.0.0
-- Docker (可选)
+- Docker (可选，用于生产环境)
 
 ## 本地开发部署
 
@@ -37,11 +37,11 @@ vim .env.production
 bun run dev
 ```
 
-5. 运行生产服务器
+## 配置 Docker 镜像源
 
-```bash
-bun run start
-```
+请参考 [DOCKER_MIRROR.md](./DOCKER_MIRROR.md)
+
+前提是您要在设备上事先安装 Docker
 
 ## Docker 部署
 
@@ -60,33 +60,11 @@ docker run -d \
   video-parser
 ```
 
-3. 查看容器日志
-
-```bash
-docker logs -f video-parser
-```
-
 ## 环境变量说明
 
 必需的环境变量：
 
 - `PORT`: 服务器端口号（开发环境：10010, 生产环境：7777），具体可在环境变量文件查看
-
-## 故障排除
-
-1. 如果遇到 Chromium 启动失败：
-
-```bash
-# 检查 Chromium 是否正确安装
-docker exec -it video-parser which chromium-browser
-```
-
-2. 如果遇到中文显示问题：
-
-```bash
-# 确认字体文件是否存在
-docker exec -it video-parser ls /usr/share/fonts
-```
 
 ## 更新维护
 
@@ -112,18 +90,20 @@ docker run -d -p 10010:7777 --name video-parser video-parser:latest
 
 1. 构建 linux/amd64 架构的镜像并推送到私有仓库
 
+注意：example-registry.com 是一个自建的私有仓库，这里只做示例，请替换为实际的私有仓库地址
+
 ```bash
 # 构建并推送到私有仓库
-docker build --push --platform linux/amd64 -t docker-registry.itcox.cn/video-parser:latest .
+docker build --push --platform linux/amd64 -t example-registry.com/video-parser:latest .
 
 # 拉取镜像
-docker pull docker-registry.itcox.cn/video-parser:latest
+docker pull example-registry.com/video-parser:latest
 
 # 运行容器
 docker run -d \
   -p 10010:7777 \
   --name video-parser \
-  docker-registry.itcox.cn/video-parser:latest
+  example-registry.com/video-parser:latest
 ```
 
 2. 构建多架构支持的镜像
@@ -134,6 +114,6 @@ docker buildx create --use
 
 # 构建并推送多架构镜像
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t docker-registry.itcox.cn/video-parser:latest \
+  -t example-registry.com/video-parser:latest \
   --push .
 ```

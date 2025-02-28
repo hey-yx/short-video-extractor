@@ -13,7 +13,11 @@ import utc from "dayjs/plugin/utc";
 dayjs.locale("zh-cn");
 dayjs.extend(utc);
 
-const ClientAddrs = ["http://localhost:5173", "http://172.20.10.3:5173"];
+const ClientAddrs = [
+  "http://localhost:5173",
+  /^https:\/\/.*\.vusercontent\.net$/,
+  "https://short-video-extractor.itcox.cn",
+];
 
 export const createApp = () => {
   const app = new Elysia()
