@@ -1,4 +1,4 @@
-import { type ApiResponse } from "@/types/response";
+import type { ApiResponse } from "@/types/response";
 
 const authWhitelist = [
   "/user/login",
@@ -16,7 +16,7 @@ const authWhitelist = [
  * @return 如果路径在白名单中返回 true，否则返回 false
  */
 function isInWhitelist(path: string) {
-  for (let pattern of authWhitelist) {
+  for (const pattern of authWhitelist) {
     if (typeof pattern === "string") {
       if (path === pattern) {
         return true;

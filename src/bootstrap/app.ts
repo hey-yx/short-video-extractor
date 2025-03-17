@@ -8,21 +8,24 @@ import { jwt } from "@elysiajs/jwt";
 import "dayjs/locale/zh-cn";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { puppeteerManager } from "@/utils/puppeteer";
 
 // 设置全局语言为中文
 dayjs.locale("zh-cn");
 dayjs.extend(utc);
 
+puppeteerManager.getPage();
+
 const ClientAddrs = [
   "http://localhost:5173",
-  "https://kzmquwyli8ammdmwkvp0.lite.vusercontent.net/",
+  /^https:\/\/.*\.lite\.vusercontent\.net$/,
   /^https:\/\/.*\.itcox\.cn$/,
 ];
 
 export const createApp = () => {
   const app = new Elysia()
     .onError((error) => {
-      return errorHook(error as any);
+      return errorHook(error);
     })
     .use(
       cors({
