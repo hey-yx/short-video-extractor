@@ -20,6 +20,8 @@
 
 ### 解析接口
 
+接口 1（标准接口）：
+
 ```http
 POST /public/parseVideo
 Content-Type: application/json
@@ -28,6 +30,19 @@ Content-Type: application/json
   "url": "https://v.douyin.com/xxxxx/"
 }
 ```
+
+接口 2（简化接口）：
+
+```http
+POST /pv
+Content-Type: application/json
+
+{
+  "url": "https://v.douyin.com/xxxxx/"
+}
+```
+
+两个接口功能完全相同，您可以根据个人喜好选择使用。
 
 #### 响应示例
 
