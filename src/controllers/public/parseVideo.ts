@@ -21,6 +21,9 @@ export async function parseVideo({
     const { url } = body as ParseVideoBody;
     const page = await puppeteerManager.getPage();
 
+    // 刷新页面
+    await page.reload({ waitUntil: "networkidle0" });
+
     // 等待输入框和按钮加载
     await page.waitForSelector(
       '.section-heading input[placeholder="请输入短视频分享链接"]',
