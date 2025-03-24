@@ -19,10 +19,15 @@ export async function parseVideo({
 > {
   try {
     const { url } = body as ParseVideoBody;
-    const page = await puppeteerManager.getPage();
+    let page = await puppeteerManager.getPage();
 
-    // 刷新页面
-    await page.reload({ waitUntil: "networkidle0" });
+    try {
+      // 刷新页面
+      await page.reload({ waitUntil: "networkidle0" });
+    } catch (error) {
+      // 如果刷新失败，重新获取页面
+      page = await puppeteerManager.getPage();
+    }
 
     // 等待输入框和按钮加载
     await page.waitForSelector(
