@@ -14,7 +14,10 @@ import { puppeteerManager } from "@/utils/puppeteer";
 dayjs.locale("zh-cn");
 dayjs.extend(utc);
 
-puppeteerManager.getPage();
+// 启动时打开两个标签页
+(async () => {
+  await puppeteerManager.createNewPage(false);
+})();
 
 const ClientAddrs = [
   "http://localhost:5173",
