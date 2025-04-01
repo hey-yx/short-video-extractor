@@ -9,11 +9,19 @@
     "test": "dotenvx run -f .env.development -- bun test",
     "prepare-fallback": "husky install",
     "format": "prettier --write .",
+    "separate-1": "------------------------------------------------------------",
     "encrypt-dev": "dotenvx encrypt -f .env.development",
     "encrypt-prod": "dotenvx encrypt -f .env.production",
     "decrypt-dev": "dotenvx decrypt -f .env.development",
     "decrypt-prod": "dotenvx decrypt -f .env.production",
-    "dotenvx-help": "sh -c 'echo \"Current dotenvx version number: $(dotenvx --version)\" && dotenvx help'"
+    "dotenvx-help": "sh -c 'echo \"Current dotenvx version number: $(dotenvx --version)\" && dotenvx help'",
+    "separate-2": "------------------------------------------------------------",
+    "pm2:dev": "pm2 start ecosystem.config.json",
+    "pm2:start": "pm2-runtime ecosystem.config.json",
+    "pm2:stop": "pm2 stop short-video-extractor",
+    "pm2:restart": "pm2 restart short-video-extractor",
+    "pm2:logs": "pm2 logs short-video-extractor",
+    "pm2:status": "pm2 status"
   },
   "devDependencies": {
     "@types/bun": "^1.1.12",
@@ -41,6 +49,7 @@
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.13",
     "elysia": "^1.1.23",
+    "pm2": "^6.0.5",
     "puppeteer": "^24.1.0",
     "svg-captcha": "^1.4.0",
     "uuid": "^11.0.2"

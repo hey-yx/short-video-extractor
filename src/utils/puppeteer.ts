@@ -35,7 +35,13 @@ class PuppeteerManager {
       try {
         return await puppeteer.launch({
           headless: true,
-          args: ["--no-sandbox", "--window-size=1280,800"],
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--window-size=1280,800",
+          ],
           defaultViewport: { width: 1280, height: 800 },
           timeout: 30000,
         });
@@ -185,10 +191,31 @@ class PuppeteerManager {
         let loginResponseReceived = false;
 
         const requestHandler = (request: HTTPRequest) => {
-          if (request.method() === "POST" && request.url().includes("/login")) {
-            loginRequestSent = true;
+          try {
+            if (
+              request.method() === "POST" &&
+              request.url().includes("/login")
+            ) {
+              if (!loginRequestSent) {
+                loginRequestSent = true;
+                request.continue();
+              } else {
+                // 如果请求已经被处理过，直接继续而不是中止
+                request.continue();
+              }
+            } else {
+              request.continue();
+            }
+          } catch (error: unknown) {
+            // 如果出现 "Request is already handled" 错误，直接继续
+            if (
+              error instanceof Error &&
+              error.message.includes("Request is already handled")
+            ) {
+              return;
+            }
+            request.continue();
           }
-          request.continue();
         };
 
         const responseHandler = (response: HTTPResponse) => {
@@ -241,33 +268,75 @@ class PuppeteerManager {
         await page.click("#loginSubmit");
 
         // 等待一下确保请求发送
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // 直接等待成功模态框出现，不等待请求响应
+        // 等待登录成功
         try {
-          // 等待模态框出现
-          await page.waitForSelector("#successModal", {
-            visible: true,
-            timeout: 30000,
-          });
+          // 等待模态框出现，增加重试机制
+          let retryCount = 0;
+          const waitForModal = async () => {
+            try {
+              await page.waitForSelector("#successModal", {
+                visible: true,
+                timeout: 30000,
+              });
+              return true;
+            } catch (error) {
+              if (retryCount < maxRetries) {
+                retryCount++;
+                console.log(`等待模态框出现失败，第 ${retryCount} 次重试...`);
+                await new Promise((resolve) => setTimeout(resolve, 2000)); // 等待2秒后重试
+                return waitForModal();
+              }
+              throw error;
+            }
+          };
+
+          await waitForModal();
+
+          // 等待模态框内容加载，增加重试机制
+          retryCount = 0;
+          const waitForModalContent = async () => {
+            try {
+              await page.waitForFunction(
+                () => {
+                  const content = document.querySelector("#successmodalbody p");
+                  return (
+                    content && content.textContent?.trim() === "登陆成功！"
+                  );
+                },
+                { timeout: 30000 },
+              );
+              return true;
+            } catch (error) {
+              if (retryCount < maxRetries) {
+                retryCount++;
+                console.log(
+                  `等待模态框内容加载失败，第 ${retryCount} 次重试...`,
+                );
+                await new Promise((resolve) => setTimeout(resolve, 2000)); // 等待2秒后重试
+                return waitForModalContent();
+              }
+              throw error;
+            }
+          };
+
+          await waitForModalContent();
+
+          // 等待一下确保完全显示
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          // 检查登录状态
+          const isLoggedIn = await this.checkLoginStatus(page);
+          if (!isLoggedIn) {
+            throw new Error("登录状态验证失败");
+          }
 
           // 移除事件监听
           page.removeAllListeners("request");
           page.removeAllListeners("response");
 
-          // 等待模态框内容加载
-          await page.waitForFunction(
-            () => {
-              const content = document.querySelector("#successmodalbody p");
-              return content && content.textContent?.trim() === "登陆成功！";
-            },
-            { timeout: 30000 },
-          );
-
-          // 等待一下确保完全关闭
-          await new Promise((resolve) => setTimeout(resolve, 200));
-
-          // 直接点击关闭按钮
+          // 点击关闭按钮
           await page.click(
             "#successModal .modal-dialog .modal-content .modal-footer .btn",
           );
