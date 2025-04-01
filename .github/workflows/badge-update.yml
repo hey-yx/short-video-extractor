@@ -1,0 +1,52 @@
+name: Update Badges
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # 每小时运行一次
+  workflow_dispatch:  # 允许手动触发
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-badges:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests
+        run: npm test
+        
+      - name: Update badges
+        run: |
+          # 获取当前时间戳
+          TIMESTAMP=$(date +%s)
+          
+          # 更新 README.md 中的徽章时间戳
+          sed -i "s|https://status.itcox.cn/badge/sve-api/dot?animate=ping&t=.*|https://status.itcox.cn/badge/sve-api/dot?animate=ping\&t=$TIMESTAMP|g" README.md
+          sed -i "s|https://status.itcox.cn/badge/sve-api/status?.*&t=.*|https://status.itcox.cn/badge/sve-api/status?labelColor=\&color=\&style=for-the-badge\&label=short-video-extractor%20%E2%9C%A8\&t=$TIMESTAMP|g" README.md
+          sed -i "s|https://status.itcox.cn/badge/sve-api/uptime?.*&t=.*|https://status.itcox.cn/badge/sve-api/uptime?labelColor=333\&color=7a44dc\&style=for-the-badge\&label=short-video-extractor%20%E2%9C%A8\&sinceLast=7776000\&hideDuration=false\&t=$TIMESTAMP|g" README.md
+          
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-action@itcox.cn"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git commit -m "chore: update badges with timestamp" || exit 0
+          git push || {
+            echo "Failed to push changes. Retrying with force push..."
+            git push -f || {
+              echo "Force push failed. Please check the repository permissions."
+              exit 1
+            }
+          }
