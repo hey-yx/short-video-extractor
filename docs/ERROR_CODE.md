@@ -35,3 +35,17 @@
   "errorCode": 1203
 }
 ```
+
+## 1204 - 源站无效
+
+```json
+{
+  "success": false,
+  "data": {
+    "videoUrl": "",
+    "title": ""
+  },
+  "message": "源站无效或无法访问，请稍后再试",
+  "errorCode": 1204
+}
+```

@@ -16,37 +16,37 @@ dayjs.extend(utc);
 
 // 启动时打开两个标签页
 (async () => {
-  await puppeteerManager.createNewPage(false);
+	await puppeteerManager.createNewPage(false);
 })();
 
 const ClientAddrs = [
-  "http://localhost:5173",
-  /^https:\/\/.*\.lite\.vusercontent\.net$/,
-  /^https:\/\/.*\.itcox\.cn$/,
+	"http://localhost:5173",
+	/^https:\/\/.*\.lite\.vusercontent\.net$/,
+	/^https:\/\/.*\.itcox\.cn$/,
 ];
 
 export const createApp = () => {
-  const app = new Elysia()
-    .onError((error) => {
-      return errorHook(error);
-    })
-    .use(
-      cors({
-        origin: [...ClientAddrs],
-      }),
-    )
-    .use(
-      jwt({
-        name: "jwt",
-        secret: Bun.env.JWT_SECRET as string,
-        exp: "7d",
-      }),
-    )
-    .use(staticPlugin())
-    .use(createAuthHook)
-    .onBeforeHandle(authWhitelist)
-    .get("/", () => "Hello Elysia")
-    .use(globalRouterPlugin);
+	const app = new Elysia()
+		.onError((error) => {
+			return errorHook(error);
+		})
+		.use(
+			cors({
+				origin: [...ClientAddrs],
+			}),
+		)
+		.use(
+			jwt({
+				name: "jwt",
+				secret: Bun.env.JWT_SECRET as string,
+				exp: "7d",
+			}),
+		)
+		.use(staticPlugin())
+		.use(createAuthHook)
+		.onBeforeHandle(authWhitelist)
+		.get("/", () => "Hello Elysia")
+		.use(globalRouterPlugin);
 
-  return app;
+	return app;
 };
