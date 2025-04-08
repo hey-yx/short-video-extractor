@@ -1,51 +1,34 @@
 # 错误码
 
-## 1201 - 解析失败
+## 1201 - 无法辨别 url 真实性🫠
 
 ```json
 {
-  "success": false,
-  "data": { "videoUrl": "", "title": "" },
-  "message": "解析失败，未找到视频链接或图片列表",
-  "errorCode": 1201
-}
+  success: false,
+  data: null,
+  message: "无法辨别 url 真实性🫠",
+  errorCode: 1201
+};
 ```
 
-## 1202 - 服务器错误
+## 1202 - 无法识别的平台💀
 
 ```json
 {
-  "success": false,
-  "data": { "videoUrl": "", "title": "" },
-  "message": "服务器错误",
-  "errorCode": 1202
-}
+  success: false,
+  data: null,
+  message: "无法识别的平台💀",
+  errorCode: 1202,
+};
 ```
 
-## 1203 - 解析超时
+## 1203 - 此平台解析功能仍在开发中📍
 
 ```json
 {
-  "success": false,
-  "data": {
-    "videoUrl": "",
-    "title": ""
-  },
-  "message": "解析超时，请稍后重试",
-  "errorCode": 1203
-}
-```
-
-## 1204 - 源站无效
-
-```json
-{
-  "success": false,
-  "data": {
-    "videoUrl": "",
-    "title": ""
-  },
-  "message": "源站无效或无法访问，请稍后再试",
-  "errorCode": 1204
-}
+  success: false,
+  data: null,
+  message: "此平台解析功能仍在开发中📍",
+  errorCode: 1203,
+};
 ```

@@ -54,74 +54,86 @@ class PuppeteerManager {
 
 	private async createPage(): Promise<Page | null> {
 		const browser = await this.getBrowser();
-		let page = await browser.newPage();
+		const page = await browser.newPage();
 
-		// 设置页面超时时间为5秒
-		page.setDefaultTimeout(5000);
-		page.setDefaultNavigationTimeout(5000);
+		// 设置页面超时时间为10秒
+		page.setDefaultTimeout(10000);
+		page.setDefaultNavigationTimeout(10000);
 
-		// 设置视口大小
-		await page.setViewport({ width: 1280, height: 800 });
+		// 设置视口大小为常见分辨率
+		await page.setViewport({ width: 1366, height: 768 });
 
 		// 启用 JavaScript
 		await page.setJavaScriptEnabled(true);
 
-		// 设置用户代理
+		// 设置更真实的用户代理
 		await page.setUserAgent(
 			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
 		);
 
-		// 添加重试机制
-		let retryCount = 0;
-		const maxRetries = 2; // 减少重试次数
-		let lastError: Error | null = null;
+		// 设置更真实的浏览器指纹
+		await page.evaluateOnNewDocument(() => {
+			// 修改 navigator 属性
+			Object.defineProperty(navigator, "platform", { get: () => "MacIntel" });
+			Object.defineProperty(navigator, "webdriver", { get: () => false });
+			Object.defineProperty(navigator, "languages", {
+				get: () => ["zh-CN", "zh", "en"],
+			});
 
-		while (retryCount < maxRetries) {
-			try {
-				// 导航到目标页面
-				await page.goto("https://www.jiexiapi.top/", {
-					waitUntil: "networkidle0",
-					timeout: 5000, // 5秒超时
-				});
+			// 添加一些常见的浏览器插件
+			Object.defineProperty(navigator, "plugins", {
+				get: () => [
+					{
+						0: { type: "application/x-google-chrome-pdf" },
+						description: "Portable Document Format",
+						filename: "internal-pdf-viewer",
+						length: 1,
+						name: "Chrome PDF Plugin",
+					},
+					{
+						0: { type: "application/pdf" },
+						description: "Portable Document Format",
+						filename: "mhjfbmdgcfjbbpaeojofohoefgiehjai",
+						length: 1,
+						name: "Chrome PDF Viewer",
+					},
+				],
+			});
+		});
 
-				// 等待页面加载完成
-				await page.waitForFunction(() => document.readyState === "complete", {
-					timeout: 5000, // 5秒超时
-				});
+		try {
+			// 导航到目标页面，使用更真实的加载策略
+			await page.goto("https://www.jiexiapi.top/", {
+				waitUntil: "domcontentloaded", // 使用更快的加载策略
+				timeout: 10000,
+			});
 
-				return page;
-			} catch (error: unknown) {
-				lastError = error instanceof Error ? error : new Error(String(error));
-				console.error(
-					`[Puppeteer] 导航失败，第 ${retryCount + 1} 次尝试:`,
-					lastError.message,
-				);
-				retryCount++;
+			// 等待页面加载完成
+			await page.waitForFunction(() => document.readyState === "complete", {
+				timeout: 10000,
+			});
 
-				if (retryCount < maxRetries) {
-					// 等待一段时间后重试
-					await new Promise((resolve) => setTimeout(resolve, 1000)); // 减少等待时间
+			// 模拟真实用户的鼠标移动
+			await page.mouse.move(Math.random() * 1366, Math.random() * 768);
 
-					// 如果页面已关闭，创建新页面
-					if (page.isClosed()) {
-						page = await browser.newPage();
-						page.setDefaultTimeout(5000);
-						page.setDefaultNavigationTimeout(5000);
-						await page.setViewport({ width: 1280, height: 800 });
-						await page.setJavaScriptEnabled(true);
-						await page.setUserAgent(
-							"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-						);
-					}
-				}
+			// 模拟真实用户的滚动行为
+			await page.evaluate(() => {
+				window.scrollTo(0, Math.random() * 100);
+				setTimeout(() => {
+					window.scrollTo(0, 0);
+				}, 500);
+			});
+
+			return page;
+		} catch (error) {
+			console.error(
+				`[Puppeteer] 页面创建失败: ${error instanceof Error ? error.message : String(error)}`,
+			);
+			if (!page.isClosed()) {
+				await page.close();
 			}
+			return null;
 		}
-
-		// 如果所有重试都失败，返回 null 而不是抛出错误
-		console.error(
-			`[Puppeteer] 源站无效或无法访问: ${lastError?.message || "未知错误"}`,
-		);
-		return null;
 	}
 
 	public async createNewPage(c = true): Promise<Page | null> {

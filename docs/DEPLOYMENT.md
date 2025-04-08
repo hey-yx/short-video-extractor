@@ -2,11 +2,13 @@
 
 本文档详细说明了如何部署和运行视频解析服务。
 
-## 环境要求
+## 技术栈
 
-- Node.js >= 18
-- Bun >= 1.0.0
-- Docker (可选，用于生产环境)
+- 运行时：Bun 1.1.21
+- 包管理：Bun
+- 进程管理：PM2
+- 浏览器自动化：Puppeteer
+- 容器化：Docker
 
 ## 本地开发部署
 
@@ -35,19 +37,6 @@ vim .env.production
 
 ```bash
 bun run dev
-```
-
-## 跨域配置
-
-如果你需要在网站上对接部署的解析服务，需要先配置网站跨域地址，打开 `src/bootstrap/app.ts` 文件，修改 `ClientAddrs` 数组，添加你的网站地址，例如：
-
-```ts
-const ClientAddrs = [
-  "http://localhost:5173",
-  "https://v0.dev/chat/short-video-extractor-z2fVaJntkAp",
-  /^https:\/\/.*\.itcox\.cn$/,
-  "https://your-website.com",
-];
 ```
 
 ## 配置 Docker 镜像源

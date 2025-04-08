@@ -41,9 +41,6 @@
   "dependencies": {
     "@dotenvx/dotenvx": "^1.21.0",
     "@elysiajs/cors": "^1.1.1",
-    "@elysiajs/cron": "^1.1.1",
-    "@elysiajs/jwt": "^1.1.1",
-    "@elysiajs/static": "^1.1.2",
     "@types/puppeteer": "^7.0.4",
     "axios": "^1.7.7",
     "crypto-js": "^4.2.0",

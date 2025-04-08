@@ -1,5 +1,6 @@
 import type { ApiResponse } from "@/types/response";
 import { puppeteerManager } from "@/utils/puppeteer";
+import type { Context } from "elysia";
 
 interface ParseVideoBody {
 	url: string;
@@ -146,7 +147,7 @@ async function parseVideoWithRetry(
 export async function parseVideo({
 	body,
 	set,
-}: ItcoxTypes.ContextPro): Promise<
+}: Context): Promise<
 	ApiResponse<{ videoUrl: string; title: string; imagesList?: string[] }>
 > {
 	try {
