@@ -25,6 +25,7 @@ export async function transferPlatform({
 
 	switch (mainDomain) {
 		case "xiaohongshu.com":
+		case "xhslink.com":
 			return await parseXiaohongshuContent({
 				body: { url: rawUrl },
 			} as Context);

@@ -1,4 +1,3 @@
-import type { ContentInfo, ApiResponse } from "@/types/content";
 import type { Context } from "elysia";
 import puppeteer from "puppeteer";
 
@@ -32,9 +31,6 @@ export async function parseXiaohongshuContent({
 	const { url } = body as { url: string };
 	console.log("开始处理URL:", url);
 
-	// 提取作者信息
-	const authorName = "";
-	const authorUrl = "";
 	const resources: { type: string; url: string }[] = [];
 
 	try {
@@ -158,7 +154,6 @@ export async function parseXiaohongshuContent({
 				if (url.includes("sns-webpic-")) {
 					if (!videoUrls.includes(url)) {
 						videoUrls.push(url);
-						const currentTime = Date.now();
 						resources.push({
 							type: "image",
 							url: url,
@@ -189,8 +184,13 @@ export async function parseXiaohongshuContent({
 		// 获取页面标题和作者信息
 		const pageInfo = await page.evaluate(() => {
 			// 获取标题
-			const titleElement = document.querySelector("#detail-desc .note-text");
-			const title = titleElement?.textContent?.trim() || "";
+			const titleElement = document.querySelector("#detail-title");
+			const title =
+				titleElement?.textContent?.trim() ||
+				document
+					.querySelector("#detail-desc .note-text")
+					?.textContent?.trim() ||
+				"";
 
 			// 获取作者信息
 			const authorNameElement = document.querySelector(".author .username");
