@@ -1,11 +1,23 @@
 FROM oven/bun:1.1.21-alpine
 
-# 安装所有必需的依赖
+# 安装 Node.js 和 Chromium 依赖
 RUN apk add --no-cache \
+    nodejs \
     chromium \
     chromium-chromedriver \
-    ca-certificates \
-    nodejs
+    fontconfig \
+    freetype \
+    libstdc++ \
+    nss \
+    xorg-server \
+    xvfb \
+    dbus \
+    ttf-freefont \
+    wget \
+    ca-certificates
+
+# Puppeteer 无头浏览器参数建议加上
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # 设置工作目录
 WORKDIR /app

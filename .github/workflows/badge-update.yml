@@ -2,7 +2,7 @@ name: Update Badges
 
 on:
   schedule:
-    - cron: '0 */12 * * *'  # 每12小时运行一次
+    - cron: '0 0 */7 * *'  # 每7天运行一次（每隔7天的0点运行）
   workflow_dispatch:  # 允许手动触发
 
 permissions:
@@ -14,8 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
