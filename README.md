@@ -1,22 +1,35 @@
-# Video Parser Service[![Status](https://status.itcox.cn/badge/sve-api/dot?animate=ping&t=1743490343t=1748477662t=1748304859t=1748132168t=1747959258t=1747786484t=1747613719t=1747440836t=1747267975t=1747095267t=1746922512t=1746749643t=1746576855t=1746404092t=1746231218t=1746058539t=1745885636t=1745712905t=1745540048t=1745367231t=1745194481t=1745021601t=1744848833t=1744676042t=1744632287t=1744589540t=1744545850t=1744504566t=1744459435t=1744416673t=1744373059t=1744330291t=1744286695t=1744243885t=1744200277t=1744178505t=1744157023t=1744135283t=1744113702t=1744092101t=1744070610t=1744048891t=1744027310t=1744005697t=1743984215t=1743962488t=1743940892t=1743919295t=1743897841t=1743876093t=1743854502t=1743832892t=1743811411t=1743789690t=1743768109t=1743746499t=1743725086t=1743714094t=1743703305t=1743692505t=1743681716t=1743670903t=1743660108t=1743650016t=1743638673t=1743627685t=1743616909t=1743606101t=1743595316t=1743584508t=1743573723t=1743563637t=1743552290t=1743541292t=1743530499t=1743519719t=1743508933)](https://status.itcox.cn)
+<div align="center">
+<h1 align="center">Video Parser Service</h1>
+✨✨✨这是一个可以快速部署的短视频解析服务，开箱即用，目前支持小红书解析服务✨✨✨
 
-[![short-video-extractor ✨](https://status.itcox.cn/badge/sve-api/status?labelColor=&color=&style=for-the-badge&label=short-video-extractor%20%E2%9C%A8&t=1743490343t=1748477662t=1748304859t=1748132168t=1747959258t=1747786484t=1747613719t=1747440836t=1747267975t=1747095267t=1746922512t=1746749643t=1746576855t=1746404092t=1746231218t=1746058539t=1745885636t=1745712905t=1745540048t=1745367231t=1745194481t=1745021601t=1744848833t=1744676042t=1744632287t=1744589540t=1744545850t=1744504566t=1744459435t=1744416673t=1744373059t=1744330291t=1744286695t=1744243885t=1744200277t=1744178505t=1744157023t=1744135283t=1744113702t=1744092101t=1744070610t=1744048891t=1744027310t=1744005697t=1743984215t=1743962488t=1743940892t=1743919295t=1743897841t=1743876093t=1743854502t=1743832892t=1743811411t=1743789690t=1743768109t=1743746499t=1743725086t=1743714094t=1743703305t=1743692505t=1743681716t=1743670903t=1743660108t=1743650016t=1743638673t=1743627685t=1743616909t=1743606101t=1743595316t=1743584508t=1743573723t=1743563637t=1743552290t=1743541292t=1743530499t=1743519719t=1743508933)](https://status.itcox.cn)
-[![short-video-extractor ✨ 90D](https://status.itcox.cn/badge/sve-api/uptime?labelColor=333&color=7a44dc&style=for-the-badge&label=short-video-extractor%20%E2%9C%A8&sinceLast=7776000&hideDuration=false&t=1743490343t=1748477662t=1748304859t=1748132168t=1747959258t=1747786484t=1747613719t=1747440836t=1747267975t=1747095267t=1746922512t=1746749643t=1746576855t=1746404092t=1746231218t=1746058539t=1745885636t=1745712905t=1745540048t=1745367231t=1745194481t=1745021601t=1744848833t=1744676042t=1744632287t=1744589540t=1744545850t=1744504566t=1744459435t=1744416673t=1744373059t=1744330291t=1744286695t=1744243885t=1744200277t=1744178505t=1744157023t=1744135283t=1744113702t=1744092101t=1744070610t=1744048891t=1744027310t=1744005697t=1743984215t=1743962488t=1743940892t=1743919295t=1743897841t=1743876093t=1743854502t=1743832892t=1743811411t=1743789690t=1743768109t=1743746499t=1743725086t=1743714094t=1743703305t=1743692505t=1743681716t=1743670903t=1743660108t=1743650016t=1743638673t=1743627685t=1743616909t=1743606101t=1743595316t=1743584508t=1743573723t=1743563637t=1743552290t=1743541292t=1743530499t=1743519719t=1743508933)](https://status.itcox.cn)
+<br />
 
-![](./docs/images/screenshot.png)
+[![GitHub License](https://img.shields.io/github/license/yassine-zhang/short-video-extractor?style=flat-square&color=gold)](./LICENSE)
+[![GitHub Repo stars](https://img.shields.io/github/stars/yassine-zhang/short-video-extractor?style=flat-square)](https://github.com/yassine-zhang/short-video-extractor/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/yassine-zhang/short-video-extractor?style=flat-square)](https://github.com/yassine-zhang/short-video-extractor/forks)
+[![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/yassine-zhang/short-video-extractor?style=flat-square&color=mediumpurple)](https://github.com/yassine-zhang/short-video-extractor/issues)
+[![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/yassine-zhang/short-video-extractor?style=flat-square&color=mediumpurple)](https://github.com/yassine-zhang/short-video-extractor/issues?q=is%3Aissue%20state%3Aclosed)
+[![Docker Image Size](https://img.shields.io/docker/image-size/yassine778/video-parser?arch=amd64&style=flat-square&logo=docker&logoColor=mediumseagreen&color=mediumseagreen)](https://hub.docker.com/r/yassine778/video-parser)
+![GitHub repo size](https://img.shields.io/github/repo-size/yassine-zhang/short-video-extractor?style=flat-square&color=mediumseagreen)
 
+[![Server Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fkener-sve-monitor-to-shieldsendpoints.it-edu.workers.dev%2Fstatus)](https://status.itcox.cn/?monitor=sve-api)
+[![Server Uptime](https://img.shields.io/endpoint?url=https%3A%2F%2Fkener-sve-monitor-to-shieldsendpoints.it-edu.workers.dev%2Fuptime)](https://status.itcox.cn/?monitor=sve-api)
 
-🚧🚧🚧这里是一个稳定快速的短视频解析服务，部署即可使用，目前支持小红书解析服务🚧🚧🚧
+</div>
 
 ## 功能列表🎉🎉🎉
+
 1.  每次解析速度稳定在 3 ~ 12s ，速度取决于页面内解析量和服务器下行网速✨；
 2.  小红书实况图解析后会被作为视频返回，我们加入了 type 变量来区分解析的资源类型🎉；
-3. ...
+3.  ...
+
+## 注意⚠️
+
+当前项目通过 Node.js puppeteer 模拟点击操作并监听资源实现短视频解析，受限于页面结构和反爬机制，无法保证长期稳定性。
 
 ## TodoList📍
-1. 开发抖音和快手的短视频去水印解析服务；
-2. 单独开发实况图转换工具库，确保视频保留原始 live 元数据信息，并尽量让其质量不变，在手机上被识别为实况图；
 
+在不久的将来，我将新开一个专门仓库，基于 Node.js 或 Python，直接调用小红书 API 接口获取数据，从而大幅提升解析的稳定性与兼容性，欢迎持续关注项目进展。
 
 ## API 接口
 
@@ -33,9 +46,38 @@ Content-Type: application/json
 }
 ```
 
-## 部署文档
+## Docker 镜像快速使用
 
-[详细部署文档(Click Here)](./docs/DEPLOYMENT.md)
+你可以直接拉取并运行我们已构建好的官方镜像，无需本地构建：
+
+### 1. 拉取镜像
+
+```bash
+docker pull yassine778/video-parser:latest
+```
+
+### 2. 运行容器
+
+```bash
+docker run -d \
+  -p 10010:7777 \
+  --name video-parser \
+  yassine778/video-parser:latest
+```
+
+### 3. 验证服务
+
+容器启动后，发起 POST 请求 `http://localhost:10010/public/parseVideo` 即可调用接口。
+
+---
+
+如需更多高级用法（如数据持久化、日志挂载、反向代理等），请参考[详细部署文档](./docs/DEPLOYMENT.md)。
+
+如遇镜像拉取缓慢，可参考[镜像源配置指南](./docs/DOCKER_MIRROR.md)加速 Docker 镜像下载。
+
+---
+
+如需进一步定制或有疑问，欢迎随时联系技术支持。
 
 ## 联系我们
 
@@ -48,7 +90,6 @@ Content-Type: application/json
     <img src="./docs/images/wechat-pay.png" alt="赞助码" width="200">
     <img src="./docs/images/alipay.png" alt="赞助码" width="200">
 </p>
-
 
 ## 许可证
 

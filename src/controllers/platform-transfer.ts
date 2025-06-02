@@ -2,9 +2,9 @@ import type { ContentInfo, ApiResponse } from "@/types/content";
 import type { Context } from "elysia";
 import { extractUrl, isValidUrl, extractMainDomain } from "@/utils/extractUrl";
 
-import { parseXiaohongshuContent } from "@/controllers/xiaohongshu";
-import { parseDouyinContent } from "@/controllers/douyin";
-import { parseKuaishouContent } from "@/controllers/kuaishou";
+import { parseXiaohongshuContent } from "@/controllers/core/xiaohongshu";
+import { parseDouyinContent } from "@/controllers/core/douyin";
+import { parseKuaishouContent } from "@/controllers/core/kuaishou";
 
 export async function transferPlatform({
 	body,
