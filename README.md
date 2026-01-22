@@ -35,15 +35,36 @@
 
 ### 标准接口
 
-> /pv 地址简化版
+| 接口路径           | 请求方法 | Content-Type     | 请求参数示例                                                             | 说明                     |
+| ------------------ | -------- | ---------------- | ------------------------------------------------------------------------ | ------------------------ |
+| /pv                | POST     | application/json | {<br> &nbsp;&nbsp; "url": "https://www.xiaohongshu.com/explore/xxx"<br>} | 解析短视频接口，简化地址 |
+| /public/parseVideo | POST     | application/json | {<br> &nbsp;&nbsp; "url": "https://www.xiaohongshu.com/explore/xxx"<br>} | 解析短视频接口           |
 
-```http
-POST /public/parseVideo
-Content-Type: application/json
+---
 
-{
-  "url": "https://v.douyin.com/xxxxx/"
-}
+## 环境变量说明
+
+- `PORT`：服务监听端口（开发环境建议 10010，生产环境建议 7777）
+- `PUPPETEER_EXECUTABLE_PATH`：指定 Puppeteer 启动时所用 Chromium/Chrome 浏览器的绝对路径，建议在 Docker 或服务器环境下设置为 `/usr/bin/chromium-browser`，否则 Puppeteer 可能无法正常启动。
+
+## 本地运行
+
+### 安装依赖
+
+```bash
+bun install
+```
+
+### 直接运行源代码
+
+```bash
+bun run dev
+```
+
+### 编译并运行
+
+```bash
+bun run build-local && bun run start
 ```
 
 ## Docker 镜像快速使用
@@ -71,7 +92,7 @@ docker run -d \
 
 ---
 
-如需更多高级用法（如数据持久化、日志挂载、反向代理等），请参考[详细部署文档](./docs/DEPLOYMENT.md)。
+详情内容请参考[详细部署文档](./docs/DEPLOYMENT.md)。
 
 如遇镜像拉取缓慢，可参考[镜像源配置指南](./docs/DOCKER_MIRROR.md)加速 Docker 镜像下载。
 

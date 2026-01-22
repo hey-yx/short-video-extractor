@@ -1,8 +1,19 @@
-FROM oven/bun:1.1.21-alpine
+# 第一阶段：构建阶段
+FROM oven/bun:canary-alpine AS builder
 
-# 安装 Node.js 和 Chromium 依赖
+WORKDIR /app
+
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
+
+COPY . .
+# 先删除旧的构建产物
+RUN rm -rf ./src/entry && bun run build
+
+# 第二阶段：生产镜像
+FROM oven/bun:canary-alpine
+
 RUN apk add --no-cache \
-    nodejs \
     chromium \
     chromium-chromedriver \
     fontconfig \
@@ -16,33 +27,19 @@ RUN apk add --no-cache \
     wget \
     ca-certificates
 
-# Puppeteer 无头浏览器参数建议加上
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
-# 设置工作目录
 WORKDIR /app
 
-# 复制 package.json 和 bun.lockb
-COPY package.json bun.lockb ./
+# 只复制构建产物和依赖
+COPY --from=builder /app/package.json /app/bun.lockb ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src/entry ./src/entry
+COPY --from=builder /app/ecosystem.config.json ./
 
-# 安装依赖
-RUN bun install --frozen-lockfile
-
-# 复制源代码
-COPY . .
-
-# 安装 PM2
-RUN bun add -g pm2
-
-# 创建日志目录
-RUN mkdir -p logs
-
-# 设置 Puppeteer 环境变量
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    PORT=7777
 
-# 暴露端口
-EXPOSE 7777
+# 用环境变量控制端口暴露
+EXPOSE ${PORT}
 
-# 使用 PM2 Runtime 启动应用
-CMD ["pm2-runtime", "ecosystem.config.json"]
+CMD ["bun", "run", "start"]

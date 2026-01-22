@@ -64,9 +64,22 @@ docker run -d \
 
 ## 环境变量说明
 
-必需的环境变量：
+- `PORT`：服务监听端口（开发环境建议 10010，生产环境建议 7777）
+- `PUPPETEER_EXECUTABLE_PATH`：指定 Puppeteer 启动时所用 Chromium/Chrome 浏览器的绝对路径，建议在 Docker 或服务器环境下设置为 `/usr/bin/chromium-browser`，否则 Puppeteer 可能无法正常启动。
 
-- `PORT`: 服务器端口号（开发环境：10010, 生产环境：7777），具体可在环境变量文件查看
+## 常用脚本说明
+
+- `bun run dev`：开发环境启动服务，自动加载 .env.development 环境变量。
+- `bun run build-local`：本地开发环境编译打包。
+- `bun run build`：生产环境编译打包，生成 Linux ARM64 可执行文件。
+- `bun run start`：直接运行编译后的入口文件。
+- `bun run format`：使用 Prettier 格式化全部代码。
+- `bun run encrypt-dev` / `bun run encrypt-prod`：加密开发/生产环境变量文件。
+- `bun run decrypt-dev` / `bun run decrypt-prod`：解密开发/生产环境变量文件。
+- `bun run dotenvx-help`：显示 dotenvx 版本及帮助信息。
+- `bun run pm2:dev`：用 PM2 启动开发环境。
+- `bun run pm2:start`：用 PM2 启动生产环境。
+- `bun run pm2:stop` / `bun run pm2:restart` / `bun run pm2:logs` / `bun run pm2:status`：PM2 进程管理相关命令。
 
 ## 更新维护
 

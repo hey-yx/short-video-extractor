@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "dotenvx run -f .env.development -- bun --watch src/index.ts",
-    "preview": "dotenvx run -f .env.production -- bun --watch src/index.ts",
-    "start": "dotenvx run -f .env.production --overload --debug -- bun --watch src/index.ts",
-    "test": "dotenvx run -f .env.development -- bun test",
+    "build-local": "bun build ./src/index.ts --compile --outfile ./src/entry",
+    "build": "bun build ./src/index.ts --compile --minify --target=bun-linux-amd64 --outfile ./src/entry",
+    "start": "./src/entry",
     "prepare-fallback": "husky install",
     "format": "prettier --write .",
     "separate-1": "------------------------------------------------------------",
