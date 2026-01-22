@@ -16,12 +16,6 @@ dayjs.extend(utc);
 // 	await puppeteerManager.createNewPage(false);
 // })();
 
-const ClientAddrs = [
-	"http://localhost:5173",
-	/^https:\/\/.*\.lite\.vusercontent\.net$/,
-	/^https:\/\/.*\.itcox\.cn$/,
-];
-
 export const createApp = () => {
 	const app = new Elysia()
 		.onError((error) => {
@@ -29,13 +23,13 @@ export const createApp = () => {
 		})
 		.use(
 			cors({
-				origin: [...ClientAddrs],
+				origin: "*",
 			}),
 		)
 		.get(
 			"/",
 			() =>
-				"welcome to short-video-extractor server, please visit https://github.com/itcox/short-video-extractor for more information",
+				"welcome to short-video-extractor server, please visit https://github.com/ethanz-code/short-video-extractor/tree/main for more information",
 		)
 		.use(globalRouterPlugin);
 

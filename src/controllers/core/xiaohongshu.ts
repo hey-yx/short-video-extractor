@@ -213,6 +213,9 @@ export async function parseXiaohongshuContent({
     console.log("获取到的页面信息:", { title, authorName, authorUrl });
 
     // 循环点击右侧按钮直到到达最后一页
+    const sleep = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms));
+
     while (true) {
       clickCount++; // 增加点击次数
 
@@ -235,9 +238,7 @@ export async function parseXiaohongshuContent({
         const closeButton = await page.$(".login-container div");
         if (closeButton) {
           await closeButton.click();
-          await page.evaluate(
-            () => new Promise((resolve) => setTimeout(resolve, 300)),
-          );
+          await sleep(300);
         }
       }
 
@@ -257,9 +258,7 @@ export async function parseXiaohongshuContent({
       });
 
       // 等待新页面加载和视频资源请求完成
-      await page.evaluate(
-        () => new Promise((resolve) => setTimeout(resolve, 500)),
-      );
+      await sleep(500);
     }
 
     // 计算需要捕获的资源数量
@@ -269,9 +268,7 @@ export async function parseXiaohongshuContent({
     let retryCount = 0;
     const maxRetries = 10 * clickCount;
     while (videoUrls.length < requiredCount && retryCount < maxRetries) {
-      await page.evaluate(
-        () => new Promise((resolve) => setTimeout(resolve, 100)),
-      );
+      await sleep(100);
       retryCount++;
     }
 

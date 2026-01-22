@@ -3,6 +3,7 @@
 ✨✨✨这是一个可以快速部署的短视频解析服务，开箱即用，目前支持小红书解析服务✨✨✨
 
 <br />
+<br />
 
 [![GitHub License](https://img.shields.io/github/license/yassine-zhang/short-video-extractor?style=flat-square&color=gold)](./LICENSE)
 [![GitHub Repo stars](https://img.shields.io/github/stars/yassine-zhang/short-video-extractor?style=flat-square)](https://github.com/yassine-zhang/short-video-extractor/stargazers)
@@ -12,9 +13,6 @@
 [![Docker Image Size](https://img.shields.io/docker/image-size/yassine778/video-parser?arch=amd64&style=flat-square&logo=docker&logoColor=mediumseagreen&color=mediumseagreen)](https://hub.docker.com/r/yassine778/video-parser)
 ![GitHub repo size](https://img.shields.io/github/repo-size/yassine-zhang/short-video-extractor?style=flat-square&color=mediumseagreen)
 
-[![Server Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fkener-sve-monitor-to-shieldsendpoints.it-edu.workers.dev%2Fstatus)](https://status.itcox.cn/?monitor=sve-api)
-[![Server Uptime](https://img.shields.io/endpoint?url=https%3A%2F%2Fkener-sve-monitor-to-shieldsendpoints.it-edu.workers.dev%2Fuptime)](https://status.itcox.cn/?monitor=sve-api)
-
 </div>
 
 ## 功能列表🎉🎉🎉
@@ -23,13 +21,13 @@
 2.  小红书实况图解析后会被作为视频返回，我们加入了 type 变量来区分解析的资源类型🎉；
 3.  ...
 
-## 注意⚠️
+## 注意
 
 当前项目通过 Node.js puppeteer 模拟点击操作并监听资源实现短视频解析，受限于页面结构和反爬机制，无法保证长期稳定性。
 
-## TodoList📍
+## 未来计划
 
-在不久的将来，我将新开一个专门仓库，基于 Node.js 或 Python，直接调用小红书 API 接口获取数据，从而大幅提升解析的稳定性与兼容性，欢迎持续关注项目进展。
+1. 新开一个仓库，基于 Node.js 或 Python，学习逆向小红书 API 接口，从而大幅提升解析的稳定性与兼容性，欢迎持续关注项目进展。
 
 ## API 接口
 
