@@ -17,21 +17,21 @@ dayjs.extend(utc);
 // })();
 
 export const createApp = () => {
-	const app = new Elysia()
-		.onError((error) => {
-			return errorHook(error);
-		})
-		.use(
-			cors({
-				origin: "*",
-			}),
-		)
-		.get(
-			"/",
-			() =>
-				"welcome to short-video-extractor server, please visit https://github.com/ethanz-code/short-video-extractor/tree/main for more information",
-		)
-		.use(globalRouterPlugin);
+  const app = new Elysia()
+    .onError((error) => {
+      return errorHook(error);
+    })
+    .use(
+      cors({
+        origin: "*",
+      }),
+    )
+    .get(
+      "/",
+      () =>
+        "welcome to short-video-extractor server, please visit https://github.com/ethanz-code/short-video-extractor/tree/main for more information",
+    )
+    .use(globalRouterPlugin);
 
-	return app;
+  return app;
 };

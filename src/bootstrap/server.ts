@@ -1,12 +1,12 @@
 import { createApp } from "./app";
 
 export const startServer = () => {
-	const PORT = Bun.env.SERVER_PORT || 7777;
-	const app = createApp();
+  const PORT = Bun.env.SERVER_PORT || 7777;
+  const app = createApp();
 
   console.log(Bun.env.PUPPETEER_EXECUTABLE_PATH);
 
-	app.listen(PORT, () =>
-		console.log(`Server is running on http://localhost:${PORT}`),
-	);
+  app.listen(PORT, () =>
+    console.log(`Server is running on http://localhost:${PORT}`),
+  );
 };

@@ -6,20 +6,25 @@
  * @returns 提取出的URL，如果没有找到URL则返回null
  */
 export function extractUrl(text: string): string | null {
-	if (!text) return null;
+  if (!text) return null;
 
-	// URL正则表达式，匹配http(s)://开头的URL
-	const urlRegex = /(https?:\/\/[^\s]+)/g;
+  // URL正则表达式，匹配http(s)://开头的URL
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
 
-	// 查找所有匹配的URL
-	const matches = text.match(urlRegex);
+  // 查找所有匹配的URL
+  const matches = text.match(urlRegex);
 
-	// 如果找到匹配的URL，返回第一个匹配项
-	if (matches && matches.length > 0) {
-		return matches[0];
-	}
+  // 如果找到匹配的URL，返回第一个匹配项
+  if (matches && matches.length > 0) {
+    let url = matches[0];
 
-	return null;
+    // 移除URL末尾可能的标点符号和非URL字符
+    url = url.replace(/[.,;:!?()、，；：！？（）]+$/, '');
+
+    return url;
+  }
+
+  return null;
 }
 
 /**
@@ -30,20 +35,20 @@ export function extractUrl(text: string): string | null {
  * @returns 提取出的所有URL数组，如果没有找到URL则返回空数组
  */
 export function extractAllUrls(text: string): string[] {
-	if (!text) return [];
+  if (!text) return [];
 
-	// URL正则表达式，匹配http(s)://开头的URL
-	const urlRegex = /(https?:\/\/[^\s]+)/g;
+  // URL正则表达式，匹配http(s)://开头的URL
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
 
-	// 查找所有匹配的URL
-	const matches = text.match(urlRegex);
+  // 查找所有匹配的URL
+  const matches = text.match(urlRegex);
 
-	// 如果找到匹配的URL，返回所有匹配项
-	if (matches && matches.length > 0) {
-		return matches;
-	}
+  // 如果找到匹配的URL，返回所有匹配项
+  if (matches && matches.length > 0) {
+    return matches;
+  }
 
-	return [];
+  return [];
 }
 
 /**
@@ -54,14 +59,14 @@ export function extractAllUrls(text: string): string[] {
  * @returns 如果URL有效则返回true，否则返回false
  */
 export function isValidUrl(url: string): boolean {
-	if (!url) return false;
+  if (!url) return false;
 
-	try {
-		new URL(url);
-		return true;
-	} catch (error) {
-		return false;
-	}
+  try {
+    new URL(url);
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 /**
@@ -72,44 +77,44 @@ export function isValidUrl(url: string): boolean {
  * @returns 提取出的主域名，如果URL无效或无法提取则返回null
  */
 export function extractMainDomain(url: string): string | null {
-	if (!url || !isValidUrl(url)) return null;
+  if (!url || !isValidUrl(url)) return null;
 
-	try {
-		const urlObj = new URL(url);
-		const hostname = urlObj.hostname;
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname;
 
-		// 处理子域名情况，例如 www.xiaohongshu.com 提取为 xiaohongshu.com
-		const parts = hostname.split(".");
+    // 处理子域名情况，例如 www.xiaohongshu.com 提取为 xiaohongshu.com
+    const parts = hostname.split(".");
 
-		// 如果域名部分少于2个，则无法提取主域名
-		if (parts.length < 2) return null;
+    // 如果域名部分少于2个，则无法提取主域名
+    if (parts.length < 2) return null;
 
-		// 如果域名部分大于2个，可能是子域名，尝试提取主域名
-		if (parts.length > 2) {
-			// 检查是否是常见的二级域名前缀，如 www, m, api 等
-			const commonSubdomains = [
-				"www",
-				"m",
-				"api",
-				"app",
-				"dev",
-				"test",
-				"staging",
-				"prod",
-			];
+    // 如果域名部分大于2个，可能是子域名，尝试提取主域名
+    if (parts.length > 2) {
+      // 检查是否是常见的二级域名前缀，如 www, m, api 等
+      const commonSubdomains = [
+        "www",
+        "m",
+        "api",
+        "app",
+        "dev",
+        "test",
+        "staging",
+        "prod",
+      ];
 
-			// 如果第一部分是常见的二级域名前缀，则返回后两部分
-			if (commonSubdomains.includes(parts[0])) {
-				return parts.slice(1).join(".");
-			}
+      // 如果第一部分是常见的二级域名前缀，则返回后两部分
+      if (commonSubdomains.includes(parts[0])) {
+        return parts.slice(1).join(".");
+      }
 
-			// 否则返回最后两部分
-			return parts.slice(-2).join(".");
-		}
+      // 否则返回最后两部分
+      return parts.slice(-2).join(".");
+    }
 
-		// 如果只有两部分，直接返回
-		return hostname;
-	} catch (error) {
-		return null;
-	}
+    // 如果只有两部分，直接返回
+    return hostname;
+  } catch (error) {
+    return null;
+  }
 }

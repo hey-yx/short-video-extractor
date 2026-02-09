@@ -3,54 +3,65 @@ import type { Context } from "elysia";
 import { extractUrl, isValidUrl, extractMainDomain } from "@/utils/extractUrl";
 
 import { parseXiaohongshuContent } from "@/controllers/core/xiaohongshu";
-import { parseDouyinContent } from "@/controllers/core/douyin";
-import { parseKuaishouContent } from "@/controllers/core/kuaishou";
+import { DouyinApiParser } from "@/utils/api-parser";
+
+const douyinParser = new DouyinApiParser();
 
 export async function transferPlatform({
-	body,
+  body,
 }: Context): Promise<ApiResponse<ContentInfo | null>> {
-	const { url } = body as { url: string };
+  const { url } = body as { url: string };
 
-	const rawUrl = extractUrl(url);
-	const mainDomain = extractMainDomain(rawUrl as string);
+  const rawUrl = extractUrl(url);
+  const mainDomain = extractMainDomain(rawUrl as string);
 
-	if (!rawUrl || (rawUrl && !isValidUrl(rawUrl))) {
-		return {
-			success: false,
-			data: null,
-			message: "无法辨别 url 真实性🫠",
-			errorCode: 1201,
-		};
-	}
+  if (!rawUrl || (rawUrl && !isValidUrl(rawUrl))) {
+    return {
+      success: false,
+      data: null,
+      message: "无法辨别 url 真实性",
+      errorCode: 1201,
+    };
+  }
 
-	switch (mainDomain) {
-		case "xiaohongshu.com":
-		case "xhslink.com":
-			return await parseXiaohongshuContent({
-				body: { url: rawUrl },
-			} as Context);
-		case "douyin.com":
-			return {
-				success: false,
-				data: null,
-				message: "此平台解析功能仍在开发中📍",
-				errorCode: 1203,
-			};
-		// return await parseDouyinContent({ body: { url: rawUrl } } as Context);
-		case "kuaishou.com":
-			return {
-				success: false,
-				data: null,
-				message: "此平台解析功能仍在开发中📍",
-				errorCode: 1203,
-			};
-		// return await parseKuaishouContent({ body: { url: rawUrl } } as Context);
-		default:
-			return {
-				success: false,
-				data: null,
-				message: "无法识别的平台💀",
-				errorCode: 1202,
-			};
-	}
+  switch (mainDomain) {
+    case "xiaohongshu.com":
+    case "xhslink.com": {
+      return await parseXiaohongshuContent({
+        body: { url: rawUrl },
+      } as Context);
+    }
+    case "douyin.com": {
+      const apiResult = await douyinParser.parseVideo(rawUrl);
+
+      if (apiResult) {
+        return {
+          success: true,
+          data: {
+            title: apiResult.title,
+            author: {
+              name: apiResult.author.name,
+              url: apiResult.author.avatar,
+            },
+            resources: apiResult.resources,
+          },
+          message: "获取抖音内容成功",
+        };
+      }
+
+      return {
+        success: false,
+        data: null,
+        message: "抖音解析失败，请确保链接有效",
+        errorCode: 1204,
+      };
+    }
+    default:
+      return {
+        success: false,
+        data: null,
+        message: "无法识别的平台",
+        errorCode: 1202,
+      };
+  }
 }
