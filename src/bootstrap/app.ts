@@ -29,7 +29,7 @@ export const createApp = () => {
     .get(
       "/",
       () =>
-        "welcome to short-video-extractor server, please visit https://github.com/ethanz-code/short-video-extractor/tree/main for more information",
+        "welcome to short-video-extractor server, please visit https://github.com/hey-yx/short-video-extractor/tree/main for more information",
     )
     .use(globalRouterPlugin);
 
