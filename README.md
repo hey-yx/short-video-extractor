@@ -1,156 +1,164 @@
-<div align="center">
-<h1 align="center">Video Parser Service</h1>
-这是一个可以快速部署的短视频解析服务，开箱即用，支持小红书、抖音、快手解析
+# short-video-extractor
 
-<br />
-<br />
+短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。v2 完全重构（2026-10，与旧版无契约关系，`/pv`、`/public/*` 已下线），支持抖音、小红书、快手、B 站。默认返回直链（客户端请求时不带 Referer 即可下载），服务器零带宽；`/media` 中转作为可选增强。
 
-[![GitHub License](https://img.shields.io/github/license/yassine-zhang/short-video-extractor?style=flat-square&color=gold)](./LICENSE)
-[![GitHub Repo stars](https://img.shields.io/github/stars/yassine-zhang/short-video-extractor?style=flat-square)](https://github.com/yassine-zhang/short-video-extractor/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/yassine-zhang/short-video-extractor?style=flat-square)](https://github.com/yassine-zhang/short-video-extractor/forks)
-[![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/yassine-zhang/short-video-extractor?style=flat-square&color=mediumpurple)](https://github.com/yassine-zhang/short-video-extractor/issues)
-[![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-closed/yassine-zhang/short-video-extractor?style=flat-square&color=mediumpurple)](https://github.com/yassine-zhang/short-video-extractor/issues?q=is%3Aissue%20state%3Aclosed)
-[![Docker Image Size](https://img.shields.io/docker/image-size/yassine778/video-parser?arch=amd64&style=flat-square&logo=docker&logoColor=mediumseagreen&color=mediumseagreen)](https://hub.docker.com/r/yassine778/video-parser)
-![GitHub repo size](https://img.shields.io/github/repo-size/yassine-zhang/short-video-extractor?style=flat-square&color=mediumseagreen)
+## 架构
 
-</div>
+请求流程：**match（识别平台）→ 缓存 → dispatch（短链展开）→ fetch（平台适配层）→ parse（纯函数）→ 统一信封返回**。
 
-## 功能列表
+```
+src/
+├── index.ts                  # 入口
+├── bootstrap/{app,server}.ts # createApp()（测试可直接调）、监听与优雅关闭
+├── routes/
+│   ├── parse.routes.ts       # POST|GET /parse（限流、缓存、指标打点）
+│   ├── media.routes.ts       # GET|HEAD /media（可选流式中转）
+│   └── ops.routes.ts         # /health /ready /platforms /metrics
+├── services/
+│   ├── parse.service.ts      # 编排：match → 缓存 → dispatch → fetch → parse
+│   ├── cache.ts              # LRU + expiresAt 语义 + 负缓存 + singleflight
+│   ├── limiter.ts            # 按 IP 令牌桶限流
+│   └── media-proxy.ts        # HMAC 签名 + SSRF 白名单 + 手动跟 302 + Range 透传
+├── platforms/                # 插件式平台层：加平台 = 加目录 + app.ts 注册一行
+│   ├── douyin/  xhs/  kuaishou/  bilibili/
+│   └── registry.ts  hosts.ts
+├── core/                     # 错误码、统一信封、URL 工具
+├── infra/                    # pino 日志、指标、Puppeteer 浏览器网关
+└── types/platform.ts         # 统一数据模型（MediaAsset / ParseResult / FetchCtx）
+```
 
-1.  每次解析速度稳定在 1 ~ 3 秒，采用 API 拦截技术，快速且完整；
-    > **温馨提示**：当前测试服务器带宽仅为 3Mbps（上下行），解析速度可能较慢，建议部署到更高带宽的服务器以获得更好的性能体验；
-2.  浏览器实例复用：使用单例模式管理浏览器实例，首次启动后响应速度提升约 2-3 秒；
-3.  智能缓存机制：相同 URL 在一小时内重复请求将直接返回缓存结果，大幅提升响应速度；
-4.  多平台支持：支持小红书、抖音解析，自动获取无水印资源；
-5.  完整资源捕获：通过 API 拦截技术，确保获取所有图片和视频资源。
+平台层三条硬约束：`platforms/**` 不 import Elysia、不读 env、不 console.log；`parse()` 是纯函数（同输入同输出），用 fixture 离线回归；IO 只经 `fetch()` 和注入的 `FetchCtx`。平台改版时表现是「单测先红」，不是线上悄悄返回空结果。
 
-## 支持平台
+技术栈：Bun + Elysia。运行时依赖只有 elysia、@elysiajs/cors、lru-cache、pino、puppeteer（仅小红书通道用浏览器）。
 
-| 平台   | 支持类型                | 特点                 |
-| ------ | ----------------------- | -------------------- |
-| 小红书 | 视频、图片（单图/多图） | 完整获取所有图片资源 |
-| 抖音   | 视频、图集              | 无水印视频           |
+## 平台状态
 
-## 注意
+| 平台 | 通道 | 支持内容 | 浏览器 |
+|---|---|---|---|
+| 抖音 | 纯 HTTP（detail 接口 + play 直链） | 视频（540p/720p/1080p/原片四档）、图集、实况照片 | 否 |
+| 小红书 | 浏览器抓主文档 HTML → `__INITIAL_STATE__` | 笔记图片、视频 | 需要（TLS 指纹放行） |
+| 快手 | 纯 HTTP（短链 302 + 分享页 INIT_STATE） | 视频、多清晰度 | 否 |
+| B 站 | 纯 HTTP（view + playurl try_look） | 视频、多 P、DASH 音视频分离 | 否 |
 
-当前项目采用 API 拦截技术实现短视频解析，直接从平台 API 获取数据，无需复杂签名算法，速度快且稳定性高。
+运行时以 `GET /platforms` 为准（平台自描述）。
 
-**技术优势**：
+## API
 
-- API 拦截：直接获取平台 API 数据，比 DOM 解析快 3-4 倍
-- 完整资源：从 API 响应中提取所有资源，不会遗漏
-- 资源优化：拦截图片、字体等资源加载，降低带宽消耗
-- 自动降级：API 失败时自动降级到浏览器解析
-- 浏览器复用：单例模式管理浏览器实例
+所有 JSON 响应走统一信封：
 
-**已知限制**：
+```json
+{ "success": true, "data": { ... } }
+{ "success": false, "data": null, "error": { "code": "RISK_CONTROL", "message": "..." } }
+```
 
-- **抖音图集解析**：由于抖音图集类型不调用详情 API，需使用 Puppeteer 监听网络资源获取图片，**无法返回标题、作者头像等元数据信息**（仅返回资源列表）
-- **资源捕获稳定性**：使用 Puppeteer（非逆向手段）不仅请求速度较慢（相比 API 调用），还存在一定概率丢失捕获资源的情况，属于正常现象
+### POST /parse（或 GET /parse?url=）
 
-## 未来计划
+主接口。`Content-Type: application/json`，body `{"url": "<分享链接>"}`。支持分享短链（v.douyin.com、xhslink.com、v.kuaishou.com、b23.tv 等，自动展开）。
 
-1. 支持更多短视频平台
-2. 实现纯 API 调用（无需浏览器）
-3. 添加批量解析功能
-4. 提供更多 CDN 加速选项
+`data`（ParseResult）核心字段：
 
-## API 接口
+| 字段 | 说明 |
+|---|---|
+| `platform` / `id` / `kind` | 平台、平台内 ID、`video` \| `album` |
+| `title` / `description` / `tags` / `author` | 元数据 |
+| `assets[]` | 资源列表，见下 |
+| `expiresAt` | 所有直链里最早过期的时刻（Unix 秒），缓存与重取依据 |
+| `via` | 解析通道：`http` 或 `browser` |
 
-### 标准接口
+`assets[]`（MediaAsset）：`type`（video/image/audio/cover）、`url`（**直连地址**，客户端请求时不要带 Referer）、`variants[]`（同资源的其他档位，抖音给全四档）、`width` / `height` / `durationMs` / `size`、`backups[]`（备用 CDN）、`liveClipUrl`（实况照片的 5s 视频）。B 站视频另带 `audioUrl`（DASH 音轨，需与视频分别拉取后合成）。
 
-| 接口路径           | 请求方法 | Content-Type     | 请求参数示例                              | 说明                     |
-| ------------------ | -------- | ---------------- | ----------------------------------------- | ------------------------ |
-| /pv                | POST     | application/json | {<br> &nbsp;&nbsp; "url": "平台链接"<br>} | 解析短视频接口，简化地址 |
-| /public/parseVideo | POST     | application/json | {<br> &nbsp;&nbsp; "url": "平台链接"<br>} | 解析短视频接口           |
+错误码与 HTTP 状态：`INVALID_URL`(400)、`UNSUPPORTED_PLATFORM`(422)、`CONTENT_NOT_FOUND`(404)、`CONTENT_RESTRICTED`(403)、`RISK_CONTROL`(503)、`UPSTREAM_ERROR` / `UPSTREAM_CHANGED`(502)、`UPSTREAM_TIMEOUT`(504)、`RATE_LIMITED`(429)、`MEDIA_*`（见下）、`INTERNAL`(500)。
 
-### 缓存管理接口
+### GET /media?u=&exp=&sig=（可选，默认关闭）
 
-| 接口路径             | 请求方法 | 请求参数示例                              | 说明                                          |
-| -------------------- | -------- | ----------------------------------------- | --------------------------------------------- |
-| /public/cache/stats  | GET      | 无                                        | 获取缓存统计信息（缓存数量、所有缓存的URL等） |
-| /public/cache/clear  | POST     | 无                                        | 清空所有缓存                                  |
-| /public/cache/delete | POST     | {<br> &nbsp;&nbsp; "url": "平台链接"<br>} | 删除指定URL的缓存                             |
+流式中转，三种用途：强制下载文件名（Content-Disposition）、兜底会强制带 Referer 的容器（微信内置浏览器等）、链接过期后透明重取。配置 `PROXY_SECRET` 后启用（未配置返回 501，直链主路径不受影响）。
 
-**缓存说明**：
+- `sig` = HMAC-SHA256(`PROXY_SECRET`, `"<url>\n<exp>"`) 前 32 位十六进制，有效期 600 秒；过期 410、篡改 403。
+- 上游域名白名单（平台分享域 + CDN 域），302 每跳重新校验（SSRF 防护）；并发上限 2；支持 Range / HEAD。
 
-- 缓存有效期：1小时
-- 缓存键生成规则：自动移除URL中的动态查询参数（如 `xhsshare`、`xsec_token` 等），确保相同内容的URL能命中缓存
-- 自动清理：每10分钟自动清理过期缓存
-- 缓存命中率：相同URL在一小时内的重复请求将直接从内存返回，响应速度从秒级降至毫秒级
+### GET /health
 
----
+存活探针：进程活着即 200 `{"status":"ok","uptime":...}`，不查外部依赖（防外部抖动引发连环重启）。Docker HEALTHCHECK 打这里。
 
-## 环境变量说明
+### GET /ready
 
-- `PORT`：服务监听端口（开发环境建议 10010，生产环境建议 7777）
-- `PUPPETEER_EXECUTABLE_PATH`：指定 Puppeteer 启动时所用 Chromium/Chrome 浏览器的绝对路径，建议在 Docker 或服务器环境下设置为 `/usr/bin/chromium-browser`，否则 Puppeteer 可能无法正常启动。
+就绪探针：平台适配器注册齐才 200，否则 503。
 
-## 本地运行
+### GET /platforms
 
-### 安装依赖
+已注册平台自描述（名称、说明、识别的域名、能力声明）。
+
+### GET /metrics
+
+Prometheus 文本格式（自写渲染，未引 prom-client）：
+
+| 指标 | 类型 | 说明 |
+|---|---|---|
+| `parse_total{platform,code}` | counter | 解析计数，code 为 `ok` 或业务错误码 |
+| `parse_duration_ms` | histogram | 解析耗时分布（毫秒，按 platform） |
+| `cache_hit_total` | counter | 缓存命中次数 |
+| `upstream_error_total{platform,reason}` | counter | 上游失败/风控次数 |
+
+## 可观测性
+
+- **结构化日志**：pino，一行一请求 JSON。每请求生成/透传 `x-request-id`（响应头回写，日志字段 `reqId`），访问日志含 method、path、status、耗时，平台解析事件另带 platform / id / 耗时。
+- **敏感信息脱敏**：所有日志输出经深度 redact——URL 的 query 值整体打码（防 `xsec_token` 等凭据进日志），消息文本里的内联链接同样处理，Error 实例与 detail 递归脱敏。参数名保留，值一律 `REDACTED`。
+- 日志级别由 `LOG_LEVEL` 控制（默认 `info`）。
+
+## 本地开发
 
 ```bash
 bun install
+bun dev          # 开发（--watch），默认端口 7777
+bun test         # 单测（全离线 fixture 回归）
+bun run typecheck
 ```
 
-### 直接运行源代码
+小红书通道需要本机有 Chrome（Puppeteer 自动管理）；其余平台纯 HTTP 无此要求。
+
+## 环境变量
+
+| 变量 | 默认 | 说明 |
+|---|---|---|
+| `PORT` | 7777 | 监听端口 |
+| `LOG_LEVEL` | info | fatal/error/warn/info/debug/trace |
+| `PROXY_SECRET` | 未配置 | /media 中转签名密钥；不配则 /media 返回 501 |
+| `PUPPETEER_EXECUTABLE_PATH` | — | 容器内固定 `/usr/bin/chromium`（Dockerfile 已设） |
+
+参考 `.env.example`。生产 `.env` 放服务器本地（chmod 600），不进仓库。
+
+## 部署
+
+### 镜像
+
+多阶段构建：`oven/bun:alpine` 编译单二进制 → `alpine:3.22` + chromium 运行（小红书通道需要真实浏览器内核）。非 root（uid 10001）运行，tini 收僵尸进程，HEALTHCHECK 打 /health，目标 < 1GB。
 
 ```bash
-bun run dev
+docker build -t video-parser:v2 .
+docker run -d --name video-parser-v2 -p 16004:7777 \
+  --env-file .env --memory 800m --restart unless-stopped video-parser:v2
+curl http://127.0.0.1:16004/health
 ```
 
-### 编译并运行
+或直接 compose（`16004:7777`、`restart: unless-stopped`、`mem_limit 800m`、`env_file: .env`、日志轮转 10m×3）：
 
 ```bash
-bun run build-local && bun run start
+docker compose up -d
 ```
 
-## Docker 镜像快速使用
+### 灰度（现网旧容器在 16003）
 
-你可以直接拉取并运行我们已构建好的官方镜像，无需本地构建：
+新容器起 **16004** 与旧容器并行，`curl 127.0.0.1:16004` 四平台验证通过后，反代（1Panel openresty，`sve-api.itcox.cn`）改指 16004——一条配置，秒级可回滚。旧容器 `docker stop` 但不删，观察一周无回退需求再清理。
 
-### 1. 拉取镜像
+### 服务器注意
 
-```bash
-docker pull yassine778/video-parser:latest
-```
+上海腾讯云磁盘仅剩 5.5G：构建前先 `docker image prune` 清旧镜像与构建缓存，服务器不保留多份镜像。低频自用，800m 内存上限足够。
 
-### 2. 运行容器
+## CI
 
-```bash
-docker run -d \
-  -p 10010:7777 \
-  --name video-parser \
-  yassine778/video-parser:latest
-```
+`.github/workflows/test.yml`：push（main）与 PR 跑 `bun run typecheck` + `bun test`，环境变量 `PUPPETEER_SKIP_DOWNLOAD: "true"` 避免 CI 拉浏览器。
 
-### 3. 验证服务
+## 设计文档
 
-容器启动后，发起 POST 请求 `http://localhost:10010/public/parseVideo` 即可调用接口。
-
----
-
-详情内容请参考[详细部署文档](./docs/DEPLOYMENT.md)。
-
-如遇镜像拉取缓慢，可参考[镜像源配置指南](./docs/DOCKER_MIRROR.md)加速 Docker 镜像下载。
-
----
-
-如需进一步定制或有疑问，欢迎随时联系技术支持。
-
-## 联系我们
-
-- QQ: 57878778
-- 邮箱：support@itcox.cn
-
-## 赞助支持
-
-<p style="display: flex;">
-    <img src="./docs/images/wechat-pay.png" alt="赞助码" width="200">
-    <img src="./docs/images/alipay.png" alt="赞助码" width="200">
-</p>
-
-## 许可证
-
-本项目采用 [Apache License 2.0](LICENSE) 许可证。Copyright © 2025 济宁若森软件开发中心（个人独资）
+- `docs/PLAN.md` — 重构规划（架构、平台方案、迁移与灰度）
+- `docs/research/` — 平台 API 调研与实测记录
