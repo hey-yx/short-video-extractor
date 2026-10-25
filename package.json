@@ -6,6 +6,7 @@
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "test": "bun test",
+    "test:status": "bun scripts/test-status.ts",
     "typecheck": "tsc --noEmit",
     "build:binary": "bun build ./src/index.ts --compile --outfile dist/sve",
     "format": "prettier --write src tests"

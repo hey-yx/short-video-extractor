@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>短视频解析 · 状态页</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --card: #ffffff;
+        --text: #1c1f23;
+        --muted: #6b7280;
+        --border: #d8dce3;
+        --accent: #2563eb;
+        --accent-text: #ffffff;
+        --error-bg: #fdecea;
+        --error-border: #e5b3ad;
+        --error-text: #8a2f25;
+        --ok-bg: #e8f3ec;
+        --ok-border: #a9cdb6;
+        --ok-text: #20582f;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #16181c;
+          --card: #1f2228;
+          --text: #e7e9ee;
+          --muted: #9aa1ad;
+          --border: #363b44;
+          --accent: #5b8def;
+          --accent-text: #ffffff;
+          --error-bg: #3a221f;
+          --error-border: #6e3b34;
+          --error-text: #f0b3ab;
+          --ok-bg: #1e2f23;
+          --ok-border: #34543c;
+          --ok-text: #a6d5b2;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 24px 16px 48px;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC',
+          'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 860px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 1.05rem;
+        margin: 0 0 12px;
+      }
+      p.lead {
+        color: var(--muted);
+        margin: 0 0 20px;
+      }
+      section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      input[type='text'] {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 0.95rem;
+      }
+      input[type='text']:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .row input {
+        flex: 1;
+      }
+      button {
+        padding: 8px 18px;
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        background: var(--accent);
+        color: var(--accent-text);
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: transparent;
+        color: var(--accent);
+      }
+      .field {
+        margin-bottom: 12px;
+      }
+      .hint {
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+      .badge {
+        display: inline-block;
+        padding: 1px 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .badge.ok {
+        border-color: var(--ok-border);
+        background: var(--ok-bg);
+        color: var(--ok-text);
+      }
+      .badge.err {
+        border-color: var(--error-border);
+        background: var(--error-bg);
+        color: var(--error-text);
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 4px 0;
+      }
+      .desc {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 0 0 12px;
+      }
+      .cover {
+        width: 100%;
+        max-height: 320px;
+        object-fit: contain;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .grid img {
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        object-fit: cover;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+      ul.links {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      ul.links li {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 6px 0;
+        border-top: 1px solid var(--border);
+      }
+      ul.links li:first-child {
+        border-top: none;
+      }
+      ul.links a {
+        flex: 1;
+        min-width: 0;
+        color: var(--accent);
+        word-break: break-all;
+        font-size: 0.85rem;
+        text-decoration: none;
+      }
+      ul.links a:hover {
+        text-decoration: underline;
+      }
+      .kind {
+        font-size: 0.82rem;
+        color: var(--muted);
+        width: 100%;
+      }
+      .notice {
+        border: 1px solid var(--error-border);
+        background: var(--error-bg);
+        color: var(--error-text);
+        border-radius: 8px;
+        padding: 12px 14px;
+      }
+      .notice .code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.82rem;
+      }
+      .notice .next {
+        margin-top: 6px;
+      }
+      .ci-line {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+      .ci-line img {
+        height: 20px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.82rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>短视频解析 · 状态页</h1>
+      <p class="lead">粘一条分享链接，出直链与封面；下方是 CI 状态。零依赖静态页，直接双击打开即可用。</p>
+
+      <section>
+        <h2>解析</h2>
+        <div class="field">
+          <label for="base">/parse 服务地址（存 localStorage，换浏览器要重填）</label>
+          <input id="base" type="text" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label for="share">分享链接或分享口令（抖音 / 快手 / B 站 / 小红书）</label>
+          <div class="row">
+            <input id="share" type="text" placeholder="例如 https://www.bilibili.com/video/BV1GJ411x7h7" spellcheck="false" />
+            <button id="go">解析</button>
+          </div>
+          <p class="hint">口令里夹的文字不用管，会自动挑出 http(s) 链接。</p>
+        </div>
+        <div id="result"></div>
+      </section>
+
+      <section>
+        <h2>CI 状态</h2>
+        <div class="ci-line">
+          <img
+            src="https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml/badge.svg"
+            alt="GitHub Actions CI 状态"
+          />
+          <span id="ci-text" class="hint">正在读取最近一次 CI 运行……</span>
+        </div>
+      </section>
+
+      <footer>short-video-extractor · 本页所有请求都发往你配置的 /parse 地址</footer>
+    </main>
+
+    <script>
+      (function () {
+        var BASE_KEY = 'sve-parse-base';
+        var DEFAULT_BASE = 'http://127.0.0.1:7777';
+        var baseInput = document.getElementById('base');
+        var shareInput = document.getElementById('share');
+        var resultDiv = document.getElementById('result');
+        var ciText = document.getElementById('ci-text');
+
+        baseInput.value = localStorage.getItem(BASE_KEY) || DEFAULT_BASE;
+        baseInput.addEventListener('change', function () {
+          localStorage.setItem(BASE_KEY, baseInput.value.trim());
+        });
+
+        // 所有进 innerHTML 的外部字符串（链接、标题、错误信息）都必须先过 esc() 转义
+        function esc(s) {
+          return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+          });
+        }
+
+        function extractUrl(text) {
+          var m = String(text).match(/https?:\/\/[^\s，,、"'）)]+/);
+          return m ? m[0] : String(text).trim();
+        }
+
+        // 错误码 → 人话 + 下一步动作
+        var HINTS = {
+          INVALID_URL: ['链接不完整或不是视频分享链接', '检查是否复制了完整分享口令（含 https:// 链接），或换一条链接'],
+          UNSUPPORTED_PLATFORM: ['暂不支持这个平台', '目前支持 抖音 / 快手 / B 站 / 小红书 的分享链接'],
+          UNSUPPORTED_CONTENT: ['地址不对或内容类型不支持', '检查服务地址是否填对（默认 http://127.0.0.1:7777）'],
+          CONTENT_NOT_FOUND: ['作品不存在或已删除', '在平台 App 里确认作品还在，再复制一条新链接'],
+          CONTENT_RESTRICTED: ['作品不可见（私密 / 仅自己可见 / 地区限制）', '换一条公开作品的链接'],
+          AUTH_REQUIRED: ['需要登录才能访问', '换一条公开作品的链接'],
+          RISK_CONTROL: ['触发了平台风控', '稍等几分钟再试，别短时间高频解析'],
+          UPSTREAM_TIMEOUT: ['平台接口超时', '稍后重试'],
+          UPSTREAM_CHANGED: ['平台返回的数据格式变了', '稍后重试；持续失败请提 issue'],
+          UPSTREAM_ERROR: ['平台接口出错', '稍后重试'],
+          RATE_LIMITED: ['请求太频繁（服务限流 30 次/分钟/IP）', '等一分钟再试'],
+          MEDIA_PROXY_DISABLED: ['媒体中转未开启', '直链可直接下载，无需中转；确需中转请在服务端开启'],
+          MEDIA_BAD_SIGNATURE: ['媒体中转签名不对', '直链可直接下载；如需中转请重新生成链接'],
+          MEDIA_LINK_EXPIRED: ['媒体中转链接过期', '重新解析一次拿新链接'],
+          INTERNAL: ['服务内部错误', '稍后重试；持续失败请看服务日志'],
+          NETWORK: ['连不上 /parse 服务', '确认服务已启动（bun src/index.ts）、地址端口正确、没被防火墙拦'],
+        };
+
+        function renderError(code, message, detail) {
+          var hint = HINTS[code] || ['解析失败', '稍后重试；持续失败请提 issue'];
+          var detailHtml = '';
+          if (detail && Object.keys(detail).length) {
+            detailHtml =
+              '<div class="code">' +
+              esc(
+                Object.keys(detail)
+                  .map(function (k) {
+                    return k + '=' + detail[k];
+                  })
+                  .join('  '),
+              ) +
+              '</div>';
+          }
+          resultDiv.innerHTML =
+            '<div class="notice">' +
+            '<div><strong>' +
+            esc(hint[0]) +
+            '</strong> <span class="code">' +
+            esc(code) +
+            '</span></div>' +
+            '<div class="next">下一步：' +
+            esc(hint[1]) +
+            '</div>' +
+            (message ? '<div class="code" style="margin-top:6px">' + esc(message) + '</div>' : '') +
+            detailHtml +
+            '</div>';
+        }
+
+        function linkItem(label, url) {
+          return (
+            '<li><span class="kind">' +
+            esc(label) +
+            '</span><a href="' +
+            esc(url) +
+            '" target="_blank" rel="noreferrer">' +
+            esc(url) +
+            '</a><button class="secondary" data-copy="' +
+            esc(url) +
+            '">复制</button></li>'
+          );
+        }
+
+        function renderResult(body) {
+          var d = body.data;
+          if (!d) {
+            renderError('INTERNAL', '服务返回了空数据');
+            return;
+          }
+          var kindText = { video: '视频', album: '图集', unknown: '未知类型' }[d.kind] || d.kind;
+          var html = '';
+          html += '<div class="meta">';
+          html += '<span class="badge ok">' + esc(d.platform) + '</span>';
+          html += '<span class="badge">' + esc(kindText) + '</span>';
+          html += '<span class="badge">id ' + esc(d.id) + '</span>';
+          html += '<span class="badge">via ' + esc(d.via) + '</span>';
+          if (body.cached) html += '<span class="badge ok">缓存命中</span>';
+          html += '</div>';
+          html += '<div class="title">' + esc(d.title || '（无标题）') + '</div>';
+          if (d.description && d.description !== d.title) {
+            html += '<p class="desc">' + esc(d.description) + '</p>';
+          }
+          if (d.author && d.author.name) {
+            html += '<p class="desc">作者：' + esc(d.author.name) + '</p>';
+          }
+
+          var assets = d.assets || [];
+          var images = assets.filter(function (a) {
+            return a.type === 'image';
+          });
+          var videos = assets.filter(function (a) {
+            return a.type !== 'image';
+          });
+
+          var cover = '';
+          for (var i = 0; i < assets.length; i++) {
+            if (assets[i].coverUrl) {
+              cover = assets[i].coverUrl;
+              break;
+            }
+          }
+          if (cover && images.length === 0) {
+            html += '<img class="cover" src="' + esc(cover) + '" alt="封面" />';
+          }
+
+          if (images.length > 0) {
+            html += '<div class="grid">';
+            images.slice(0, 9).forEach(function (a) {
+              html += '<a href="' + esc(a.url) + '" target="_blank" rel="noreferrer"><img src="' + esc(a.url) + '" alt="图片" loading="lazy" /></a>';
+            });
+            html += '</div>';
+          }
+
+          html += '<ul class="links">';
+          videos.forEach(function (a) {
+            html += linkItem('视频直链', a.url);
+            if (a.audioUrl) html += linkItem('音频直链', a.audioUrl);
+            (a.variants || []).forEach(function (v) {
+              html += linkItem('档位 ' + v.ratio + (v.watermark ? '（带水印）' : ''), v.url);
+            });
+          });
+          images.forEach(function (a, idx) {
+            html += linkItem('图片 ' + (idx + 1), a.url);
+          });
+          html += '</ul>';
+          if (assets.length === 0) html += '<p class="hint">该结果没有可下载资源。</p>';
+          resultDiv.innerHTML = html;
+        }
+
+        document.getElementById('go').addEventListener('click', function () {
+          doParse();
+        });
+        shareInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') doParse();
+        });
+
+        function doParse() {
+          var raw = shareInput.value.trim();
+          if (!raw) {
+            renderError('INVALID_URL', '先粘一条分享链接');
+            return;
+          }
+          var url = extractUrl(raw);
+          var base = (baseInput.value.trim() || DEFAULT_BASE).replace(/\/+$/, '');
+          localStorage.setItem(BASE_KEY, base);
+          resultDiv.innerHTML = '<p class="hint">解析中……</p>';
+          fetch(base + '/parse', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ url: url }),
+          })
+            .then(function (res) {
+              return res
+                .json()
+                .catch(function () {
+                  return null;
+                })
+                .then(function (body) {
+                  return { status: res.status, body: body };
+                });
+            })
+            .then(function (r) {
+              if (r.body && r.body.success) {
+                renderResult(r.body);
+              } else if (r.body && r.body.error) {
+                renderError(r.body.error.code, r.body.error.message, r.body.error.detail);
+              } else {
+                renderError('INTERNAL', '服务返回了无法识别的内容（HTTP ' + r.status + '）');
+              }
+            })
+            .catch(function () {
+              renderError('NETWORK', '');
+            });
+        }
+
+        resultDiv.addEventListener('click', function (e) {
+          var btn = e.target.closest('button[data-copy]');
+          if (!btn) return;
+          var text = btn.getAttribute('data-copy');
+          function done() {
+            btn.textContent = '已复制';
+            setTimeout(function () {
+              btn.textContent = '复制';
+            }, 1500);
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, function () {
+              window.prompt('手动复制：', text);
+            });
+          } else {
+            window.prompt('手动复制：', text);
+          }
+        });
+
+        // CI 状态：API 拿不到就降级为只显示徽章 + 链接
+        fetch('https://api.github.com/repos/hey-yx/short-video-extractor/actions/runs?per_page=1')
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            var run = data && data.workflow_runs && data.workflow_runs[0];
+            if (!run) throw new Error('no run');
+            var verdict = run.conclusion || run.status;
+            ciText.innerHTML =
+              '最近一次：<strong>' +
+              esc(verdict) +
+              '</strong> · ' +
+              esc(run.head_branch) +
+              ' · ' +
+              esc(run.display_title) +
+              ' · ' +
+              esc(run.created_at) +
+              ' · <a href="' +
+              esc(run.html_url) +
+              '" target="_blank" rel="noreferrer">查看运行</a>';
+          })
+          .catch(function () {
+            ciText.innerHTML =
+              '跨域或网络受限，读不到 API（徽章仍有效）· <a href="https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml" target="_blank" rel="noreferrer">查看 Actions</a> · <a href="https://api.github.com/repos/hey-yx/short-video-extractor/actions/runs?per_page=1" target="_blank" rel="noreferrer">API 原文</a>';
+          });
+      })();
+    </script>
+  </body>
+</html>
