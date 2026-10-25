@@ -138,7 +138,7 @@ bun run typecheck
 > [!TIP]
 > The Xiaohongshu channel needs Chrome on the machine (Puppeteer manages it automatically); every other platform is pure HTTP.
 
-`docs/status.html` is a zero-dependency demo page — open it straight from disk (file://, no server needed), paste a share link and get the parsed direct links + cover thumbnails, with the CI badge alongside.
+`docs/status.html` is a zero-dependency status page — an overall banner, service health, per-platform status, usage counters and a live parse demo on one page. Open it straight from disk (file://, then fill in the service address), or after deploying visit `http://<server>:7777/status` in a browser — nothing extra to run.
 
 ## Environment Variables
 
@@ -191,6 +191,10 @@ docker compose up -d
 ### Upgrading
 
 Rebuild the image, then `docker compose up -d`. Verify `/health`, `/ready` and one real link per platform — rollback is just running the previous image tag. Run `docker image prune` occasionally to clear build cache.
+
+### Status Page
+
+The service ships its own status page: open `http://<server>:7777/status` in a browser to see whether the service is up, per-platform status, parse success/failure counters and recent platform-side failures — auto-refreshed every 10 seconds (toggleable). The same page works from disk over file:// (enter the service address manually). The page is embedded in the service binary: no extra dependencies, no monitoring stack.
 
 ## CI
 

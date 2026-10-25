@@ -3,6 +3,8 @@ node_modules
 .gitignore
 .env*
 docs
+# 检测站页面要 COPY 进构建期（status.routes.ts text import 内嵌）
+!docs/status.html
 README.md
 LICENSE
 .vscode
