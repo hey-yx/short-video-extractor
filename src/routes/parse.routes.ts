@@ -5,12 +5,7 @@ import { browserGateway } from '@/infra/browser';
 import { AppError } from '@/core/errors';
 import { clientIp, ipRateLimiter } from '@/services/limiter';
 import { asFetchLogger, requestLogger } from '@/infra/logger';
-import {
-  observeParseDuration,
-  recordCacheHit,
-  recordParse,
-  recordUpstreamError,
-} from '@/infra/metrics';
+import { observeParseDuration, recordCacheHit, recordParse, recordUpstreamError } from '@/infra/metrics';
 import { findPlatform } from '@/platforms/hosts';
 import type { FetchCtx } from '@/types/platform';
 
@@ -63,11 +58,9 @@ async function handleParse(
 }
 
 export const parseRoutes = new Elysia({ prefix: '/parse' })
-  .post(
-    '/',
-    ({ body, request, server }) => handleParse(body.url, request, server),
-    { body: t.Object({ url: t.String({ minLength: 8 }) }) },
-  )
+  .post('/', ({ body, request, server }) => handleParse(body.url, request, server), {
+    body: t.Object({ url: t.String({ minLength: 8 }) }),
+  })
   .get('/', ({ query, request, server }) => handleParse(query.url, request, server), {
     query: t.Object({ url: t.String({ minLength: 8 }) }),
   });

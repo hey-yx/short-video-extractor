@@ -96,9 +96,14 @@ export const bilibiliAdapter: PlatformAdapter = {
         if (typeof cid !== 'number' && typeof cid !== 'string') {
           throw new AppError('UPSTREAM_CHANGED', `B站 pages[${i}] 缺少 cid`, { bvid });
         }
-        const play = await requestJson(`${PLAY_URL}?${playUrlParams(bvid, String(cid))}`, headers, ctx.signal);
+        const play = await requestJson(
+          `${PLAY_URL}?${playUrlParams(bvid, String(cid))}`,
+          headers,
+          ctx.signal,
+        );
         const playData = asRecord(play.data);
-        if (!playData) throw new AppError('UPSTREAM_CHANGED', `B站 playurl 未返回数据（P${i + 1}）`, { bvid, cid });
+        if (!playData)
+          throw new AppError('UPSTREAM_CHANGED', `B站 playurl 未返回数据（P${i + 1}）`, { bvid, cid });
         // 与真实响应保持一致：键同时存在 snake/camel 两种写法（实测 base_url 与 baseUrl 双写）
         const dash = asRecord(playData.dash);
         const videos = dash?.video;
@@ -106,7 +111,13 @@ export const bilibiliAdapter: PlatformAdapter = {
         if (!Array.isArray(videos) || videos.length === 0) {
           throw new AppError('UPSTREAM_CHANGED', `B站 playurl 无 dash.video（P${i + 1}）`, { bvid, cid });
         }
-        return { page: i + 1, cid, part: asRecord(page)?.part, videos, audios: Array.isArray(audios) ? audios : [] };
+        return {
+          page: i + 1,
+          cid,
+          part: asRecord(page)?.part,
+          videos,
+          audios: Array.isArray(audios) ? audios : [],
+        };
       }),
     );
 
@@ -126,7 +137,11 @@ function asRecord(v: unknown): Record<string, unknown> | null {
   return v !== null && typeof v === 'object' ? (v as Record<string, unknown>) : null;
 }
 
-async function requestJson(url: string, headers: Record<string, string>, signal: AbortSignal): Promise<{
+async function requestJson(
+  url: string,
+  headers: Record<string, string>,
+  signal: AbortSignal,
+): Promise<{
   code: number;
   message?: string;
   data: unknown;
@@ -134,7 +149,10 @@ async function requestJson(url: string, headers: Record<string, string>, signal:
   const res = await fetch(url, { headers, signal });
   const text = await res.text();
   if (res.status !== 200) {
-    throw new AppError('UPSTREAM_ERROR', `B站接口 HTTP ${res.status}`, { url: url.split('?')[0], body: text.slice(0, 120) });
+    throw new AppError('UPSTREAM_ERROR', `B站接口 HTTP ${res.status}`, {
+      url: url.split('?')[0],
+      body: text.slice(0, 120),
+    });
   }
   if (!text) {
     throw new AppError('UPSTREAM_CHANGED', 'B站接口返回空 body');

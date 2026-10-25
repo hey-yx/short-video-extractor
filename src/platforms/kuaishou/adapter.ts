@@ -19,7 +19,8 @@ export const kuaishouAdapter: PlatformAdapter = {
   capabilities: { http: true, browser: false, tlsImpersonation: false, kinds: ['video', 'album'] },
 
   match(url: URL): MatchResult | null {
-    if (!hostMatches(url.hostname, 'kuaishou.com') && !hostMatches(url.hostname, 'chenzhongtech.com')) return null;
+    if (!hostMatches(url.hostname, 'kuaishou.com') && !hostMatches(url.hostname, 'chenzhongtech.com'))
+      return null;
     // 短链 v.kuaishou.com/<code>（只认短链 host，其他 kuaishou 域是落地页）
     if (url.hostname === 'v.kuaishou.com') {
       const m = url.pathname.match(SHORT_CODE_RE);

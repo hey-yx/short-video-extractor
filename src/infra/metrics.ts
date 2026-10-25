@@ -64,7 +64,9 @@ export const metrics = {
       const labelPart = key.includes('{') ? key.slice(key.indexOf('{')) : '';
       for (let i = 0; i < DURATION_BUCKETS.length; i++) {
         const cumulative = h.counts.slice(0, i + 1).reduce((a, b) => a + b, 0);
-        lines.push(`parse_duration_ms_bucket${insertLabel(labelPart, `le="${DURATION_BUCKETS[i]}"`)} ${cumulative}`);
+        lines.push(
+          `parse_duration_ms_bucket${insertLabel(labelPart, `le="${DURATION_BUCKETS[i]}"`)} ${cumulative}`,
+        );
       }
       lines.push(`parse_duration_ms_bucket${insertLabel(labelPart, 'le="+Inf"')} ${h.count}`);
       lines.push(`parse_duration_ms_sum${labelPart} ${h.sum}`);
@@ -115,7 +117,8 @@ function insertLabel(labelPart: string, le: string): string {
   return labelPart.replace(/\}$/, `,${le}}`);
 }
 
-export const recordParse = (platform: string, code: string): void => metrics.inc('parse_total', { platform, code });
+export const recordParse = (platform: string, code: string): void =>
+  metrics.inc('parse_total', { platform, code });
 
 export const observeParseDuration = (platform: string, ms: number): void =>
   metrics.observe('parse_duration_ms', { platform }, ms);

@@ -14,7 +14,10 @@ const PROXY_HINT = 'PROXY_SECRET 未配置，/media 中转未启用（可选增�
 /** Content-Disposition 文件名：标题清洗 + RFC 5987（中文文件名） */
 function contentDisposition(title: string, contentType: string): string | null {
   const ext = contentType.includes('audio') ? 'm4a' : 'mp4';
-  const base = title.replace(/[\\/:*?"<>|\n\r]/g, ' ').trim().slice(0, 80);
+  const base = title
+    .replace(/[\\/:*?"<>|\n\r]/g, ' ')
+    .trim()
+    .slice(0, 80);
   if (!base) return null;
   return `attachment; filename*=UTF-8''${encodeURIComponent(`${base}.${ext}`)}`;
 }

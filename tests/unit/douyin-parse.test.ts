@@ -75,7 +75,9 @@ describe('douyin parseAweme（fixture 回归）', () => {
 
   test('资源全空：UPSTREAM_CHANGED（不许静默返回空数组）', () => {
     try {
-      parseAweme(payload({ aweme_detail: { aweme_id: '1', media_type: 4, images: null, video: {} }, status_code: 0 }));
+      parseAweme(
+        payload({ aweme_detail: { aweme_id: '1', media_type: 4, images: null, video: {} }, status_code: 0 }),
+      );
       expect.unreachable();
     } catch (e) {
       expect((e as AppError).code).toBe('UPSTREAM_CHANGED');

@@ -13,19 +13,25 @@ describe('kuaishou match（纯函数）', () => {
   });
 
   test('落地页 chenzhongtech /fw/photo/<photoId> → 直取 photoId', () => {
-    const m = kuaishouAdapter.match(u('https://v.m.chenzhongtech.com/fw/photo/3x3nx2kzg3ve9ie?cc=share_copylink&shareToken=x'));
+    const m = kuaishouAdapter.match(
+      u('https://v.m.chenzhongtech.com/fw/photo/3x3nx2kzg3ve9ie?cc=share_copylink&shareToken=x'),
+    );
     expect(m?.id).toBe('3x3nx2kzg3ve9ie');
     expect(m?.needsResolve).toBe(false);
   });
 
   test('实测跳转目标 c.kuaishou.com /fw/photo/<photoId>', () => {
-    const m = kuaishouAdapter.match(u('https://c.kuaishou.com/fw/photo/3x3nx2kzg3ve9ie?utm_source=app_share'));
+    const m = kuaishouAdapter.match(
+      u('https://c.kuaishou.com/fw/photo/3x3nx2kzg3ve9ie?utm_source=app_share'),
+    );
     expect(m?.id).toBe('3x3nx2kzg3ve9ie');
     expect(m?.needsResolve).toBe(false);
   });
 
   test('兜底：query 里的 photoId', () => {
-    const m = kuaishouAdapter.match(u('https://www.kuaishou.com/f/?photoId=3xzjbmsi3btw33k&cc=share_copylink'));
+    const m = kuaishouAdapter.match(
+      u('https://www.kuaishou.com/f/?photoId=3xzjbmsi3btw33k&cc=share_copylink'),
+    );
     expect(m?.id).toBe('3xzjbmsi3btw33k');
     expect(m?.needsResolve).toBe(false);
   });

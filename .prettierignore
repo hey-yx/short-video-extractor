@@ -5,3 +5,5 @@
 **/dist
 # https://github.com/prettier/prettier/issues/5246
 **/*.html
+# 抓取的接口原始响应快照，保持字节原样便于对照排查
+tests/fixtures

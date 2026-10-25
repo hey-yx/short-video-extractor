@@ -13,7 +13,9 @@ describe('bilibili match（纯函数）', () => {
   });
 
   test('多 P 链接带 ?p=2 不影响 match（全 P 都出 asset）', () => {
-    const m = bilibiliAdapter.match(u('https://www.bilibili.com/video/BV1bK411W797?p=2&spm_id_from=333.999.0.0'));
+    const m = bilibiliAdapter.match(
+      u('https://www.bilibili.com/video/BV1bK411W797?p=2&spm_id_from=333.999.0.0'),
+    );
     expect(m?.id).toBe('BV1bK411W797');
     expect(m?.needsResolve).toBe(false);
   });

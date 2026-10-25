@@ -74,9 +74,7 @@ function authorOf(d: AwemeDetail): ParsedAuthor {
 }
 
 function tagsOf(d: AwemeDetail): string[] {
-  return (d.text_extra ?? [])
-    .map((t) => t.hashtag_name)
-    .filter((n): n is string => !!n);
+  return (d.text_extra ?? []).map((t) => t.hashtag_name).filter((n): n is string => !!n);
 }
 
 /* ---------- 视频：play 直链 + variants 档位 ---------- */
@@ -105,7 +103,8 @@ function videoAsset(d: AwemeDetail): MediaAsset | null {
   variants.push({ ratio: 'origin', url: buildPlayUrl(uri, 'default'), watermark: false });
   // 带水印版（平台"保存"档）
   const dl = firstUrl(v?.download_addr);
-  if (dl) variants.push({ ratio: 'watermarked_720p', url: dl, size: v?.download_addr?.data_size, watermark: true });
+  if (dl)
+    variants.push({ ratio: 'watermarked_720p', url: dl, size: v?.download_addr?.data_size, watermark: true });
 
   // 主 URL：play 接口 1080p（实测空 Referer 200）
   return {
@@ -157,7 +156,9 @@ export function parseAweme(raw: RawPayload): ParseResult {
     const reason = body.filter_detail?.filter_reason;
     if (reason) {
       // 作品本身不可见（删除/私密/地域），重试无意义
-      throw new AppError('CONTENT_RESTRICTED', body.filter_detail?.detail_msg || '作品不可见', { filter_reason: reason });
+      throw new AppError('CONTENT_RESTRICTED', body.filter_detail?.detail_msg || '作品不可见', {
+        filter_reason: reason,
+      });
     }
     throw new AppError('CONTENT_NOT_FOUND', '作品不存在或已删除');
   }

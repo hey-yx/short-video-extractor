@@ -148,10 +148,12 @@ describe('手动跟 302', () => {
       });
     }) as unknown as typeof fetch;
     try {
-      const res = await fetchUpstream('https://www.douyin.com/aweme/v1/play/?video_id=x', new Headers(), 'GET', [
-        'douyin.com',
-        'douyinvod.com',
-      ]);
+      const res = await fetchUpstream(
+        'https://www.douyin.com/aweme/v1/play/?video_id=x',
+        new Headers(),
+        'GET',
+        ['douyin.com', 'douyinvod.com'],
+      );
       expect(res.status).toBe(200);
       expect(n).toBe(2);
     } finally {

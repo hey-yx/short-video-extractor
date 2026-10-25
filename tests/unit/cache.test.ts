@@ -148,8 +148,8 @@ describe('cacheKey', () => {
       'douyin:7142091187963399427',
     );
     // 同一视频两次分享 URL 参数全变，key 不变
-    expect(cacheKey('douyin', '7142091187963399427', 'https://www.douyin.com/video/7142091187963399427?x=1')).toBe(
-      'douyin:7142091187963399427',
-    );
+    expect(
+      cacheKey('douyin', '7142091187963399427', 'https://www.douyin.com/video/7142091187963399427?x=1'),
+    ).toBe('douyin:7142091187963399427');
   });
 });

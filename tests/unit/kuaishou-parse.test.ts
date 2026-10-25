@@ -50,7 +50,8 @@ describe('kuaishou parseKuaishou（真实分享页 fixture 回归）', () => {
   });
 
   test('photo JSON 里字符串含转义引号/花括号不影响括号配平', () => {
-    const tricky = 'window.INIT_STATE = {"photo":{"photoId":"p1","caption":"a \\"quote\\" and {} braces"},"z":1};';
+    const tricky =
+      'window.INIT_STATE = {"photo":{"photoId":"p1","caption":"a \\"quote\\" and {} braces"},"z":1};';
     const photo = extractPhotoJson(tricky);
     expect(photo.photoId).toBe('p1');
     expect(photo.caption).toContain('"quote"');
