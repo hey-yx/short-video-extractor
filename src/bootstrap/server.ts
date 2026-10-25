@@ -1,12 +1,19 @@
-import { createApp } from "./app";
+import { createApp } from './app';
 
-export const startServer = () => {
-  const PORT = Bun.env.SERVER_PORT || 7777;
-  const app = createApp();
+const PORT = Number(process.env.PORT ?? 7777);
 
-  console.log(Bun.env.PUPPETEER_EXECUTABLE_PATH);
+const app = createApp();
+app.listen(PORT, () => {
+  console.log(`[sve] listening on :${PORT}`);
+});
 
-  app.listen(PORT, () =>
-    console.log(`Server is running on http://localhost:${PORT}`),
-  );
-};
+// 优雅关闭
+process.on('SIGTERM', () => {
+  console.log('[sve] SIGTERM, stopping');
+  app.stop();
+  process.exit(0);
+});
+process.on('SIGINT', () => {
+  app.stop();
+  process.exit(0);
+});

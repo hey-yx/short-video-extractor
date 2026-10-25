@@ -1,3 +1,1 @@
-import { startServer } from "@/bootstrap/server";
-
-startServer();
+import '@/bootstrap/server';

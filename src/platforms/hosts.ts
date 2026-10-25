@@ -1,0 +1,26 @@
+import type { Platform } from '@/types/platform';
+
+/** 平台域名白名单（registry.match 的数据源；新增平台只改这里 + 加目录） */
+export const PLATFORM_HOSTS: Record<Platform, readonly string[]> = {
+  douyin: ['douyin.com', 'iesdouyin.com', 'v.douyin.com'],
+  xhs: ['xiaohongshu.com', 'xhslink.com', 'xhslink.cn'],
+  kuaishou: ['kuaishou.com', 'chenzhongtech.com', 'v.kuaishou.com'],
+  bilibili: ['bilibili.com', 'b23.tv'],
+};
+
+/** host 是否属于平台（后缀匹配：news.douyin.com ∈ douyin.com） */
+export function hostMatches(host: string, domain: string): boolean {
+  const h = host.toLowerCase();
+  const d = domain.toLowerCase();
+  return h === d || h.endsWith(`.${d}`);
+}
+
+/** 从 URL 找所属平台；找不到返回 null */
+export function findPlatform(url: URL): Platform | null {
+  for (const [platform, hosts] of Object.entries(PLATFORM_HOSTS) as [Platform, readonly string[]][]) {
+    for (const h of hosts) {
+      if (hostMatches(url.hostname, h)) return platform;
+    }
+  }
+  return null;
+}
