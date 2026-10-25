@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # 多阶段：oven/bun 构建单二进制 → alpine + chromium 运行（小红书通道需要真实浏览器）
-# 体积实测见 README「部署 · 镜像」；服务器磁盘仅剩 5.5G，勿加多余层
+# 体积实测见 README「部署 · 镜像」；镜像体积敏感，勿加多余层
 ARG BUN_VERSION=1.3.10
 
 FROM --platform=$BUILDPLATFORM oven/bun:${BUN_VERSION}-alpine AS builder

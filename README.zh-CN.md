@@ -173,28 +173,24 @@ bun run typecheck
 
 apk 源默认走阿里云镜像（构建实测 `dl-cdn.alpinelinux.org` 仅 14KB/s，阿里云 1.4MB/s），换官方源：`docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`。
 
-构建后验收：容器内 `/health` 200、`/ready` 4 平台、小红书真实链接（video + album）与抖音真实链接解析成功，`bun test` 77 全绿、`tsc --noEmit` 零错。
+构建后验收：容器内 `/health` 200、`/ready` 4 平台、小红书真实链接（video + album）与抖音真实链接解析成功，`bun test` 100 全绿、`tsc --noEmit` 零错。
 
 ```bash
-docker build -t video-parser:v2 .
-docker run -d --name video-parser-v2 -p 16004:7777 \
-  --env-file .env --memory 800m --restart unless-stopped video-parser:v2
-curl http://127.0.0.1:16004/health
+docker build -t short-video-extractor:v2 .
+docker run -d --name short-video-extractor -p 7777:7777 \
+  --env-file .env --memory 800m --restart unless-stopped short-video-extractor:v2
+curl http://127.0.0.1:7777/health
 ```
 
-或直接 compose（`16004:7777`、`restart: unless-stopped`、`mem_limit 800m`、`env_file: .env`、日志轮转 10m×3）：
+或直接 compose（`7777:7777`、`restart: unless-stopped`、`mem_limit 800m`、`env_file: .env`、日志轮转 10m×3）：
 
 ```bash
 docker compose up -d
 ```
 
-### 灰度（现网旧容器在 16003）
+### 升级
 
-新容器起 **16004** 与旧容器并行，`curl 127.0.0.1:16004` 四平台验证通过后，反代（1Panel openresty，`sve-api.itcox.cn`）改指 16004——一条配置，秒级可回滚。旧容器 `docker stop` 但不删，观察一周无回退需求再清理。
-
-### 服务器注意
-
-上海腾讯云磁盘仅剩 5.5G：构建前先 `docker image prune` 清旧镜像与构建缓存，服务器不保留多份镜像。低频自用，800m 内存上限足够。
+重新构建镜像后 `docker compose up -d`，确认 `/health`、`/ready` 与每平台一条真实链接解析通过即完成——回滚就是换回旧镜像 tag。偶尔跑一次 `docker image prune` 清构建缓存。
 
 ## CI
 

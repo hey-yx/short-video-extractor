@@ -1,11 +1,11 @@
 services:
-  sve:
+  app:
     build:
       context: .
-    image: video-parser:v2
-    container_name: video-parser-v2
+    image: short-video-extractor:v2
+    container_name: short-video-extractor
     ports:
-      - "16004:7777"
+      - "7777:7777"
     restart: unless-stopped
     mem_limit: 800m
     env_file:

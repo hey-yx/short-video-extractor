@@ -173,28 +173,24 @@ What could not be cut: chromium itself at 233MB, plus the ffmpeg family it hard-
 
 The apk mirror defaults to Aliyun (measured during the build: `dl-cdn.alpinelinux.org` crawled at 14KB/s vs Aliyun at 1.4MB/s). To use the official mirror: `docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
 
-Post-build acceptance: `/health` 200 inside the container, `/ready` reports 4 platforms, real Xiaohongshu links (video + album) and real Douyin links parse successfully, `bun test` all green (77), `tsc --noEmit` zero errors.
+Post-build acceptance: `/health` 200 inside the container, `/ready` reports 4 platforms, real Xiaohongshu links (video + album) and real Douyin links parse successfully, `bun test` all green (100), `tsc --noEmit` zero errors.
 
 ```bash
-docker build -t video-parser:v2 .
-docker run -d --name video-parser-v2 -p 16004:7777 \
-  --env-file .env --memory 800m --restart unless-stopped video-parser:v2
-curl http://127.0.0.1:16004/health
+docker build -t short-video-extractor:v2 .
+docker run -d --name short-video-extractor -p 7777:7777 \
+  --env-file .env --memory 800m --restart unless-stopped short-video-extractor:v2
+curl http://127.0.0.1:7777/health
 ```
 
-Or just compose (`16004:7777`, `restart: unless-stopped`, `mem_limit 800m`, `env_file: .env`, log rotation 10m×3):
+Or just compose (`7777:7777`, `restart: unless-stopped`, `mem_limit 800m`, `env_file: .env`, log rotation 10m×3):
 
 ```bash
 docker compose up -d
 ```
 
-### Canary rollout (current production container on 16003)
+### Upgrading
 
-Start the new container on **16004** next to the old one, verify all four platforms with `curl 127.0.0.1:16004`, then repoint the reverse proxy (1Panel openresty, `sve-api.itcox.cn`) at 16004 — one config line, rollback in seconds. `docker stop` the old container but don't delete it; clean it up after a week without rollback.
-
-### Server notes
-
-The Shanghai Tencent Cloud box has only 5.5G of disk left: run `docker image prune` before building to clear old images and build caches, and don't keep multiple images on the server. Low-frequency personal use — the 800m memory cap is plenty.
+Rebuild the image, then `docker compose up -d`. Verify `/health`, `/ready` and one real link per platform — rollback is just running the previous image tag. Run `docker image prune` occasionally to clear build cache.
 
 ## CI
 
