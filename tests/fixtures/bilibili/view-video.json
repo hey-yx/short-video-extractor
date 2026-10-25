@@ -1,0 +1,42 @@
+{
+ "code": 0,
+ "message": "OK",
+ "ttl": 1,
+ "data": {
+  "bvid": "BV1GJ411x7h7",
+  "aid": 80433022,
+  "cid": 137649199,
+  "videos": 1,
+  "title": "【官方 MV】Never Gonna Give You Up - Rick Astley",
+  "desc": "-",
+  "pic": "http://i1.hdslb.com/bfs/archive/5242750857121e05146d5d5b13a47a2a6dd36e98.jpg",
+  "duration": 213,
+  "owner": {
+   "mid": 486906719,
+   "name": "索尼音乐中国",
+   "face": "https://i2.hdslb.com/bfs/face/6bc95d0670863d36bf9167a37b825c39ce258506.jpg"
+  },
+  "pages": [
+   {
+    "cid": 137649199,
+    "page": 1,
+    "from": "vupload",
+    "part": "Never Gonna Give You Up - Rick Astley",
+    "duration": 213,
+    "vid": "",
+    "weblink": "",
+    "dimension": {
+     "width": 1920,
+     "height": 1080,
+     "rotate": 0
+    },
+    "ctime": 1577835803
+   }
+  ],
+  "dimension": {
+   "width": 1920,
+   "height": 1080,
+   "rotate": 0
+  }
+ }
+}

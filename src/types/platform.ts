@@ -38,6 +38,10 @@ export interface MediaAsset {
   liveClipUrl?: string;
   /** 封面图（视频类资源附带） */
   coverUrl?: string;
+  /** 音频直链（B 站 DASH 音视频分离时的伴音轨，下载端需与视频分别拉取后合成） */
+  audioUrl?: string;
+  /** 多 P 视频的分 P 标题（B 站 pages[].part） */
+  partTitle?: string;
 }
 
 export interface ParsedAuthor {

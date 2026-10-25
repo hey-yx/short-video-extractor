@@ -4,11 +4,9 @@ import { findPlatform } from './hosts';
 
 const adapters: PlatformAdapter[] = [];
 
-/** 注册适配器（启动时调用；顺序即 match 优先级） */
+/** 注册适配器（幂等：同平台重复注册跳过；启动时调用） */
 export function register(adapter: PlatformAdapter): void {
-  if (adapters.some((a) => a.platform === adapter.platform)) {
-    throw new Error(`platform already registered: ${adapter.platform}`);
-  }
+  if (adapters.some((a) => a.platform === adapter.platform)) return;
   adapters.push(adapter);
 }
 
