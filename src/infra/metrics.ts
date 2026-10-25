@@ -41,9 +41,9 @@ export const metrics = {
       h = { counts: new Array<number>(DURATION_BUCKETS.length).fill(0), sum: 0, count: 0 };
       histograms.set(key, h);
     }
-    for (let i = 0; i < DURATION_BUCKETS.length; i++) {
-      if (value <= DURATION_BUCKETS[i]!) h.counts[i]!++;
-    }
+    // Prometheus 语义：bucket 是累计计数。这里只记首个命中桶，render() 统一做前缀和
+    const idx = DURATION_BUCKETS.findIndex((b) => value <= b);
+    if (idx >= 0) h.counts[idx]!++;
     h.sum += value;
     h.count++;
   },
