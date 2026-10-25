@@ -131,7 +131,25 @@ bun run typecheck
 
 ### 镜像
 
-多阶段构建：`oven/bun:alpine` 编译单二进制 → `alpine:3.22` + chromium 运行（小红书通道需要真实浏览器内核）。非 root（uid 10001）运行，tini 收僵尸进程，HEALTHCHECK 打 /health，目标 < 1GB。
+多阶段构建：`oven/bun:alpine` 编译单二进制 → `alpine:3.22` + chromium 运行（小红书通道需要真实浏览器内核）。非 root（uid 10001）运行，tini 收僵尸进程，HEALTHCHECK 打 /health。
+
+体积实测（2026-10-25 本机构建）：**830MB → 495MB**（-335MB，-40%），达成 <700MB 目标。层构成：alpine 基底 8.5MB + 运行层 386MB（瘦身前 721MB）+ bun 单二进制 100MB。
+
+瘦身即「把无头解析用不到的文件在装包同层删掉」，每删一项都在容器内实测小红书真实链接解析（video + album，浏览器通道真跑）通过后才保留：
+
+| 删掉 | 体积 | 依据 |
+|---|---|---|
+| mesa/LLVM 软渲染栈（libLLVM、libgallium、gallium-pipe 驱动） | 247MB | headless 无 GPU 用不上；chromium 动态依赖闭包不含它们 |
+| 系统 ICU 数据 + libicu | 30MB | chromium 自带 ICU，不读系统数据 |
+| mime 库、图标主题、gtk 数据、typelib、pci.ids、pipewire 插件等 | 38MB | 无头解析用不到的数据文件 |
+| ANGLE/SwiftShader（libEGL / libGLESv2 / libvulkan） | 7MB | 砍后小红书浏览器通道照常 |
+| locales（留 zh-CN / en-US）、多余字重、2x UI 资源 | 4MB | |
+
+砍不动：chromium 本体 233MB，以及它硬链接的 ffmpeg 全家桶（x265 / aom / SvtAv1Enc 等编码器约 40MB 是 chromium 动态依赖，删了二进制起不来）、nss / freetype / harfbuzz / fontconfig、ca-certificates；bun 单二进制 100MB 不强压（--minify 已开）。
+
+apk 源默认走阿里云镜像（构建实测 `dl-cdn.alpinelinux.org` 仅 14KB/s，阿里云 1.4MB/s），换官方源：`docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`。
+
+构建后验收：容器内 `/health` 200、`/ready` 4 平台、小红书真实链接（video + album）与抖音真实链接解析成功，`bun test` 77 全绿、`tsc --noEmit` 零错。
 
 ```bash
 docker build -t video-parser:v2 .
