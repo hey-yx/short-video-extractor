@@ -1,5 +1,5 @@
 import { AppError } from '@/core/errors';
-import type { FetchCtx, MatchResult, Platform, PlatformAdapter, RawPayload, ParseResult } from '@/types/platform';
+import type { FetchCtx, MatchResult, PlatformAdapter } from '@/types/platform';
 import { findPlatform } from './hosts';
 
 const adapters: PlatformAdapter[] = [];
@@ -12,12 +12,6 @@ export function register(adapter: PlatformAdapter): void {
 
 export function listAdapters(): readonly PlatformAdapter[] {
   return adapters;
-}
-
-export function getAdapter(platform: Platform): PlatformAdapter {
-  const a = adapters.find((x) => x.platform === platform);
-  if (!a) throw new AppError('UNSUPPORTED_PLATFORM', `平台未注册: ${platform}`);
-  return a;
 }
 
 /** 按域名找适配器 */
@@ -57,15 +51,3 @@ export async function dispatch(
   }
   return dispatch(finalUrl, ctx, depth + 1);
 }
-
-/** 完整解析：fetch + parse */
-export async function resolvePayload(
-  adapter: PlatformAdapter,
-  input: MatchResult,
-  url: URL,
-  ctx: FetchCtx,
-): Promise<RawPayload> {
-  return adapter.fetch(input, url, ctx);
-}
-
-export type { ParseResult };
