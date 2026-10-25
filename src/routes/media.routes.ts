@@ -9,7 +9,7 @@ import {
   verifyMediaSignature,
 } from '@/services/media-proxy';
 
-const PROXY_HINT = 'PROXY_SECRET 未配置，/media 中转未启用（可选增强，见 PLAN §11.4）。直链仍是主路径。';
+const PROXY_HINT = 'PROXY_SECRET 未配置，/media 中转未启用（可选增强）。直链仍是主路径。';
 
 /** Content-Disposition 文件名：标题清洗 + RFC 5987（中文文件名） */
 function contentDisposition(title: string, contentType: string): string | null {

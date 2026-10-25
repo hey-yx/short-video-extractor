@@ -202,5 +202,4 @@ The service ships its own status page: open `http://<server>:7777/status` in a b
 
 ## Design Documents
 
-- `docs/PLAN.md` — rewrite plan (architecture, per-platform approach, migration and canary rollout)
 - `docs/research/` — platform API research and measured notes

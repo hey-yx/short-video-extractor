@@ -26,7 +26,7 @@ export const opsRoutes = new Elysia()
       })),
     ),
   )
-  // Prometheus 文本格式指标（自写渲染，PLAN §14）
+  // Prometheus 文本格式指标（自写渲染）
   .get('/metrics', ({ set }) => {
     set.headers['content-type'] = 'text/plain; version=0.0.4; charset=utf-8';
     return metrics.render();

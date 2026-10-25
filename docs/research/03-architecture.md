@@ -34,14 +34,14 @@ yt-dlp 有 1100+ 个 extractor 类（`_extractors.py` 实测导入 1187 个 `*IE
 | `src/utils/cache.ts` | 进程内 `Map` + `setInterval` 清理，仅小红书在用，key 只去 4 个 query 参数 | 多副本不共享；重启即失效；`setInterval` 还会挂住 `bun test` 进程 | §5 |
 | `src/routes/public.routes.ts` | `/public/cache/clear`、`/cache/delete` **无鉴权** | 任何人可清空线上缓存（可被用来打穿上游、放大风控） | §6 |
 | `src/hooks/error.hooks.ts` | 所有错误统一 `set.status = 400` + `text/plain` | 破坏 JSON 契约；参数校验错误、内部异常、404 全糊成 400 | §7 |
-| `src/utils/puppeteer.ts` | 文件里硬编码 `business@itcox.cn` / 明文密码 + 登录 `jiexiapi.top` 的整套逻辑 | **凭据泄漏 + 供应链风险**，且这段代码与业务无关，必须立刻删 | §0.3 |
+| `src/utils/puppeteer.ts` | 文件里硬编码某邮箱账号 / 明文密码 + 登录某解析站域名（原文含真实凭据，已抹） | **凭据泄漏 + 供应链风险**，且这段代码与业务无关，必须立刻删 | §0.3 |
 | `src/bootstrap/app.ts` | `cors({ origin: "*" })` 且无鉴权 | 公开可刷；配合中转代理就是免费 CDN | §4 §6 |
 | 全仓库 | 0 个测试文件，`package.json` 无 `test` 脚本 | 重构无安全网 | §9 |
 
 ### 0.3 先做的三件「与架构无关但必须马上做」的事
 
-1. **删除 `src/utils/puppeteer.ts` 里 `PuppeteerManager`（jiexiapi 登录）整段**，并轮换该账号密码——密码已进 git 历史。
-2. `grep -r "business@itcox" .` 确认无残留，必要时 `git filter-repo` 清历史。
+1. **删除 `src/utils/puppeteer.ts` 里 `PuppeteerManager`（第三方解析站登录）整段**，并轮换该账号密码——密码已进 git 历史。
+2. `grep` 确认真实凭据无残留，必要时 `git filter-repo` 清历史。
 3. `/public/cache/*` 三个管理端点先加 `Authorization` 校验或直接下线。
 
 ---

@@ -21,7 +21,7 @@ export interface AssetVariant {
 
 export interface MediaAsset {
   type: AssetType;
-  /** 直连地址（客户端不带 Referer 即可下载，见 PLAN.md §11） */
+  /** 直连地址（客户端不带 Referer 即可下载） */
   url: string;
   /** 该资源的过期时刻（Unix 秒）；读不出则省略 */
   expiresAt?: number;

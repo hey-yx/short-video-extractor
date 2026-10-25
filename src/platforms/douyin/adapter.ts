@@ -12,7 +12,7 @@ const OPEN_ORIGIN = 'https://open.douyin.com';
 const AWEME_ID_RE = /\/(?:video|note|share\/video|share\/note)\/(\d{15,20})/;
 const MODAL_ID_RE = /[?&]modal_id=(\d{15,20})/;
 
-/** 抖音直链形态（空 Referer 可下；见 docs/research/01 §5 与 PLAN §11） */
+/** 抖音直链形态（空 Referer 可下；见 docs/research/01 §5） */
 export function buildPlayUrl(videoId: string, ratio: string): string {
   return `https://www.douyin.com/aweme/v1/play/?video_id=${encodeURIComponent(videoId)}&ratio=${ratio}&line=0`;
 }

@@ -2,7 +2,7 @@
  * 轻量 Prometheus 指标：自写文本格式渲染，不引 prom-client（依赖要瘦）。
  * Bun 单线程，Map 直读直写；低频自用场景无性能压力。
  *
- * 指标清单（PLAN §14 / research 03 §6.6）：
+ * 指标清单（research 03 §6.6）：
  *  - parse_total{platform,code}        解析计数（code = ok 或业务错误码）
  *  - parse_duration_ms (histogram)     解析耗时分布
  *  - cache_hit_total                   缓存命中（P4 接入，先暴露 0）

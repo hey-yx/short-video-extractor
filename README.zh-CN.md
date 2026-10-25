@@ -202,5 +202,4 @@ docker compose up -d
 
 ## 设计文档
 
-- `docs/PLAN.md` — 重构规划（架构、平台方案、迁移与灰度）
 - `docs/research/` — 平台 API 调研与实测记录

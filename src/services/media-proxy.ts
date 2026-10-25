@@ -9,11 +9,11 @@ import { hostMatches, PLATFORM_HOSTS } from '@/platforms/hosts';
  * 三个实测坑照单全收：HEAD 显式注册、redirect:'manual'、accept-encoding: identity。
  */
 
-/** 签名有效期（秒），PLAN §七：短时效防 token 进日志/Referer 后被刷 */
+/** 签名有效期（秒）：短时效防 token 进日志/Referer 后被刷 */
 const SIGN_TTL_SECONDS = 600;
 /** 上游重定向跳数上限 */
 const MAX_REDIRECTS = 5;
-/** 并发上限（PLAN §11.4：服务器带宽 2.7 Mbps，必须限流） */
+/** 并发上限：服务器带宽有限，必须限流 */
 const MAX_CONCURRENCY = 2;
 /** 允许透传给上游的请求头（白名单，绝不整体复制） */
 const PASSTHROUGH_HEADERS = ['range', 'if-range', 'if-none-match', 'if-modified-since'] as const;
@@ -127,7 +127,7 @@ export function verifyMediaSignature(
   if (!isProxyConfigured()) {
     throw new AppError(
       'MEDIA_PROXY_DISABLED',
-      'PROXY_SECRET 未配置，中转端点未启用（这是可选增强，见 PLAN §11.4）',
+      'PROXY_SECRET 未配置，/media 中转未启用（可选增强）。直链仍是主路径。',
     );
   }
   const { u, exp, sig } = query;
@@ -241,7 +241,7 @@ export function buildMediaResponseHeaders(upstream: Headers): Headers {
   return out;
 }
 
-/** 全局并发信号量（PLAN §11.4：中转并发上限 2） */
+/** 全局并发信号量：中转并发上限 2 */
 class Semaphore {
   private active = 0;
   private readonly waiters: Array<() => void> = [];
