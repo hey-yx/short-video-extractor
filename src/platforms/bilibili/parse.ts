@@ -30,7 +30,13 @@ interface BiliViewData {
   pic?: string;
   duration?: number;
   owner?: { mid?: number; name?: string; face?: string };
-  pages?: Array<{ cid?: number; page?: number; part?: string; duration?: number; dimension?: { width?: number; height?: number } }>;
+  pages?: Array<{
+    cid?: number;
+    page?: number;
+    part?: string;
+    duration?: number;
+    dimension?: { width?: number; height?: number };
+  }>;
   dimension?: { width?: number; height?: number };
 }
 
@@ -58,8 +64,18 @@ function streamBackups(s: BiliStream): string[] {
 /** 清晰度档名：DASH id 120=4K, 116=1080P60, 112=1080P+, 80=1080P, 74=720P60, 64=720P, 32/16=480/360P */
 function qualityName(id: number | undefined, w?: number, h?: number): string {
   const names: Record<number, string> = {
-    127: '8K', 126: '杜比视界', 125: 'HDR', 120: '4K', 116: '1080P60', 112: '1080P+',
-    100: '智能修复', 80: '1080P', 74: '720P60', 64: '720P', 32: '480P', 16: '360P',
+    127: '8K',
+    126: '杜比视界',
+    125: 'HDR',
+    120: '4K',
+    116: '1080P60',
+    112: '1080P+',
+    100: '智能修复',
+    80: '1080P',
+    74: '720P60',
+    64: '720P',
+    32: '480P',
+    16: '360P',
   };
   if (id !== undefined && names[id]) return names[id]!;
   if (w && h) return `${h}p`;
@@ -72,6 +88,13 @@ function sortStreams(streams: BiliStream[]): BiliStream[] {
     if (hd !== 0) return hd;
     return (b.bandwidth ?? 0) - (a.bandwidth ?? 0);
   });
+}
+
+/** 直链时效：upos URL 的 deadline= 参数是过期 Unix 秒（10 位），读不出返回 undefined */
+function urlExpiry(url: string): number | undefined {
+  const m = url.match(/[?&](?:deadline|expires)=(\d{9,11})(?:[&#]|$)/);
+  const ts = m?.[1] ? Number(m[1]) : undefined;
+  return ts !== undefined && ts > 1e9 && ts < 1e11 ? ts : undefined;
 }
 
 export function parseBilibili(raw: RawPayload): ParseResult {
@@ -124,11 +147,19 @@ export function parseBilibili(raw: RawPayload): ParseResult {
       url: streamUrl(best),
       width: best.width ?? dim?.width,
       height: best.height ?? dim?.height,
-      durationMs: pageInfo?.duration ? pageInfo.duration * 1000 : viewData.duration ? viewData.duration * 1000 : undefined,
+      durationMs: pageInfo?.duration
+        ? pageInfo.duration * 1000
+        : viewData.duration
+          ? viewData.duration * 1000
+          : undefined,
       backups: streamBackups(best),
       coverUrl: viewData.pic,
       variants,
     };
+    const expiries = [urlExpiry(asset.url), bestAudio ? urlExpiry(streamUrl(bestAudio)) : undefined].filter(
+      (t): t is number => t !== undefined,
+    );
+    if (expiries.length > 0) asset.expiresAt = Math.min(...expiries);
     if (bestAudio && streamUrl(bestAudio)) {
       asset.audioUrl = streamUrl(bestAudio);
     }
@@ -142,7 +173,10 @@ export function parseBilibili(raw: RawPayload): ParseResult {
     platform: 'bilibili',
     id: viewData.bvid ?? '',
     kind: 'video',
-    title: isMulti && viewData.title ? `${viewData.title}（共 ${payload.streams.length}P）` : viewData.title ?? '',
+    title:
+      isMulti && viewData.title
+        ? `${viewData.title}（共 ${payload.streams.length}P）`
+        : (viewData.title ?? ''),
     description: viewData.desc,
     author: {
       name: viewData.owner?.name ?? '',
@@ -150,7 +184,14 @@ export function parseBilibili(raw: RawPayload): ParseResult {
       avatar: viewData.owner?.face,
     },
     assets,
+    expiresAt: minExpiry(assets),
     parsedAt: raw.fetchedAt,
     via: 'http',
   } satisfies ParseResult;
+}
+
+/** 所有 asset 里最早过期的时刻；全读不出则省略 */
+function minExpiry(assets: MediaAsset[]): number | undefined {
+  const list = assets.map((a) => a.expiresAt).filter((t): t is number => t !== undefined);
+  return list.length > 0 ? Math.min(...list) : undefined;
 }

@@ -156,10 +156,14 @@ export function verifyMediaSignature(
     throw new AppError('INVALID_URL', 'u 参数不是合法 URL');
   }
   if (url.protocol !== 'https:') {
-    throw new AppError('CONTENT_RESTRICTED', '中转只允许 https 链接', { protocol: url.protocol });
+    throw new AppError('CONTENT_RESTRICTED', '中转只允许 https 链接', {
+      protocol: url.protocol,
+    });
   }
   if (!allowedHosts().some((d) => hostMatches(url.hostname, d))) {
-    throw new AppError('CONTENT_RESTRICTED', '目标域名不在允许列表', { host: url.hostname });
+    throw new AppError('CONTENT_RESTRICTED', '目标域名不在允许列表', {
+      host: url.hostname,
+    });
   }
   return { url: url.href, exp: expNum };
 }
@@ -170,13 +174,19 @@ export function assertSafeHost(rawUrl: string, allowlist: string[]): URL {
   try {
     u = new URL(rawUrl);
   } catch {
-    throw new AppError('INVALID_URL', '跳转地址不是合法 URL', { url: rawUrl.slice(0, 120) });
+    throw new AppError('INVALID_URL', '跳转地址不是合法 URL', {
+      url: rawUrl.slice(0, 120),
+    });
   }
   if (u.protocol !== 'https:') {
-    throw new AppError('CONTENT_RESTRICTED', '中转只允许 https 链接', { protocol: u.protocol });
+    throw new AppError('CONTENT_RESTRICTED', '中转只允许 https 链接', {
+      protocol: u.protocol,
+    });
   }
   if (!allowlist.some((d) => hostMatches(u.hostname, d))) {
-    throw new AppError('CONTENT_RESTRICTED', '跳转域名不在允许列表', { host: u.hostname });
+    throw new AppError('CONTENT_RESTRICTED', '跳转域名不在允许列表', {
+      host: u.hostname,
+    });
   }
   return u;
 }
@@ -190,7 +200,9 @@ export async function fetchUpstream(
   depth = 0,
 ): Promise<Response> {
   if (depth > MAX_REDIRECTS) {
-    throw new AppError('UPSTREAM_ERROR', '上游重定向超过 5 跳', { url: target.slice(0, 120) });
+    throw new AppError('UPSTREAM_ERROR', '上游重定向超过 5 跳', {
+      url: target.slice(0, 120),
+    });
   }
   const u = assertSafeHost(target, allowlist);
   const headers = new Headers(upstreamHeadersFor(u.hostname));
@@ -223,6 +235,9 @@ export function buildMediaResponseHeaders(upstream: Headers): Headers {
   out.set('content-type', !ct || ct.includes('octet-stream') ? 'video/mp4' : ct);
   out.set('accept-ranges', 'bytes');
   out.set('cache-control', 'public, max-age=3600');
+  // 浏览器跨域播放需要；Range 头不脱敏，前端才能算 seek
+  out.set('access-control-allow-origin', '*');
+  out.set('access-control-expose-headers', 'Content-Length, Content-Range, Accept-Ranges');
   return out;
 }
 
@@ -235,14 +250,17 @@ class Semaphore {
 
   async run<T>(fn: () => Promise<T>): Promise<T> {
     if (this.active >= this.limit) {
+      // 排队等前一个任务让出名额；名额直接转交，不再经过 active 计数
       await new Promise<void>((resolve) => this.waiters.push(resolve));
+    } else {
+      this.active += 1;
     }
-    this.active += 1;
     try {
       return await fn();
     } finally {
-      this.active -= 1;
-      this.waiters.shift()?.();
+      const next = this.waiters.shift();
+      if (next) next();
+      else this.active -= 1;
     }
   }
 

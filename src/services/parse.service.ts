@@ -31,7 +31,9 @@ export async function parseUrl(rawUrl: string, ctx: FetchCtx): Promise<ParseOutc
   }
   const matched = adapter.match(url);
   if (!matched) {
-    throw new AppError('INVALID_URL', `链接格式不属于 ${adapter.platform}`, { url: url.href });
+    throw new AppError('INVALID_URL', `链接格式不属于 ${adapter.platform}`, {
+      url: url.href,
+    });
   }
   const key = cacheKey(matched.platform, matched.id, url.href);
 
@@ -40,6 +42,9 @@ export async function parseUrl(rawUrl: string, ctx: FetchCtx): Promise<ParseOutc
     const started = Date.now();
     const payload = await finalAdapter.fetch(input, finalUrl, ctx);
     const parsed = finalAdapter.parse(payload, input);
+    // 短链 key 与展开后的稳定 id 不同：回填一份，长短链共享缓存
+    const canonical = cacheKey(parsed.platform, parsed.id, finalUrl.href);
+    if (canonical !== key) parseCache.set(canonical, parsed);
     ctx.logger.info('parse done', {
       platform: parsed.platform,
       id: parsed.id,

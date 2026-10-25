@@ -83,6 +83,10 @@ describe('bilibili parseBilibili（真实 view/playurl fixture 回归）', () =>
     expect(ratios).toContain('360P');
     expect(asset.variants!.length).toBe(3);
     expect(new Set(ratios).size).toBe(ratios.length);
+
+    // 直链时效：upos URL 的 deadline= 过期时刻 → asset.expiresAt
+    expect(asset.expiresAt).toBeGreaterThan(1_700_000_000);
+    expect(r.expiresAt).toBe(asset.expiresAt);
   });
 
   test('多 P：每 P 一个 asset，分 P 标题注在 asset.partTitle', () => {
@@ -108,7 +112,11 @@ describe('bilibili parseBilibili（真实 view/playurl fixture 回归）', () =>
 
   test('载荷缺 streams：UPSTREAM_CHANGED（不许静默返回空数组）', () => {
     try {
-      parseBilibili({ via: 'api', fetchedAt: FETCHED_AT, body: { view: { code: 0, data: viewVideo.data }, streams: [] } });
+      parseBilibili({
+        via: 'api',
+        fetchedAt: FETCHED_AT,
+        body: { view: { code: 0, data: viewVideo.data }, streams: [] },
+      });
       expect.unreachable();
     } catch (e) {
       expect(e).toBeInstanceOf(AppError);
@@ -123,7 +131,14 @@ describe('bilibili parseBilibili（真实 view/playurl fixture 回归）', () =>
         fetchedAt: FETCHED_AT,
         body: {
           view: { code: 0, data: viewVideo.data },
-          streams: [{ page: 1, cid: 1, videos: [{ id: 80, codecs: 'avc1' }], audios: [] }],
+          streams: [
+            {
+              page: 1,
+              cid: 1,
+              videos: [{ id: 80, codecs: 'avc1' }],
+              audios: [],
+            },
+          ],
         },
       });
       expect.unreachable();
@@ -134,7 +149,11 @@ describe('bilibili parseBilibili（真实 view/playurl fixture 回归）', () =>
 
   test('非 api 载荷拒绝', () => {
     try {
-      parseBilibili({ via: 'html-embedded-json', fetchedAt: FETCHED_AT, body: {} });
+      parseBilibili({
+        via: 'html-embedded-json',
+        fetchedAt: FETCHED_AT,
+        body: {},
+      });
       expect.unreachable();
     } catch (e) {
       expect((e as AppError).code).toBe('UPSTREAM_CHANGED');
