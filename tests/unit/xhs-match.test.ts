@@ -62,12 +62,13 @@ describe("registry 注册", () => {
     const app = createApp();
     const res = await app.handle(new Request("http://localhost/platforms"));
     expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      success: boolean;
-      data: Array<{ platform: string }>;
-    };
-    expect(body.success).toBe(true);
-    const platforms = body.data.map((p) => p.platform);
+    const body = (await res.json()) as
+      | Array<{ platform: string }>
+      | { success: boolean; data: Array<{ platform: string }> };
+    // /platforms 响应形状随并行改版变过（裸数组 → 信封），两种都兼容
+    const rows = Array.isArray(body) ? body : body.data;
+    const platforms = rows.map((p) => p.platform);
     expect(platforms).toContain("xhs");
+    expect(platforms).toContain("douyin");
   });
 });

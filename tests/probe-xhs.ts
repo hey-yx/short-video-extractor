@@ -7,7 +7,7 @@ import { parseUrl } from "../src/services/parse.service";
 import { register } from "../src/platforms/registry";
 import { xhsAdapter } from "../src/platforms/xhs/adapter";
 import { browserGateway, closeBrowser } from "../src/infra/browser";
-import type { FetchCtx } from "../src/types/platform";
+import type { FetchCtx, ParseResult } from "../src/types/platform";
 
 // service 层跑法不经过 createApp()，这里手动注册（每个进程只注册一次）
 register(xhsAdapter);
@@ -24,7 +24,13 @@ async function verifyUrl(
 ): Promise<{ ok: boolean; kind: string }> {
   const t0 = Date.now();
   try {
-    const { result: r, cached } = await parseUrl(rawUrl, ctx);
+    // parse.service 的返回形状随并行改版变过（ParseResult → {result, cached}），两种都兼容
+    const out = (await parseUrl(rawUrl, ctx)) as unknown as {
+      result?: ParseResult;
+      cached?: boolean;
+    } & Partial<ParseResult>;
+    const r = (out.result ?? out) as ParseResult;
+    const cached = out.cached ?? false;
     console.log(
       `[verify] ok in ${Date.now() - t0}ms: ${r.platform}/${r.id} kind=${r.kind} via=${r.via} cached=${cached}`,
     );
