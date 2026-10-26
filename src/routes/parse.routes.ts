@@ -20,6 +20,8 @@ const httpCtx = (request: Request, platform: Platform | null): FetchCtx => ({
   // 海外平台出站代理（PROXY_<PLATFORM> 覆盖 → OUTBOUND_PROXY → HTTPS_PROXY 兜底）；
   // YouTube 直链绑 IP，/media 中转经 resolveProxy 同源取值；平台包不读 env
   proxyUrl: platform ? resolveProxy(platform) : undefined,
+  // Instagram 匿名 GraphQL doc_id（轮换配置，平台包不读 env）；未配置时 IG adapter 给可懂报错
+  instagramDocId: process.env.IG_GRAPHQL_DOC_ID || undefined,
 });
 
 const UPSTREAM_CODES = new Set(['UPSTREAM_ERROR', 'UPSTREAM_CHANGED', 'UPSTREAM_TIMEOUT', 'RISK_CONTROL']);

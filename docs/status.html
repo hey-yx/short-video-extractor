@@ -780,7 +780,7 @@
           UPSTREAM_TIMEOUT: '平台响应太慢',
           RISK_CONTROL: '平台风控拦截',
         };
-        var PLATFORM_NAMES = { douyin: '抖音', kuaishou: '快手', bilibili: 'B 站', xhs: '小红书', weibo: '微博', twitter: 'X（推特）', youtube: 'YouTube' };
+        var PLATFORM_NAMES = { douyin: '抖音', kuaishou: '快手', bilibili: 'B 站', xhs: '小红书', weibo: '微博', twitter: 'X（推特）', youtube: 'YouTube', instagram: 'Instagram' };
         var KIND_NAMES = { video: '视频', album: '图集', images: '图集', unknown: '其他' };
         function pName(p) {
           return PLATFORM_NAMES[p] || p;
@@ -985,7 +985,7 @@
 
         var HINTS = {
           INVALID_URL: ['链接不完整或不是视频分享链接', '检查是否复制了完整分享口令（含 https:// 链接），或换一条链接'],
-          UNSUPPORTED_PLATFORM: ['暂不支持这个平台', '目前支持 抖音 / 快手 / B 站 / 小红书 / YouTube 的分享链接'],
+          UNSUPPORTED_PLATFORM: ['暂不支持这个平台', '目前支持 抖音 / 快手 / B 站 / 小红书 / X / YouTube / Instagram 的分享链接'],
           UNSUPPORTED_CONTENT: ['地址不对或内容类型不支持', '检查服务地址是否填对（默认 http://127.0.0.1:7777）'],
           CONTENT_NOT_FOUND: ['作品不存在或已删除', '在平台 App 里确认作品还在，再复制一条新链接'],
           CONTENT_RESTRICTED: ['作品不可见（私密 / 仅自己可见 / 地区限制）', '换一条公开作品的链接'],
@@ -998,6 +998,7 @@
           MEDIA_PROXY_DISABLED: ['媒体中转未开启', '直链可直接下载，无需中转；确需中转请在服务端开启'],
           MEDIA_BAD_SIGNATURE: ['媒体中转签名不对', '直链可直接下载；如需中转请重新生成链接'],
           MEDIA_LINK_EXPIRED: ['媒体中转链接过期', '重新解析一次拿新链接'],
+          CONFIG_MISSING: ['Instagram 通道未配置', '服务端需要配置 IG_GRAPHQL_DOC_ID（doc_id 会随 IG 发版轮换，运维更新后重启）'],
           INTERNAL: ['服务内部错误', '稍后重试；持续失败请看服务日志'],
           NETWORK: ['连不上解析服务', '确认服务已启动、服务地址填对了、没被防火墙拦'],
         };

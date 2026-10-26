@@ -1,0 +1,144 @@
+{
+  "data": {
+    "xdt_api__v1__media__shortcode__web_info": {
+      "items": [
+        {
+          "code": "Dar829LpJx_",
+          "pk": "0000000000000000000",
+          "id": "0000000000000000000_0000000000",
+          "ad_id": null,
+          "taken_at": 1700000000,
+          "inventory_source": null,
+          "video_versions": null,
+          "coauthor_producers": null,
+          "invited_coauthor_producers": null,
+          "facepile_top_likers": null,
+          "is_dash_eligible": null,
+          "number_of_qualities": null,
+          "video_dash_manifest": null,
+          "image_versions2": {
+            "candidates": [
+              {
+                "url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.heic?stp=dst-jpg_e35_tt6&_nc_cat=deadbeef&_nc_map=deadbeef&ig_cache_key=MzkzOTUwOTk1ODQwMTYyOTMxMQ%3D%3D.3-ccb7-5&ccb=deadbeef&_nc_sid=deadbeef&efg=deadbeef&_nc_ohc=deadbeef&_nc_oc=deadbeef&_nc_ad=deadbeef&_nc_cid=deadbeef&_nc_zt=deadbeef&_nc_ht=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+                "height": 1350,
+                "width": 1080
+              },
+              {
+                "url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.heic?stp=dst-jpg_e35_p720x720_tt6&_nc_cat=deadbeef&_nc_map=deadbeef&ig_cache_key=MzkzOTUwOTk1ODQwMTYyOTMxMQ%3D%3D.3-ccb7-5&ccb=deadbeef&_nc_sid=deadbeef&efg=deadbeef&_nc_ohc=deadbeef&_nc_oc=deadbeef&_nc_ad=deadbeef&_nc_cid=deadbeef&_nc_zt=deadbeef&_nc_ht=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+                "height": 900,
+                "width": 720
+              },
+              {
+                "url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.heic?stp=dst-jpg_e35_p640x640_sh2.08_tt6&_nc_cat=deadbeef&_nc_map=deadbeef&ig_cache_key=MzkzOTUwOTk1ODQwMTYyOTMxMQ%3D%3D.3-ccb7-5&ccb=deadbeef&_nc_sid=deadbeef&efg=deadbeef&_nc_ohc=deadbeef&_nc_oc=deadbeef&_nc_ad=deadbeef&_nc_cid=deadbeef&_nc_zt=deadbeef&_nc_ht=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+                "height": 800,
+                "width": 640
+              }
+            ]
+          },
+          "is_paid_partnership": null,
+          "sponsor_tags": null,
+          "original_width": 1080,
+          "original_height": 1350,
+          "organic_tracking_token": "0000000000000000000",
+          "user": {
+            "pk": "0000000000000000000",
+            "username": "fake.user",
+            "full_name": "Fake User",
+            "profile_pic_url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?stp=dst-jpg_s150x150_tt6&efg=deadbeef&_nc_ht=deadbeef&_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_ohc=deadbeef&_nc_gid=deadbeef&edm=AOmX9WgBAAAA&ccb=deadbeef&oh=deadbeef&oe=6AF3C2C1&_nc_sid=deadbeef",
+            "is_private": false,
+            "is_embeds_disabled": false,
+            "is_unpublished": false,
+            "is_verified": false,
+            "friendship_status": null,
+            "latest_reel_media": null,
+            "id": "0000000000000000000_0000000000",
+            "__typename": "XDTUserDict",
+            "show_account_transparency_details": true,
+            "live_broadcast_visibility": null,
+            "live_broadcast_id": null,
+            "hd_profile_pic_url_info": {
+              "url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?efg=deadbeef&_nc_ht=deadbeef&_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_ohc=deadbeef&_nc_gid=deadbeef&edm=AOmX9WgBAAAA&ccb=deadbeef&oh=deadbeef&oe=6AF3C2C1&_nc_sid=deadbeef"
+            },
+            "aigm_account_label_info": null,
+            "transparency_product": null,
+            "transparency_product_enabled": false,
+            "transparency_label": null,
+            "ai_agent_owner_username": null
+          },
+          "group": null,
+          "comments_disabled": null,
+          "like_and_view_counts_disabled": null,
+          "can_viewer_reshare": null,
+          "product_type": "carousel_item",
+          "media_type": 1,
+          "usertags": null,
+          "media_overlay_info": null,
+          "carousel_media": null,
+          "location": null,
+          "has_audio": null,
+          "floating_context_items": null,
+          "clips_metadata": null,
+          "clips_attribution_info": null,
+          "ai_interactive_embodiment_attachment_style_info": null,
+          "has_liked": null,
+          "open_carousel_submission_state": null,
+          "carousel_parent_id": null,
+          "display_uri": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.heic?stp=c0.135.1080.1080a_dst-jpg_e15_fr_s1080x1080_tt6&_nc_ht=deadbeef&_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_ohc=deadbeef&_nc_gid=deadbeef&edm=AOmX9WgBAAAA&ccb=deadbeef&oh=deadbeef&oe=6AF3C2C1&_nc_sid=deadbeef",
+          "preview": null,
+          "accessibility_caption": "fake accessibility caption",
+          "previous_submitter": null,
+          "link": null,
+          "story_cta": null,
+          "like_count": null,
+          "logging_info_token": "0000000000000000000",
+          "carousel_media_count": null,
+          "comment_count": null,
+          "preview_comments": null,
+          "view_count": null,
+          "top_likers": null,
+          "hidden_likes_string_variant": null,
+          "fb_like_count": null,
+          "crosspost_metadata": null,
+          "social_context": null,
+          "can_reshare": null,
+          "enable_media_notes_production": null,
+          "media_repost_count": null,
+          "saved_collection_ids": null,
+          "has_viewer_saved": null,
+          "sharing_friction_info": {
+            "should_have_sharing_friction": false,
+            "bloks_app_url": null
+          },
+          "caption": null,
+          "boosted_status": null,
+          "boost_unavailable_identifier": null,
+          "boost_unavailable_reason": null,
+          "can_see_insights_as_brand": null,
+          "affiliate_info": null,
+          "ai_label_info": null,
+          "ig_media_sharing_disabled": null,
+          "feed_demotion_control": null,
+          "feed_recs_demotion_control": null,
+          "main_feed_carousel_starting_media_id": null,
+          "is_shared_from_basel": null,
+          "fb_comment_count": null,
+          "all_previous_submitters": null,
+          "follow_hashtag_info": null,
+          "media_attributions_data": [],
+          "wearable_attribution_info": null,
+          "caption_is_edited": false,
+          "commenting_disabled_for_viewer": null
+        }
+      ]
+    }
+  },
+  "extensions": {
+    "is_final": true,
+    "all_video_dash_prefetch_representations": [],
+    "server_metadata": {
+      "request_start_time_ms": 1792991685371,
+      "time_at_flush_ms": 1792991685527
+    }
+  },
+  "status": "ok"
+}

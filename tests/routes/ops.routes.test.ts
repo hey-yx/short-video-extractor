@@ -26,7 +26,7 @@ describe('ops 路由（/health /ready /platforms /metrics）', () => {
     expect(body.platforms).toBeGreaterThanOrEqual(4);
   });
 
-  test('/platforms：统一信封 + 五平台 + 字段齐全', async () => {
+  test('/platforms：统一信封 + 全平台 + 字段齐全', async () => {
     const res = await get('/platforms');
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
@@ -37,7 +37,16 @@ describe('ops 路由（/health /ready /platforms /metrics）', () => {
     expect(Array.isArray(body.data)).toBe(true);
     expect(body.data.length).toBe(listAdapters().length);
     const names = body.data.map((p) => p.platform).sort();
-    expect(names).toEqual(['bilibili', 'douyin', 'kuaishou', 'twitter', 'weibo', 'xhs', 'youtube']);
+    expect(names).toEqual([
+      'bilibili',
+      'douyin',
+      'instagram',
+      'kuaishou',
+      'twitter',
+      'weibo',
+      'xhs',
+      'youtube',
+    ]);
     for (const p of body.data) {
       expect(typeof p.description).toBe('string');
       expect(p.description.length).toBeGreaterThan(0);

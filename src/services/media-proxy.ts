@@ -54,6 +54,9 @@ const CDN_HOSTS = [
   'twimg.com',
   'googlevideo.com',
   'ytimg.com',
+  // Instagram 媒体 CDN（视频直链实域 *.fna.fbcdn.net；cdninstagram.com 为备用图床域）
+  'fbcdn.net',
+  'cdninstagram.com',
 ];
 
 /** SSRF 白名单：已注册平台的分享域 + 对应 CDN 域 */
@@ -84,6 +87,10 @@ const UPSTREAM_HEADERS: Array<{ match: string; referer?: string }> = [
   // googlevideo/ytimg 实测（2026-10-26）：Range 206 带不带 Referer 均可，按不带处理
   { match: 'googlevideo.com', referer: undefined },
   { match: 'ytimg.com', referer: undefined },
+  // IG CDN 实测（2026-10-26）：视频/图片/头像直链带不带 Referer 均 206，按不带处理；
+  // 视频直链实域是 *.fna.fbcdn.net，fbcdn.net 后缀匹配全覆盖（cdninstagram.com 备用域一并放行）
+  { match: 'fbcdn.net', referer: undefined },
+  { match: 'cdninstagram.com', referer: undefined },
 ];
 
 function upstreamHeadersFor(host: string): Record<string, string> {

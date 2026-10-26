@@ -14,6 +14,7 @@ export type ErrorCode =
   | 'MEDIA_PROXY_DISABLED'
   | 'MEDIA_BAD_SIGNATURE'
   | 'MEDIA_LINK_EXPIRED'
+  | 'CONFIG_MISSING'
   | 'INTERNAL';
 
 const HTTP_STATUS: Record<ErrorCode, number> = {
@@ -31,6 +32,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   MEDIA_PROXY_DISABLED: 501,
   MEDIA_BAD_SIGNATURE: 403,
   MEDIA_LINK_EXPIRED: 410,
+  CONFIG_MISSING: 501,
   INTERNAL: 500,
 };
 

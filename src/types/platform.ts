@@ -3,7 +3,8 @@
  * 平台适配层（src/platforms/**）的 parse() 输出此结构；对外 API 直接序列化它。
  */
 
-export type Platform = 'douyin' | 'xhs' | 'kuaishou' | 'bilibili' | 'weibo' | 'twitter' | 'youtube';
+export type Platform =
+  'douyin' | 'xhs' | 'kuaishou' | 'bilibili' | 'weibo' | 'twitter' | 'youtube' | 'instagram';
 
 export type AssetType = 'video' | 'image' | 'audio' | 'cover';
 
@@ -124,6 +125,11 @@ export interface FetchCtx {
    * YouTube 直链绑 IP：解析与 /media 中转必须用同一个值。
    */
   proxyUrl?: string;
+  /**
+   * Instagram 匿名 GraphQL doc_id（IG 前端发版会轮换，必须配置化）。
+   * 由 routes 层从 env IG_GRAPHQL_DOC_ID 读出注入；平台包不读 env；未配置时 IG adapter 给可懂报错。
+   */
+  instagramDocId?: string;
 }
 
 /** 平台原始载荷：可 JSON 序列化，fixture 才能录制回放 */

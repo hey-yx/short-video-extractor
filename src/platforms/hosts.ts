@@ -10,6 +10,8 @@ export const PLATFORM_HOSTS: Record<Platform, readonly string[]> = {
   // twitter.com 覆盖 mobile.twitter.com；x.com 覆盖 v.x.com（后缀匹配）；t.co 短链展开走通用 resolve
   twitter: ['x.com', 'twitter.com', 't.co'],
   youtube: ['youtube.com', 'youtu.be', 'youtube-nocookie.com'],
+  // instagr.am 301 到 instagram.com（实测），但分享口令可能直接带原始短域
+  instagram: ['instagram.com', 'instagr.am'],
 };
 
 /** host 是否属于平台（后缀匹配：news.douyin.com ∈ douyin.com） */

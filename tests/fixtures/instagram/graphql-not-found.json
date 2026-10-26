@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "message": "execution error",
+      "path": [
+        "xdt_api__v1__media__shortcode__web_info"
+      ],
+      "severity": "CRITICAL"
+    }
+  ],
+  "data": null
+}

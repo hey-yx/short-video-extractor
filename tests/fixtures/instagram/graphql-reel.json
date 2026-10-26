@@ -1,0 +1,266 @@
+{
+  "data": {
+    "xdt_api__v1__media__shortcode__web_info": {
+      "items": [
+        {
+          "code": "C9z1OIUi8Yh",
+          "pk": "0000000000000000000",
+          "id": "0000000000000000000_0000000000",
+          "ad_id": null,
+          "taken_at": 1700000000,
+          "inventory_source": null,
+          "video_versions": [
+            {
+              "width": 640,
+              "height": 360,
+              "url": "https://cdn-fake.fbcdn.net/o1/v/fake/FAKEPATH1234567890.mp4?_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_sid=deadbeef&_nc_ht=deadbeef&_nc_ohc=deadbeef&efg=deadbeef&ccb=deadbeef&vs=deadbeef&_nc_vs=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&_nc_map=deadbeef&_nc_zt=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+              "type": 101
+            },
+            {
+              "width": 640,
+              "height": 360,
+              "url": "https://cdn-fake.fbcdn.net/o1/v/fake/FAKEPATH1234567890.mp4?_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_sid=deadbeef&_nc_ht=deadbeef&_nc_ohc=deadbeef&efg=deadbeef&ccb=deadbeef&vs=deadbeef&_nc_vs=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&_nc_map=deadbeef&_nc_zt=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+              "type": 102
+            }
+          ],
+          "coauthor_producers": [],
+          "invited_coauthor_producers": [],
+          "facepile_top_likers": null,
+          "is_dash_eligible": 1,
+          "number_of_qualities": 1,
+          "video_dash_manifest": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd\" profiles=\"urn:mpeg:dash:profile:isoff-on-demand:2011\" minBufferTime=\"PT2S\" type=\"static\" mediaPresentationDuration=\"PT33.034481S\" FBManifestTimestamp=\"1792990929\" FBManifestIdentifier=\"FqL79q0NGBBpZ19kYXNoX2Jhc2VsaW5lGSbAmZz2v5G+Bdr7sq3DxMYGIhgYZGFzaF9sbl9oZWFhY192YnIzX2F1ZGlvIjbuDBQAEhQCAA==\"><Period id=\"0\" duration=\"PT33.034481S\"><AdaptationSet id=\"0\" contentType=\"video\" subsegmentAlignment=\"true\" par=\"16:9\" FBUnifiedUploadResolutionMos=\"360:80.1\"><SupplementalProperty schemeIdUri=\"urn:mpeg:mpegB:cicp:TransferCharacteristics\" value=\"1\"/><Representation id=\"1843958759448301v\" bandwidth=\"293180\" codecs=\"avc1.4d001e\" mimeType=\"video/mp4\" sar=\"1:1\" FBEncodingTag=\"dash_baseline_3_v1\" FBContentLength=\"1210635\" FBPlaybackResolutionMos=\"0:100,360:51.4,480:49.2,720:49.2,1080:51.7,2160:57.2\" FBPlaybackResolutionMosConfidenceLevel=\"high\" FBPlaybackResolutionCsvqm=\"0:100,360:66.2,480:64,720:64,1080:66.6,2160:72.5\" FBAbrPolicyTags=\"\" width=\"640\" height=\"360\" frameRate=\"14848/512\" FBQualityClass=\"sd\" FBQualityLabel=\"360p\"><BaseURL>https://cdn-fake.fbcdn.net/fake-dash.mpd</BaseURL><SegmentBase indexRange=\"888-1003\" timescale=\"14848\" FBMinimumPrefetchRange=\"1004-19322\" FBFirstSegmentRange=\"1004-179935\" FBFirstSegmentDuration=\"5000\" FBSecondSegmentRange=\"179936-412113\" FBPrefetchSegmentRange=\"1004-179935\" FBPrefetchSegmentDuration=\"5000\"><Initialization range=\"0-887\"/></SegmentBase></Representation></AdaptationSet><AdaptationSet id=\"1\" contentType=\"audio\" subsegmentStartsWithSAP=\"1\" subsegmentAlignment=\"true\"><Representation id=\"1544014962853472a\" bandwidth=\"44378\" codecs=\"mp4a.40.5\" mimeType=\"audio/mp4\" FBAvgBitrate=\"44378\" audioSamplingRate=\"48000\" FBEncodingTag=\"dash_ln_heaac_vbr3_audio\" FBContentLength=\"183879\" FBPaqMos=\"93.29\" FBAbrPolicyTags=\"\"><AudioChannelConfiguration schemeIdUri=\"urn:mpeg:dash:23003:3:audio_channel_configuration:2011\" value=\"2\"/><BaseURL>https://cdn-fake.fbcdn.net/fake-dash.mpd</BaseURL><SegmentBase indexRange=\"824-1059\" timescale=\"48000\" FBMinimumPrefetchRange=\"1060-1420\" FBFirstSegmentRange=\"1060-12648\" FBFirstSegmentDuration=\"2027\" FBSecondSegmentRange=\"12649-23789\" FBPrefetchSegmentRange=\"1060-23789\" FBPrefetchSegmentDuration=\"4032\"><Initialization range=\"0-823\"/></SegmentBase></Representation></AdaptationSet></Period></MPD>\n",
+          "image_versions2": {
+            "candidates": [
+              {
+                "url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?stp=dst-jpg_e15_tt6&_nc_cat=deadbeef&_nc_map=deadbeef&ig_cache_key=MzQxOTMxMDYwOTU3Njc0MDM4NQ%3D%3D.3-ccb7-5&ccb=deadbeef&_nc_sid=deadbeef&efg=deadbeef&_nc_ohc=deadbeef&_nc_oc=deadbeef&_nc_ad=deadbeef&_nc_cid=deadbeef&_nc_zt=deadbeef&_nc_ht=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+                "height": 1215,
+                "width": 2160
+              },
+              {
+                "url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?stp=dst-jpg_e35_s1080x1080_sh2.08_tt6&_nc_cat=deadbeef&_nc_map=deadbeef&ig_cache_key=MzQxOTMxMDYwOTU3Njc0MDM4NQ%3D%3D.3-ccb7-5&ccb=deadbeef&_nc_sid=deadbeef&efg=deadbeef&_nc_ohc=deadbeef&_nc_oc=deadbeef&_nc_ad=deadbeef&_nc_cid=deadbeef&_nc_zt=deadbeef&_nc_ht=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+                "height": 608,
+                "width": 1080
+              },
+              {
+                "url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?stp=dst-jpg_e35_s720x720_sh2.08_tt6&_nc_cat=deadbeef&_nc_map=deadbeef&ig_cache_key=MzQxOTMxMDYwOTU3Njc0MDM4NQ%3D%3D.3-ccb7-5&ccb=deadbeef&_nc_sid=deadbeef&efg=deadbeef&_nc_ohc=deadbeef&_nc_oc=deadbeef&_nc_ad=deadbeef&_nc_cid=deadbeef&_nc_zt=deadbeef&_nc_ht=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+                "height": 405,
+                "width": 720
+              }
+            ]
+          },
+          "is_paid_partnership": false,
+          "sponsor_tags": null,
+          "original_width": 3840,
+          "original_height": 2160,
+          "organic_tracking_token": "0000000000000000000",
+          "user": {
+            "pk": "0000000000000000000",
+            "username": "fake.user",
+            "full_name": "Fake User",
+            "profile_pic_url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?stp=dst-jpg_s150x150_tt6&efg=deadbeef&_nc_ht=deadbeef&_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_ohc=deadbeef&_nc_gid=deadbeef&edm=AOmX9WgBAAAA&ccb=deadbeef&oh=deadbeef&oe=6AF3C2C1&_nc_sid=deadbeef",
+            "is_private": false,
+            "is_embeds_disabled": false,
+            "is_unpublished": false,
+            "is_verified": false,
+            "friendship_status": null,
+            "latest_reel_media": null,
+            "id": "0000000000000000000_0000000000",
+            "__typename": "XDTUserDict",
+            "show_account_transparency_details": true,
+            "live_broadcast_visibility": null,
+            "live_broadcast_id": null,
+            "hd_profile_pic_url_info": {
+              "url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?efg=deadbeef&_nc_ht=deadbeef&_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_ohc=deadbeef&_nc_gid=deadbeef&edm=AOmX9WgBAAAA&ccb=deadbeef&oh=deadbeef&oe=6AF3C2C1&_nc_sid=deadbeef"
+            },
+            "aigm_account_label_info": null,
+            "transparency_product": null,
+            "transparency_product_enabled": false,
+            "transparency_label": null,
+            "ai_agent_owner_username": null
+          },
+          "group": null,
+          "comments_disabled": null,
+          "like_and_view_counts_disabled": false,
+          "can_viewer_reshare": true,
+          "product_type": "clips",
+          "media_type": 2,
+          "usertags": {
+            "in": [
+              {
+                "user": {
+                  "pk": "0000000000000000000",
+                  "full_name": "Fake User",
+                  "username": "fake.user",
+                  "profile_pic_url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?stp=dst-jpg_s150x150_tt6&efg=deadbeef&_nc_ht=deadbeef&_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_ohc=deadbeef&_nc_gid=deadbeef&edm=AOmX9WgBAAAA&ccb=deadbeef&oh=deadbeef&oe=6AF3C2C1&_nc_sid=deadbeef",
+                  "is_verified": false,
+                  "id": "0000000000000000000_0000000000",
+                  "aigm_account_label_info": null
+                },
+                "position": [
+                  0,
+                  0
+                ]
+              },
+              {
+                "user": {
+                  "pk": "0000000000000000000",
+                  "full_name": "Fake User",
+                  "username": "fake.user",
+                  "profile_pic_url": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?stp=dst-jpg_s150x150_tt6&efg=deadbeef&_nc_ht=deadbeef&_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_ohc=deadbeef&_nc_gid=deadbeef&edm=AOmX9WgBAAAA&ccb=deadbeef&oh=deadbeef&oe=6AF3C2C1&_nc_sid=deadbeef",
+                  "is_verified": false,
+                  "id": "0000000000000000000_0000000000",
+                  "aigm_account_label_info": null
+                },
+                "position": [
+                  0,
+                  0
+                ]
+              }
+            ]
+          },
+          "media_overlay_info": null,
+          "carousel_media": null,
+          "location": null,
+          "has_audio": true,
+          "floating_context_items": null,
+          "clips_metadata": {
+            "audio_type": "original_sounds",
+            "achievements_info": null,
+            "music_info": null,
+            "original_sound_info": {
+              "original_audio_title": "Original audio",
+              "should_mute_audio": false,
+              "audio_asset_id": "0000000000000000000",
+              "consumption_info": {
+                "should_mute_audio_reason": "",
+                "should_mute_audio_reason_type": null,
+                "is_trending_in_clips": false
+              },
+              "ig_artist": {
+                "username": "fake.user",
+                "id": "0000000000000000000_0000000000"
+              },
+              "is_explicit": false,
+              "audio_filter_infos": []
+            },
+            "is_shared_to_fb": false,
+            "originality_info": null
+          },
+          "clips_attribution_info": null,
+          "ai_interactive_embodiment_attachment_style_info": null,
+          "has_liked": false,
+          "open_carousel_submission_state": null,
+          "carousel_parent_id": null,
+          "display_uri": "https://cdn-fake.fbcdn.net/v/t51.2885-15/FAKEIMGPATH01.jpg?stp=c472.0.1215.1215a_dst-jpg_e35_s1080x1080_sh2.08_tt6&_nc_ht=deadbeef&_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_ohc=deadbeef&_nc_gid=deadbeef&edm=AOmX9WgBAAAA&ccb=deadbeef&oh=deadbeef&oe=6AF3C2C1&_nc_sid=deadbeef",
+          "preview": null,
+          "accessibility_caption": "fake accessibility caption",
+          "previous_submitter": null,
+          "link": null,
+          "story_cta": null,
+          "like_count": 43,
+          "logging_info_token": "0000000000000000000",
+          "carousel_media_count": null,
+          "comment_count": 7,
+          "preview_comments": [],
+          "view_count": null,
+          "top_likers": null,
+          "hidden_likes_string_variant": -1,
+          "fb_like_count": null,
+          "crosspost_metadata": null,
+          "social_context": null,
+          "can_reshare": null,
+          "enable_media_notes_production": false,
+          "media_repost_count": null,
+          "saved_collection_ids": null,
+          "has_viewer_saved": null,
+          "sharing_friction_info": {
+            "should_have_sharing_friction": false,
+            "bloks_app_url": null
+          },
+          "caption": {
+            "text": "fake caption line one\nline two #faketag",
+            "pk": "0000000000000000000",
+            "has_translation": null,
+            "created_at": 1721833692
+          },
+          "boosted_status": null,
+          "boost_unavailable_identifier": null,
+          "boost_unavailable_reason": null,
+          "can_see_insights_as_brand": false,
+          "affiliate_info": null,
+          "ai_label_info": null,
+          "ig_media_sharing_disabled": false,
+          "feed_demotion_control": null,
+          "feed_recs_demotion_control": null,
+          "main_feed_carousel_starting_media_id": null,
+          "is_shared_from_basel": null,
+          "fb_comment_count": null,
+          "all_previous_submitters": null,
+          "follow_hashtag_info": null,
+          "media_attributions_data": [],
+          "wearable_attribution_info": null,
+          "caption_is_edited": false,
+          "commenting_disabled_for_viewer": null
+        }
+      ]
+    }
+  },
+  "extensions": {
+    "is_final": true,
+    "all_video_dash_prefetch_representations": [
+      {
+        "video_id": "3419310609576740385",
+        "representations": [
+          {
+            "base_url": "https://cdn-fake.fbcdn.net/o1/v/fake/FAKEPATH1234567890.mp4?_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_sid=deadbeef&_nc_ht=deadbeef&_nc_ohc=deadbeef&efg=deadbeef&ccb=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&_nc_map=deadbeef&_nc_zt=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+            "bandwidth": 293180,
+            "width": 640,
+            "height": 360,
+            "mime_type": "video/mp4",
+            "codecs": "avc1.4d001e",
+            "playback_resolution_mos": "0:100,360:51.4,480:49.2,720:49.2,1080:51.7,2160:57.2",
+            "playback_resolution_csvqm": "0:100,360:66.2,480:64,720:64,1080:66.6,2160:72.5",
+            "segments": [
+              {
+                "start": 0,
+                "end": 887
+              },
+              {
+                "start": 888,
+                "end": 1003
+              }
+            ],
+            "representation_id": "1843958759448301v"
+          },
+          {
+            "base_url": "https://cdn-fake.fbcdn.net/o1/v/fake/FAKEPATH1234567890.mp4?_nc_cat=deadbeef&_nc_oc=deadbeef&_nc_sid=deadbeef&_nc_ht=deadbeef&_nc_ohc=deadbeef&efg=deadbeef&ccb=deadbeef&_nc_gid=deadbeef&_nc_ss=deadbeef&_nc_map=deadbeef&_nc_zt=deadbeef&oh=deadbeef&oe=6AF3C2C1",
+            "bandwidth": 44378,
+            "width": 0,
+            "height": 0,
+            "mime_type": "audio/mp4",
+            "codecs": "mp4a.40.5",
+            "playback_resolution_mos": "",
+            "playback_resolution_csvqm": null,
+            "segments": [
+              {
+                "start": 0,
+                "end": 823
+              },
+              {
+                "start": 824,
+                "end": 1059
+              }
+            ],
+            "representation_id": "1544014962853472a"
+          }
+        ],
+        "initial_representation_ids": []
+      }
+    ],
+    "server_metadata": {
+      "request_start_time_ms": 1792990929487,
+      "time_at_flush_ms": 1792990929707
+    }
+  },
+  "status": "ok"
+}
