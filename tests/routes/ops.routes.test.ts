@@ -37,7 +37,7 @@ describe('ops 路由（/health /ready /platforms /metrics）', () => {
     expect(Array.isArray(body.data)).toBe(true);
     expect(body.data.length).toBe(listAdapters().length);
     const names = body.data.map((p) => p.platform).sort();
-    expect(names).toEqual(['bilibili', 'douyin', 'kuaishou', 'twitter', 'weibo', 'xhs']);
+    expect(names).toEqual(['bilibili', 'douyin', 'kuaishou', 'twitter', 'weibo', 'xhs', 'youtube']);
     for (const p of body.data) {
       expect(typeof p.description).toBe('string');
       expect(p.description.length).toBeGreaterThan(0);

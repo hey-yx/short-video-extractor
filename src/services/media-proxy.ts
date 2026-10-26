@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { AppError } from '@/core/errors';
+import { proxiedFetch } from '@/core/fetch-proxy';
+import { resolveProxy } from '@/infra/proxy';
 import { hostMatches, PLATFORM_HOSTS } from '@/platforms/hosts';
 
 /**
@@ -50,6 +52,8 @@ const CDN_HOSTS = [
   'weibocdn.com',
   'sinaimg.cn',
   'twimg.com',
+  'googlevideo.com',
+  'ytimg.com',
 ];
 
 /** SSRF 白名单：已注册平台的分享域 + 对应 CDN 域 */
@@ -77,6 +81,9 @@ const UPSTREAM_HEADERS: Array<{ match: string; referer?: string }> = [
   { match: 'sinaimg.cn', referer: 'https://weibo.com/' },
   // twimg 实测（2026-10-26）：video.twimg.com 与 pbs.twimg.com 直链无 Referer 206/200，带不带均可
   { match: 'twimg.com', referer: undefined },
+  // googlevideo/ytimg 实测（2026-10-26）：Range 206 带不带 Referer 均可，按不带处理
+  { match: 'googlevideo.com', referer: undefined },
+  { match: 'ytimg.com', referer: undefined },
 ];
 
 function upstreamHeadersFor(host: string): Record<string, string> {
@@ -218,7 +225,9 @@ export async function fetchUpstream(
     if (v) headers.set(k, v);
   }
 
-  const res = await fetch(u, { method, headers, redirect: 'manual' });
+  // googlevideo 直链绑解析出口 IP：拉流与解析走同一代理（resolveProxy 同源取值），跨出口必 403
+  const proxy = hostMatches(u.hostname, 'googlevideo.com') ? resolveProxy('youtube') : undefined;
+  const res = await proxiedFetch(u, { method, headers, redirect: 'manual', proxy });
   if (res.status >= 300 && res.status < 400) {
     const loc = res.headers.get('location');
     await res.body?.cancel(); // 302 必须取消 body，防连接泄漏

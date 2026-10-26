@@ -9,6 +9,7 @@ export const PLATFORM_HOSTS: Record<Platform, readonly string[]> = {
   weibo: ['weibo.com', 'weibo.cn', 'weibo.com.cn', 't.cn'],
   // twitter.com 覆盖 mobile.twitter.com；x.com 覆盖 v.x.com（后缀匹配）；t.co 短链展开走通用 resolve
   twitter: ['x.com', 'twitter.com', 't.co'],
+  youtube: ['youtube.com', 'youtu.be', 'youtube-nocookie.com'],
 };
 
 /** host 是否属于平台（后缀匹配：news.douyin.com ∈ douyin.com） */

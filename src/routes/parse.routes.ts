@@ -7,27 +7,29 @@ import { clientIp, ipRateLimiter } from '@/services/limiter';
 import { asFetchLogger, requestLogger } from '@/infra/logger';
 import { observeParseDuration, recordCacheHit, recordParse, recordUpstreamError } from '@/infra/metrics';
 import { findPlatform } from '@/platforms/hosts';
-import type { FetchCtx } from '@/types/platform';
+import { resolveProxy } from '@/infra/proxy';
+import type { FetchCtx, Platform } from '@/types/platform';
 
 /** 解析通道上下文：pino 子 logger（带 requestId），浏览器能力由 infra 注入 */
-const httpCtx = (request: Request): FetchCtx => ({
+const httpCtx = (request: Request, platform: Platform | null): FetchCtx => ({
   signal: AbortSignal.timeout(15_000),
   channel: 'http',
   // 需要浏览器的平台（小红书）从这里拿页面操作能力；平台包不见 puppeteer
   browser: browserGateway,
   logger: asFetchLogger(requestLogger(request)),
-  // 海外平台出站代理（部署目标网络出不了境时必配）；平台包不读 env，代理串从这里注入
-  proxyUrl: process.env.TWITTER_PROXY || undefined,
+  // 海外平台出站代理（PROXY_<PLATFORM> 覆盖 → OUTBOUND_PROXY → HTTPS_PROXY 兜底）；
+  // YouTube 直链绑 IP，/media 中转经 resolveProxy 同源取值；平台包不读 env
+  proxyUrl: platform ? resolveProxy(platform) : undefined,
 });
 
 const UPSTREAM_CODES = new Set(['UPSTREAM_ERROR', 'UPSTREAM_CHANGED', 'UPSTREAM_TIMEOUT', 'RISK_CONTROL']);
 
 /** 错误路径的平台归因：match 层拿不到 platform，从域名尽力识别 */
-function guessPlatform(rawUrl: string): string {
+function guessPlatform(rawUrl: string): Platform | null {
   try {
-    return findPlatform(new URL(rawUrl)) ?? 'unknown';
+    return findPlatform(new URL(rawUrl));
   } catch {
-    return 'unknown';
+    return null;
   }
 }
 
@@ -36,7 +38,7 @@ async function handleParse(
   request: Request,
   server?: { requestIP(request: Request): unknown } | null,
 ): Promise<{ success: boolean; data: unknown; cached?: boolean }> {
-  const ctx = httpCtx(request);
+  const ctx = httpCtx(request, guessPlatform(rawUrl));
   const ip = clientIp(request.headers, request, server);
   if (!ipRateLimiter.take(ip)) {
     throw new AppError('RATE_LIMITED', '请求过于频繁，请稍后再试', { ip });
@@ -50,7 +52,7 @@ async function handleParse(
     if (cached) recordCacheHit();
     return { ...ok(result), cached };
   } catch (error) {
-    const platform = guessPlatform(rawUrl);
+    const platform = guessPlatform(rawUrl) ?? 'unknown';
     const code = error instanceof AppError ? error.code : 'INTERNAL';
     recordParse(platform, code);
     observeParseDuration(platform, performance.now() - startedAt);

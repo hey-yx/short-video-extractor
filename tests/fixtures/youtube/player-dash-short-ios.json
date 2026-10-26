@@ -1,0 +1,749 @@
+{
+  "playabilityStatus": {
+    "status": "OK",
+    "playableInEmbed": true,
+    "offlineability": {
+      "buttonRenderer": {
+        "navigationEndpoint": {
+          "clickTrackingParams": "CAkQ6ewBIhMIlvHX_NTVlwMV3YbpBR2rZz3iygEE22-oag==",
+          "ypcGetOfflineUpsellEndpoint": {
+            "params": "ChPqqN25AQ0KC3BqV1k1Tmtqc3JZIgtwaldZNU5ranNyWSoVCAkYAVIPCgtwaldZNU5ranNyWSAB"
+          }
+        },
+        "trackingParams": "CAkQ6ewBIhMIlvHX_NTVlwMV3YbpBR2rZz3i"
+      }
+    },
+    "pictureInPicture": {
+      "pictureInPictureRenderer": {
+        "playableInPip": true,
+        "offByDefault": false,
+        "shouldResumeOnHead": false,
+        "pictureInPicturePlayability": "PICTURE_IN_PICTURE_PLAYABILITY_ALL"
+      }
+    },
+    "miniplayer": {
+      "miniplayerRenderer": {
+        "playbackMode": "PLAYBACK_MODE_ALLOW",
+        "enableStashedPlayback": false
+      }
+    },
+    "contextParams": "Q0FFU0FnZ0M="
+  },
+  "streamingData": {
+    "expiresInSeconds": "21540",
+    "formats": [],
+    "adaptiveFormats": [
+      {
+        "itag": 137,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=137&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"avc1.640028\"",
+        "bitrate": 2299254,
+        "width": 1080,
+        "height": 1920,
+        "initRange": {
+          "start": "0",
+          "end": "741"
+        },
+        "indexRange": {
+          "start": "742",
+          "end": "809"
+        },
+        "lastModified": "1765151926146420",
+        "contentLength": "5305598",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 2147363,
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_1080P"
+      },
+      {
+        "itag": 248,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=248&mime=video%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/webm; codecs=\"vp09.00.40.08\"",
+        "bitrate": 2052652,
+        "width": 1080,
+        "height": 1920,
+        "initRange": {
+          "start": "0",
+          "end": "219"
+        },
+        "indexRange": {
+          "start": "220",
+          "end": "269"
+        },
+        "lastModified": "1765152227525526",
+        "contentLength": "5045862",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 2042238,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_1080P"
+      },
+      {
+        "itag": 399,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=399&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"av01.0.08M.08\"",
+        "bitrate": 1807943,
+        "width": 1080,
+        "height": 1920,
+        "initRange": {
+          "start": "0",
+          "end": "699"
+        },
+        "indexRange": {
+          "start": "700",
+          "end": "767"
+        },
+        "lastModified": "1765152690071149",
+        "contentLength": "4315998",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 1746837,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_1080P"
+      },
+      {
+        "itag": 136,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=136&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"avc1.4D401F\"",
+        "bitrate": 1064670,
+        "width": 720,
+        "height": 1280,
+        "initRange": {
+          "start": "0",
+          "end": "739"
+        },
+        "indexRange": {
+          "start": "740",
+          "end": "807"
+        },
+        "lastModified": "1765151897417936",
+        "contentLength": "2560908",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 1036490,
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_720P"
+      },
+      {
+        "itag": 247,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=247&mime=video%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/webm; codecs=\"vp09.00.31.08\"",
+        "bitrate": 1491438,
+        "width": 720,
+        "height": 1280,
+        "initRange": {
+          "start": "0",
+          "end": "219"
+        },
+        "indexRange": {
+          "start": "220",
+          "end": "269"
+        },
+        "lastModified": "1765152111541686",
+        "contentLength": "3652294",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 1478212,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_720P"
+      },
+      {
+        "itag": 398,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=398&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"av01.0.05M.08\"",
+        "bitrate": 1092875,
+        "width": 720,
+        "height": 1280,
+        "initRange": {
+          "start": "0",
+          "end": "699"
+        },
+        "indexRange": {
+          "start": "700",
+          "end": "767"
+        },
+        "lastModified": "1765151988050766",
+        "contentLength": "2587595",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 1047291,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_720P"
+      },
+      {
+        "itag": 779,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=779&mime=video%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/webm; codecs=\"vp09.00.31.08\"",
+        "bitrate": 455908,
+        "width": 608,
+        "height": 1080,
+        "initRange": {
+          "start": "0",
+          "end": "218"
+        },
+        "indexRange": {
+          "start": "219",
+          "end": "268"
+        },
+        "lastModified": "1765152001224745",
+        "contentLength": "1119432",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 453073,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_608P_SAVER"
+      },
+      {
+        "itag": 780,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=780&mime=video%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/webm; codecs=\"vp09.00.31.08\"",
+        "bitrate": 870741,
+        "width": 608,
+        "height": 1080,
+        "initRange": {
+          "start": "0",
+          "end": "219"
+        },
+        "indexRange": {
+          "start": "220",
+          "end": "269"
+        },
+        "lastModified": "1765152318849185",
+        "contentLength": "2124513",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 859865,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_608P"
+      },
+      {
+        "itag": 788,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=788&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"av01.0.04M.08\"",
+        "bitrate": 542117,
+        "width": 608,
+        "height": 1080,
+        "initRange": {
+          "start": "0",
+          "end": "699"
+        },
+        "indexRange": {
+          "start": "700",
+          "end": "767"
+        },
+        "lastModified": "1765152366475106",
+        "contentLength": "1247756",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 505011,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_608P"
+      },
+      {
+        "itag": 135,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=135&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"avc1.4D401F\"",
+        "bitrate": 504525,
+        "width": 480,
+        "height": 854,
+        "initRange": {
+          "start": "0",
+          "end": "740"
+        },
+        "indexRange": {
+          "start": "741",
+          "end": "808"
+        },
+        "lastModified": "1765151791956787",
+        "contentLength": "1225147",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 495860,
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_480P"
+      },
+      {
+        "itag": 397,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=397&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"av01.0.04M.08\"",
+        "bitrate": 568831,
+        "width": 480,
+        "height": 854,
+        "initRange": {
+          "start": "0",
+          "end": "699"
+        },
+        "indexRange": {
+          "start": "700",
+          "end": "767"
+        },
+        "lastModified": "1765152084724891",
+        "contentLength": "1318189",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 533517,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_480P"
+      },
+      {
+        "itag": 134,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=134&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"avc1.4D401E\"",
+        "bitrate": 316240,
+        "width": 360,
+        "height": 640,
+        "initRange": {
+          "start": "0",
+          "end": "740"
+        },
+        "indexRange": {
+          "start": "741",
+          "end": "808"
+        },
+        "lastModified": "1765151865890495",
+        "contentLength": "664201",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 268825,
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_360P"
+      },
+      {
+        "itag": 243,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=243&mime=video%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/webm; codecs=\"vp09.00.21.08\"",
+        "bitrate": 173008,
+        "width": 360,
+        "height": 640,
+        "initRange": {
+          "start": "0",
+          "end": "218"
+        },
+        "indexRange": {
+          "start": "219",
+          "end": "268"
+        },
+        "lastModified": "1765152112245755",
+        "contentLength": "412802",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 167075,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_360P_SAVER"
+      },
+      {
+        "itag": 396,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=396&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"av01.0.01M.08\"",
+        "bitrate": 312596,
+        "width": 360,
+        "height": 640,
+        "initRange": {
+          "start": "0",
+          "end": "699"
+        },
+        "indexRange": {
+          "start": "700",
+          "end": "767"
+        },
+        "lastModified": "1765151967376646",
+        "contentLength": "731152",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 295923,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_360P"
+      },
+      {
+        "itag": 133,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=133&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"avc1.4D4015\"",
+        "bitrate": 162507,
+        "width": 240,
+        "height": 426,
+        "initRange": {
+          "start": "0",
+          "end": "739"
+        },
+        "indexRange": {
+          "start": "740",
+          "end": "807"
+        },
+        "lastModified": "1765151798296600",
+        "contentLength": "334322",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 135311,
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_240P"
+      },
+      {
+        "itag": 242,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=242&mime=video%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/webm; codecs=\"vp09.00.20.08\"",
+        "bitrate": 97395,
+        "width": 240,
+        "height": 426,
+        "initRange": {
+          "start": "0",
+          "end": "217"
+        },
+        "indexRange": {
+          "start": "218",
+          "end": "267"
+        },
+        "lastModified": "1765152111961778",
+        "contentLength": "232881",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 94255,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_240P_SAVER"
+      },
+      {
+        "itag": 395,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=395&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"av01.0.00M.08\"",
+        "bitrate": 93422,
+        "width": 240,
+        "height": 426,
+        "initRange": {
+          "start": "0",
+          "end": "699"
+        },
+        "indexRange": {
+          "start": "700",
+          "end": "767"
+        },
+        "lastModified": "1765151732144981",
+        "contentLength": "220709",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 89328,
+        "colorInfo": {
+          "primaries": "COLOR_PRIMARIES_BT709",
+          "transferCharacteristics": "COLOR_TRANSFER_CHARACTERISTICS_BT709",
+          "matrixCoefficients": "COLOR_MATRIX_COEFFICIENTS_BT709"
+        },
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_240P"
+      },
+      {
+        "itag": 160,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=160&mime=video%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "video/mp4; codecs=\"avc1.4D400C\"",
+        "bitrate": 79342,
+        "width": 144,
+        "height": 256,
+        "initRange": {
+          "start": "0",
+          "end": "738"
+        },
+        "indexRange": {
+          "start": "739",
+          "end": "806"
+        },
+        "lastModified": "1765151811284655",
+        "contentLength": "165071",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 66810,
+        "approxDurationMs": "19766",
+        "qualityOrdinal": "QUALITY_ORDINAL_144P"
+      },
+      {
+        "itag": 139,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=139&mime=audio%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/mp4; codecs=\"mp4a.40.5\"",
+        "bitrate": 49926,
+        "initRange": {
+          "start": "0",
+          "end": "731"
+        },
+        "indexRange": {
+          "start": "732",
+          "end": "787"
+        },
+        "lastModified": "1765151529541955",
+        "contentLength": "122460",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 49289,
+        "audioQuality": "AUDIO_QUALITY_LOW",
+        "approxDurationMs": "19876",
+        "trackAbsoluteLoudnessLkfs": -19.73,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      },
+      {
+        "itag": 139,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=139&mime=audio%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/mp4; codecs=\"mp4a.40.5\"",
+        "bitrate": 49929,
+        "initRange": {
+          "start": "0",
+          "end": "731"
+        },
+        "indexRange": {
+          "start": "732",
+          "end": "787"
+        },
+        "lastModified": "1765151551603318",
+        "contentLength": "122479",
+        "xtags": "CggKA2RyYxIBMQ",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 49297,
+        "audioQuality": "AUDIO_QUALITY_LOW",
+        "approxDurationMs": "19876",
+        "trackAbsoluteLoudnessLkfs": -19.26,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      },
+      {
+        "itag": 140,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=140&mime=audio%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+        "bitrate": 130530,
+        "initRange": {
+          "start": "0",
+          "end": "722"
+        },
+        "indexRange": {
+          "start": "723",
+          "end": "778"
+        },
+        "lastModified": "1765151530613113",
+        "contentLength": "321965",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 129896,
+        "audioQuality": "AUDIO_QUALITY_MEDIUM",
+        "approxDurationMs": "19829",
+        "trackAbsoluteLoudnessLkfs": -19.73,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      },
+      {
+        "itag": 140,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=140&mime=audio%2Fmp4&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+        "bitrate": 130541,
+        "initRange": {
+          "start": "0",
+          "end": "722"
+        },
+        "indexRange": {
+          "start": "723",
+          "end": "778"
+        },
+        "lastModified": "1765151551595237",
+        "contentLength": "321966",
+        "xtags": "CggKA2RyYxIBMQ",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 129897,
+        "audioQuality": "AUDIO_QUALITY_MEDIUM",
+        "approxDurationMs": "19829",
+        "trackAbsoluteLoudnessLkfs": -19.26,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      },
+      {
+        "itag": 249,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=249&mime=audio%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/webm; codecs=\"opus\"",
+        "bitrate": 51741,
+        "initRange": {
+          "start": "0",
+          "end": "258"
+        },
+        "indexRange": {
+          "start": "259",
+          "end": "291"
+        },
+        "lastModified": "1765151526778407",
+        "contentLength": "126761",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 51265,
+        "audioQuality": "AUDIO_QUALITY_LOW",
+        "approxDurationMs": "19781",
+        "trackAbsoluteLoudnessLkfs": -19.73,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      },
+      {
+        "itag": 249,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=249&mime=audio%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/webm; codecs=\"opus\"",
+        "bitrate": 51758,
+        "initRange": {
+          "start": "0",
+          "end": "258"
+        },
+        "indexRange": {
+          "start": "259",
+          "end": "291"
+        },
+        "lastModified": "1765151552381818",
+        "contentLength": "126778",
+        "xtags": "CggKA2RyYxIBMQ",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 51272,
+        "audioQuality": "AUDIO_QUALITY_LOW",
+        "approxDurationMs": "19781",
+        "trackAbsoluteLoudnessLkfs": -19.26,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      },
+      {
+        "itag": 250,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=250&mime=audio%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/webm; codecs=\"opus\"",
+        "bitrate": 67548,
+        "initRange": {
+          "start": "0",
+          "end": "258"
+        },
+        "indexRange": {
+          "start": "259",
+          "end": "292"
+        },
+        "lastModified": "1765151526783615",
+        "contentLength": "166250",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 67236,
+        "audioQuality": "AUDIO_QUALITY_LOW",
+        "approxDurationMs": "19781",
+        "trackAbsoluteLoudnessLkfs": -19.73,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      },
+      {
+        "itag": 250,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=250&mime=audio%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/webm; codecs=\"opus\"",
+        "bitrate": 67602,
+        "initRange": {
+          "start": "0",
+          "end": "258"
+        },
+        "indexRange": {
+          "start": "259",
+          "end": "292"
+        },
+        "lastModified": "1765151559914786",
+        "contentLength": "166307",
+        "xtags": "CggKA2RyYxIBMQ",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 67259,
+        "audioQuality": "AUDIO_QUALITY_LOW",
+        "approxDurationMs": "19781",
+        "trackAbsoluteLoudnessLkfs": -19.26,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      },
+      {
+        "itag": 251,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=251&mime=audio%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/webm; codecs=\"opus\"",
+        "bitrate": 131721,
+        "initRange": {
+          "start": "0",
+          "end": "258"
+        },
+        "indexRange": {
+          "start": "259",
+          "end": "292"
+        },
+        "lastModified": "1765151532969333",
+        "contentLength": "324732",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 131330,
+        "audioQuality": "AUDIO_QUALITY_MEDIUM",
+        "approxDurationMs": "19781",
+        "trackAbsoluteLoudnessLkfs": -19.73,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      },
+      {
+        "itag": 251,
+        "url": "https://rr3---sn-fake.googlevideo.com/videoplayback?itag=251&mime=audio%2Fwebm&expire=1893456000&ip=203.0.113.10&id=fixture00001",
+        "mimeType": "audio/webm; codecs=\"opus\"",
+        "bitrate": 131668,
+        "initRange": {
+          "start": "0",
+          "end": "258"
+        },
+        "indexRange": {
+          "start": "259",
+          "end": "292"
+        },
+        "lastModified": "1765151550894031",
+        "contentLength": "324674",
+        "xtags": "CggKA2RyYxIBMQ",
+        "projectionType": "RECTANGULAR",
+        "averageBitrate": 131307,
+        "audioQuality": "AUDIO_QUALITY_MEDIUM",
+        "approxDurationMs": "19781",
+        "trackAbsoluteLoudnessLkfs": -19.26,
+        "qualityOrdinal": "QUALITY_ORDINAL_UNKNOWN"
+      }
+    ]
+  },
+  "videoDetails": {
+    "videoId": "pjWY5NkjsrY",
+    "title": "SUBSCRIBE FOR 7 YEARS OF GOOD LUCK! 🍀😅 - #dance #funny #couple #shorts",
+    "lengthSeconds": "20",
+    "channelId": "UCGvGMmyEWp9hxDqmfLJbpkQ",
+    "isOwnerViewing": false,
+    "shortDescription": "",
+    "isCrawlable": true,
+    "thumbnail": {
+      "thumbnails": [
+        {
+          "url": "https://i.ytimg.com/vi/pjWY5NkjsrY/hqdefault.jpg?sqp=-oaymwEoCOADEOgC8quKqQMcGADwAQH4AbYIgAKAD4oCDAgAEAEYWSBkKGUwDw==&rs=AOn4CLDJ_5FhUZzJILtRF3bcpXESc8L3ZA&usqp=CBQ",
+          "width": 480,
+          "height": 360
+        },
+        {
+          "url": "https://i.ytimg.com/vi/pjWY5NkjsrY/sddefault.jpg?sqp=-oaymwEoCIAFEOAD8quKqQMcGADwAQH4AbYIgAKAD4oCDAgAEAEYWSBkKGUwDw==&rs=AOn4CLCbJxKgFbWzbJRwU03E2kSEGRNEEQ&usqp=CBQ",
+          "width": 640,
+          "height": 480
+        }
+      ]
+    },
+    "allowRatings": true,
+    "viewCount": "31372407",
+    "author": "Cadel and Mia",
+    "isPrivate": false,
+    "isUnpluggedCorpus": false,
+    "isLiveContent": false,
+    "isTvfilmVideo": false
+  }
+}

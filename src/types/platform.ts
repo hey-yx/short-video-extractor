@@ -3,7 +3,7 @@
  * 平台适配层（src/platforms/**）的 parse() 输出此结构；对外 API 直接序列化它。
  */
 
-export type Platform = 'douyin' | 'xhs' | 'kuaishou' | 'bilibili' | 'weibo' | 'twitter';
+export type Platform = 'douyin' | 'xhs' | 'kuaishou' | 'bilibili' | 'weibo' | 'twitter' | 'youtube';
 
 export type AssetType = 'video' | 'image' | 'audio' | 'cover';
 
@@ -118,9 +118,10 @@ export interface FetchCtx {
     ): Promise<unknown>;
   };
   /**
-   * 海外平台出站代理（http://host:port，如 TWITTER_PROXY）。
-   * 由 app/routes 层从 env 读出注入，平台包不读 env；Bun fetch 不吃代理 env，必须显式传。
-   * 平台侧经 src/core/fetch-proxy.ts 的 proxiedFetch 使用；未配置 = 直连。
+   * 海外平台出站代理（http://host:port）。
+   * 由 app/routes 层从 env 读出注入（resolveProxy：PROXY_<PLATFORM> 覆盖 → OUTBOUND_PROXY → HTTPS_PROXY），
+   * 平台包不读 env；平台侧经 src/core/fetch-proxy.ts 的 proxiedFetch 使用；未配置 = 直连。
+   * YouTube 直链绑 IP：解析与 /media 中转必须用同一个值。
    */
   proxyUrl?: string;
 }
