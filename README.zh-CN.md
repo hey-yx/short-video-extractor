@@ -17,7 +17,7 @@
 
 </div>
 
-短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。v2 完全重构（2026-10，与旧版无契约关系，`/pv`、`/public/*` 已下线），支持抖音、小红书、快手、B 站。默认返回直链（客户端请求时不带 Referer 即可下载），服务器零带宽；`/media` 中转作为可选增强。
+短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。v2.1 现支持 7 个平台：抖音、小红书、快手、B 站、微博、X/Twitter、YouTube（Instagram Reels 与 TikTok 已完成可行性调研，adapter 落地合入后见[新增平台](#新增平台（占位）)）。默认返回直链（客户端请求时不带 Referer 即可下载），服务器零带宽；`/media` 中转作为可选增强。
 
 ## 架构
 
@@ -37,7 +37,7 @@ src/
 │   ├── limiter.ts            # 按 IP 令牌桶限流
 │   └── media-proxy.ts        # HMAC 签名 + SSRF 白名单 + 手动跟 302 + Range 透传
 ├── platforms/                # 插件式平台层：加平台 = 加目录 + app.ts 注册一行
-│   ├── douyin/  xhs/  kuaishou/  bilibili/
+│   ├── douyin/  xhs/  kuaishou/  bilibili/  weibo/  twitter/  youtube/
 │   └── registry.ts  hosts.ts
 ├── core/                     # 错误码、统一信封、URL 工具
 ├── infra/                    # pino 日志、指标、Puppeteer 浏览器网关
@@ -46,7 +46,7 @@ src/
 
 平台层三条硬约束：`platforms/**` 不 import Elysia、不读 env、不 console.log；`parse()` 是纯函数（同输入同输出），用 fixture 离线回归；IO 只经 `fetch()` 和注入的 `FetchCtx`。平台改版时表现是「单测先红」，不是线上悄悄返回空结果。
 
-技术栈：Bun + Elysia。运行时依赖只有 elysia、@elysiajs/cors、lru-cache、pino、puppeteer（小红书主力通道，抖音风控兜底）。
+技术栈：Bun + Elysia。运行时依赖只有 elysia、@elysiajs/cors、lru-cache、pino、puppeteer（仅浏览器兜底路径需要：抖音风控降级、小红书降级兜底；纯 HTTP 主通道零浏览器依赖）。
 
 ## 稳定性
 
@@ -57,14 +57,23 @@ src/
 
 ## 平台状态
 
-| 平台 | 通道 | 支持内容 | 浏览器 |
-|---|---|---|---|
-| 抖音 | HTTP 优先（detail 接口 + play 直链），L1 被风控时自动降级浏览器截 detail XHR | 视频（540p/720p/1080p/原片四档）、图集、实况照片 | 兜底（风控时自动） |
-| 小红书 | 浏览器抓主文档 HTML → `__INITIAL_STATE__` | 笔记图片、视频 | 需要（TLS 指纹放行） |
-| 快手 | 纯 HTTP（短链 302 + 分享页 INIT_STATE） | 视频、多清晰度 | 否 |
-| B 站 | 纯 HTTP（view + playurl try_look） | 视频、多 P、DASH 音视频分离 | 否 |
+7 个平台全部接入统一 `ParseResult` 信封；通道与能力以各 adapter 的 `capabilities` 声明 + `docs/research/` 实测记录为准：
 
-运行时以 `GET /platforms` 为准（平台自描述）。
+| 平台 | 通道 | 支持内容 | 清晰度档位 | 直链绑 IP |
+|---|---|---|---|---|
+| 抖音 | HTTP 主通道（零签名 detail 接口 + play 直链），L1 被风控时自动降级浏览器截 detail XHR | 视频、图集、实况照片 | 540p/720p/1080p/原片四档（另附 720p 水印档） | 否（play 直链空 Referer 可下） |
+| 小红书 | 纯 HTTP 主通道（请求头三件套放行，见下）+ 风控/登录墙自动降级浏览器兜底 | 笔记视频、图集图片 | 视频出 master 流（h264 优先）；图片原图 | 否 |
+| 快手 | 纯 HTTP（短链 302 取 photoId + 移动端分享页 INIT_STATE，零 cookie） | 视频、图集 | 服务端返回的全部分辨率（按高度排序，最高档为主 URL） | 否 |
+| B 站 | 纯 HTTP（view + playurl try_look=1） | 视频（多 P 逐个出 asset）、DASH 音视频分离 | 360P–4K 按 DASH id 映射（120=4K、116=1080P60、80=1080P…） | 否 |
+| 微博 | 纯 HTTP（statuses/show 匿名 JSON；视频直链页 fid 换 mid；t.cn 短链 302 展开） | 视频、图集 | 1080P/720P/480P 等服务端给的档位（component 档位比 show 全） | 否 |
+| X/Twitter | 纯 HTTP（cdn.syndication.twimg.com/tweet-result，token=0 免签名） | 单条推文视频、GIF、图集 | mp4 按 bitrate 多档 + HLS 备选 | 否（twimg 直链不校验出口 IP） |
+| YouTube / Shorts | 纯 API（innertube /player，ANDROID_VR→IOS 失败自动换 client，免 PO Token 免 cookie） | 视频、Shorts | 144p–2160p 按源返回（ANDROID_VR 可到 4K），DASH 音视频分离 + 合并档 | **是**（googlevideo 直链绑解析出口 IP，约 6h 过期，直链须经 `/media` 服务端中转，中转与解析走同一代理出口） |
+
+代理：国内平台直连不走代理；海外平台（YouTube 等）经 `PROXY_<PLATFORM>` / `OUTBOUND_PROXY` / `HTTPS_PROXY` 出站代理（见[环境变量](#环境变量)）。
+
+### 新增平台（占位）
+
+Instagram Reels 与 TikTok 的可行性调研已完成（IG 匿名 GraphQL `doc_id` 通道实测通、TikTok 走 tikwm 通道，调研记录在海外平台分支），adapter 实现卡尚未合入 main。合入后本节与平台状态表将同步补齐。
 
 ## API
 
@@ -77,7 +86,7 @@ src/
 
 ### POST /parse（或 GET /parse?url=）
 
-主接口。`Content-Type: application/json`，body `{"url": "<分享链接>"}`。支持分享短链（v.douyin.com、xhslink.com、v.kuaishou.com、b23.tv 等，自动展开）。
+主接口。`Content-Type: application/json`，body `{"url": "<分享链接>"}`。支持分享短链（v.douyin.com、xhslink.com、v.kuaishou.com、b23.tv、t.cn、youtu.be 等，自动展开）。
 
 `data`（ParseResult）核心字段：
 
@@ -87,9 +96,9 @@ src/
 | `title` / `description` / `tags` / `author` | 元数据 |
 | `assets[]` | 资源列表，见下 |
 | `expiresAt` | 所有直链里最早过期的时刻（Unix 秒），缓存与重取依据 |
-| `via` | 解析通道：`http` 或 `browser` |
+| `via` | 解析通道：`http` 或 `browser`（取数语义，全平台统一） |
 
-`assets[]`（MediaAsset）：`type`（video/image/audio/cover）、`url`（**直连地址**，客户端请求时不要带 Referer）、`variants[]`（同资源的其他档位，抖音给全四档）、`width` / `height` / `durationMs` / `size`、`backups[]`（备用 CDN）、`liveClipUrl`（实况照片的 5s 视频）。B 站视频另带 `audioUrl`（DASH 音轨，需与视频分别拉取后合成）。
+`assets[]`（MediaAsset）：`type`（video/image/audio/cover）、`url`（**直连地址**，客户端请求时不要带 Referer；YouTube 除外——googlevideo 直链绑解析出口 IP，必须经 `/media` 服务端中转下载）、`variants[]`（同资源的其他档位，抖音给全四档）、`width` / `height` / `durationMs` / `size`、`backups[]`（备用 CDN）、`liveClipUrl`（实况照片的 5s 视频）。B 站与 YouTube 视频另带 `audioUrl`（DASH 音轨，需与视频分别拉取后合成）。
 
 错误码与 HTTP 状态：`INVALID_URL`(400)、`UNSUPPORTED_PLATFORM`(422)、`CONTENT_NOT_FOUND`(404)、`CONTENT_RESTRICTED`(403)、`RISK_CONTROL`(503)、`UPSTREAM_ERROR` / `UPSTREAM_CHANGED`(502)、`UPSTREAM_TIMEOUT`(504)、`RATE_LIMITED`(429)、`MEDIA_*`（见下）、`INTERNAL`(500)。
 
@@ -125,7 +134,7 @@ Prometheus 文本格式（自写渲染，未引 prom-client）：
 | `parse_duration_ms` | histogram | 解析耗时分布（毫秒，按 platform） |
 | `cache_hit_total` | counter | 缓存命中次数 |
 | `upstream_error_total{platform,reason}` | counter | 上游失败/风控次数 |
-| `channel_downgrade_total{platform,from,to}` | counter | 解析通道自动降级次数（如抖音 http→browser） |
+| `channel_downgrade_total{platform,from,to}` | counter | 解析通道自动降级次数（抖音/小红书 http→browser） |
 | `parse_retry_total{platform}` | counter | 瞬态错误（超时/5xx）重试次数 |
 
 ## 可观测性
@@ -145,7 +154,7 @@ bun run typecheck
 ```
 
 > [!TIP]
-> 小红书通道需要本机有 Chrome（Puppeteer 自动管理）；其余平台纯 HTTP 无此要求。
+> 浏览器兜底路径（抖音风控降级、小红书降级兜底）需要本机有 Chrome（Puppeteer 自动管理）；纯 HTTP 通道无此要求。
 
 `docs/status.html` 是零依赖检测站——状态总览、服务健康、平台状态、使用计数与解析演示一页全有。file:// 直接打开（手动填服务地址）；部署后浏览器访问 `http://<服务器>:7777/status` 即看，无需起任何额外服务。
 
@@ -157,6 +166,9 @@ bun run typecheck
 | `LOG_LEVEL` | info | fatal/error/warn/info/debug/trace |
 | `PROXY_SECRET` | 未配置 | /media 中转签名密钥；不配则 /media 返回 501 |
 | `PUPPETEER_EXECUTABLE_PATH` | — | 容器内固定 `/usr/bin/chromium`（Dockerfile 已设） |
+| `PROXY_<PLATFORM>` | 未配置 | 按平台出站代理（如 `PROXY_YOUTUBE`），优先级最高 |
+| `OUTBOUND_PROXY` | 未配置 | 海外平台默认出站代理（`PROXY_<PLATFORM>` 未设时生效） |
+| `HTTPS_PROXY` | 未配置 | 出站代理兜底（前两者都未设时生效）。解析顺序：`PROXY_<PLATFORM>` → `OUTBOUND_PROXY` → `HTTPS_PROXY`；国内平台不受影响（代理只注入海外平台的 fetch 与对应 `/media` 中转） |
 
 参考 `.env.example`。生产 `.env` 放服务器本地（chmod 600），不进仓库。
 
@@ -164,25 +176,11 @@ bun run typecheck
 
 ### 镜像
 
-多阶段构建：`oven/bun:alpine` 编译单二进制 → `alpine:3.22` + chromium 运行（小红书通道需要真实浏览器内核）。非 root（uid 10001）运行，tini 收僵尸进程，HEALTHCHECK 打 /health。
+多阶段构建：`oven/bun:alpine` 编译单二进制 → `alpine:3.22` + chromium 运行（浏览器兜底路径需要真实浏览器内核）。非 root（uid 10001）运行，tini 收僵尸进程，HEALTHCHECK 打 /health。
 
-体积实测（2026-10-25 本机构建）：**830MB → 495MB**（-335MB，-40%），达成 <700MB 目标。层构成：alpine 基底 8.5MB + 运行层 386MB（瘦身前 721MB）+ bun 单二进制 100MB。
+瘦身思路（2026-10-25 构建实测）：删掉无头解析用不到的文件——mesa/LLVM 软渲染栈、系统 ICU 数据、ANGLE/SwiftShader 等；chromium 本体、其 ffmpeg 动态依赖与字体/nss/ca-certificates 砍不动。本卡不构建镜像，v2.1 的体积实测数字待主会话构建后补充。apk 源默认走阿里云镜像（构建实测 `dl-cdn.alpinelinux.org` 仅 14KB/s，阿里云 1.4MB/s），换官方源：`docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
 
-瘦身即「把无头解析用不到的文件在装包同层删掉」，每删一项都在容器内实测小红书真实链接解析（video + album，浏览器通道真跑）通过后才保留：
-
-| 删掉 | 体积 | 依据 |
-|---|---|---|
-| mesa/LLVM 软渲染栈（libLLVM、libgallium、gallium-pipe 驱动） | 247MB | headless 无 GPU 用不上；chromium 动态依赖闭包不含它们 |
-| 系统 ICU 数据 + libicu | 30MB | chromium 自带 ICU，不读系统数据 |
-| mime 库、图标主题、gtk 数据、typelib、pci.ids、pipewire 插件等 | 38MB | 无头解析用不到的数据文件 |
-| ANGLE/SwiftShader（libEGL / libGLESv2 / libvulkan） | 7MB | 砍后小红书浏览器通道照常 |
-| locales（留 zh-CN / en-US）、多余字重、2x UI 资源 | 4MB | |
-
-砍不动：chromium 本体 233MB，以及它硬链接的 ffmpeg 全家桶（x265 / aom / SvtAv1Enc 等编码器约 40MB 是 chromium 动态依赖，删了二进制起不来）、nss / freetype / harfbuzz / fontconfig、ca-certificates；bun 单二进制 100MB 不强压（--minify 已开）。
-
-apk 源默认走阿里云镜像（构建实测 `dl-cdn.alpinelinux.org` 仅 14KB/s，阿里云 1.4MB/s），换官方源：`docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`。
-
-构建后验收：容器内 `/health` 200、`/ready` 4 平台、小红书真实链接（video + album）与抖音真实链接解析成功，`bun test` 100 全绿、`tsc --noEmit` 零错。
+构建后验收清单：容器内 `/health` 200、`/ready` 7 平台、每平台一条真实链接解析通过、`bun test` 全绿（180 用例）、`tsc --noEmit` 零错。
 
 ```bash
 docker build -t short-video-extractor:v2 .
@@ -211,4 +209,4 @@ docker compose up -d
 
 ## 设计文档
 
-- `docs/research/` — 平台 API 调研与实测记录
+- `docs/research/` — 平台 API 调研与实测记录（01 抖音/TikTok API、02 国内平台、03 架构、04 小红书 HTTP 通道、05 海外平台与出站代理）

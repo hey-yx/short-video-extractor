@@ -17,7 +17,7 @@
 
 </div>
 
-A short-video parsing API: give it a share link, get watermark-free video / photo-album direct links back. v2 is a full rewrite (2026-10, no contract relation with the legacy version — `/pv` and `/public/*` are gone), supporting Douyin, Xiaohongshu, Kuaishou and Bilibili. The default response is direct links (the client downloads without a Referer header), so the server carries zero bandwidth; the `/media` relay is an optional add-on.
+A short-video parsing API: give it a share link, get watermark-free video / photo-album direct links back. v2.1 supports 7 platforms: Douyin, Xiaohongshu (RedNote), Kuaishou, Bilibili, Weibo, X/Twitter and YouTube (Instagram Reels and TikTok have completed feasibility research — see [New Platforms](#new-platforms-placeholder) once those adapters land). The default response is direct links (the client downloads without a Referer header), so the server carries zero bandwidth; the `/media` relay is an optional add-on.
 
 ## Architecture
 
@@ -37,7 +37,7 @@ src/
 │   ├── limiter.ts            # per-IP token bucket rate limiter
 │   └── media-proxy.ts        # HMAC signing + SSRF allowlist + manual 302 follow + Range passthrough
 ├── platforms/                # plugin-style platform layer: adding a platform = add a directory + one registration line in app.ts
-│   ├── douyin/  xhs/  kuaishou/  bilibili/
+│   ├── douyin/  xhs/  kuaishou/  bilibili/  weibo/  twitter/  youtube/
 │   └── registry.ts  hosts.ts
 ├── core/                     # error codes, unified envelope, URL utilities
 ├── infra/                    # pino logging, metrics, Puppeteer browser gateway
@@ -46,7 +46,7 @@ src/
 
 Three hard rules for the platform layer: `platforms/**` never imports Elysia, never reads env, never calls console.log; `parse()` is a pure function (same input, same output) covered by fixture-based offline regression tests; IO goes only through `fetch()` and the injected `FetchCtx`. When a platform changes its pages/APIs, the symptom is "the unit test goes red first" — not silently empty results in production.
 
-Tech stack: Bun + Elysia. The only runtime dependencies are elysia, @elysiajs/cors, lru-cache, pino, and puppeteer (the primary channel for Xiaohongshu, the risk-control fallback for Douyin).
+Tech stack: Bun + Elysia. The only runtime dependencies are elysia, @elysiajs/cors, lru-cache, pino, and puppeteer (needed only on the browser-fallback paths: the Douyin risk-control downgrade and the Xiaohongshu fallback; the pure HTTP primary channels have zero browser dependency).
 
 ## Stability
 
@@ -57,14 +57,23 @@ Tech stack: Bun + Elysia. The only runtime dependencies are elysia, @elysiajs/co
 
 ## Platform Status
 
-| Platform | Channel | Content | Browser |
-|---|---|---|---|
-| Douyin | HTTP first (detail API + play direct links); auto-downgrades to the browser (intercepting the detail XHR) when the L1 endpoint is risk-controlled | Video (four tiers: 540p/720p/1080p/original), photo albums, live photos | Fallback (automatic on risk control) |
-| Xiaohongshu | Browser fetches the main document HTML → `__INITIAL_STATE__` | Note images, video | Required (TLS-fingerprint allowlist) |
-| Kuaishou | Pure HTTP (short-link 302 + share page INIT_STATE) | Video, multiple qualities | No |
-| Bilibili | Pure HTTP (view + playurl try_look) | Video, multi-part, DASH audio/video split | No |
+All 7 platforms produce the same unified `ParseResult` envelope. Channels and capabilities follow each adapter's `capabilities` declaration plus the measured notes under `docs/research/`:
 
-At runtime `GET /platforms` is the source of truth (platforms self-describe).
+| Platform | Channel | Content | Quality tiers | Direct link IP-bound |
+|---|---|---|---|---|
+| Douyin | HTTP primary (signature-free detail API + play direct links); auto-downgrades to the browser (intercepting the detail XHR) when L1 is risk-controlled | Video, photo albums, live photos | Four tiers 540p/720p/1080p/original (plus a 720p watermarked tier) | No (play links download with an empty Referer) |
+| Xiaohongshu (RedNote) | Pure HTTP primary (admitted by the three-header combo, see below) + automatic browser fallback on risk control / login walls | Note videos, album images | Video serves the master stream (h264 preferred); images at original size | No |
+| Kuaishou | Pure HTTP (short-link 302 for the photoId + mobile share page INIT_STATE, zero cookies) | Video, albums | All resolutions the server returns (sorted by height, top tier as the main URL) | No |
+| Bilibili | Pure HTTP (view + playurl try_look=1) | Video (each part becomes an asset), DASH audio/video split | 360P–4K mapped from DASH ids (120=4K, 116=1080P60, 80=1080P…) | No |
+| Weibo | Pure HTTP (anonymous statuses/show JSON; video direct-page fid exchanged for a mid; t.cn short links expanded via 302) | Video, albums | 1080P/720P/480P as served (the component tier list is richer than show) | No |
+| X/Twitter | Pure HTTP (cdn.syndication.twimg.com/tweet-result, token=0, signature-free) | Single-tweet video, GIF, albums | mp4 tiers by bitrate + HLS fallback | No (twimg direct links don't check the egress IP) |
+| YouTube / Shorts | Pure API (innertube /player, automatic ANDROID_VR→IOS client fallback, no PO Token, no cookies) | Video, Shorts | 144p–2160p as returned by the source (ANDROID_VR reaches 4K), DASH audio/video split plus merged tiers | **Yes** (googlevideo direct links are bound to the resolving egress IP, ~6h expiry; download via the `/media` server relay, whose egress must match the resolver's) |
+
+Proxying: domestic platforms connect directly and never use a proxy; overseas platforms (YouTube etc.) go through the `PROXY_<PLATFORM>` / `OUTBOUND_PROXY` / `HTTPS_PROXY` egress proxy (see [Environment Variables](#environment-variables)).
+
+### New Platforms (placeholder)
+
+Feasibility research for Instagram Reels and TikTok is done (the IG anonymous GraphQL `doc_id` channel was verified live; TikTok goes through the tikwm channel — research notes live on the overseas-platforms branch); the adapter implementation cards have not merged into main yet. This section and the status table will be updated once they land.
 
 ## API
 
@@ -77,7 +86,7 @@ All JSON responses use one unified envelope:
 
 ### POST /parse (or GET /parse?url=)
 
-The main endpoint. `Content-Type: application/json`, body `{"url": "<share link>"}`. Share short links are supported (v.douyin.com, xhslink.com, v.kuaishou.com, b23.tv, … — expanded automatically).
+The main endpoint. `Content-Type: application/json`, body `{"url": "<share link>"}`. Share short links are supported (v.douyin.com, xhslink.com, v.kuaishou.com, b23.tv, t.co, youtu.be, … — expanded automatically).
 
 `data` (ParseResult) core fields:
 
@@ -87,9 +96,9 @@ The main endpoint. `Content-Type: application/json`, body `{"url": "<share link>
 | `title` / `description` / `tags` / `author` | Metadata |
 | `assets[]` | Resource list, see below |
 | `expiresAt` | Earliest expiry among all direct links (Unix seconds) — the basis for caching and re-fetching |
-| `via` | Parsing channel: `http` or `browser` |
+| `via` | Parsing channel: `http` or `browser` (fetch semantics, uniform across platforms) |
 
-`assets[]` (MediaAsset): `type` (video/image/audio/cover), `url` (**direct link** — request it without a Referer header), `variants[]` (other qualities of the same asset; Douyin returns all four tiers), `width` / `height` / `durationMs` / `size`, `backups[]` (backup CDNs), `liveClipUrl` (the 5s video of a live photo). Bilibili video assets additionally carry `audioUrl` (the DASH audio track — fetch it separately and mux it with the video).
+`assets[]` (MediaAsset): `type` (video/image/audio/cover), `url` (**direct link** — request it without a Referer header; YouTube is the exception: googlevideo links are bound to the resolving egress IP and must be downloaded through the `/media` server relay), `variants[]` (other qualities of the same asset; Douyin returns all four tiers), `width` / `height` / `durationMs` / `size`, `backups[]` (backup CDNs), `liveClipUrl` (the 5s video of a live photo). Bilibili and YouTube video assets additionally carry `audioUrl` (the DASH audio track — fetch it separately and mux it with the video).
 
 Error codes and HTTP status: `INVALID_URL`(400), `UNSUPPORTED_PLATFORM`(422), `CONTENT_NOT_FOUND`(404), `CONTENT_RESTRICTED`(403), `RISK_CONTROL`(503), `UPSTREAM_ERROR` / `UPSTREAM_CHANGED`(502), `UPSTREAM_TIMEOUT`(504), `RATE_LIMITED`(429), `MEDIA_*` (see below), `INTERNAL`(500).
 
@@ -125,7 +134,7 @@ Prometheus text format (hand-rolled renderer, no prom-client):
 | `parse_duration_ms` | histogram | Parse latency distribution (milliseconds, by platform) |
 | `cache_hit_total` | counter | Cache hit count |
 | `upstream_error_total{platform,reason}` | counter | Upstream failure / risk-control count |
-| `channel_downgrade_total{platform,from,to}` | counter | Automatic channel downgrades (e.g. Douyin http→browser) |
+| `channel_downgrade_total{platform,from,to}` | counter | Automatic channel downgrades (Douyin / Xiaohongshu http→browser) |
 | `parse_retry_total{platform}` | counter | Transient-error (timeout / 5xx) retry count |
 
 ## Observability
@@ -145,7 +154,7 @@ bun run typecheck
 ```
 
 > [!TIP]
-> The Xiaohongshu channel needs Chrome on the machine (Puppeteer manages it automatically); every other platform is pure HTTP.
+> The browser-fallback paths (Douyin risk-control downgrade, Xiaohongshu fallback) need Chrome on the machine (Puppeteer manages it automatically); the pure HTTP channels have no such requirement.
 
 `docs/status.html` is a zero-dependency status page — an overall banner, service health, per-platform status, usage counters and a live parse demo on one page. Open it straight from disk (file://, then fill in the service address), or after deploying visit `http://<server>:7777/status` in a browser — nothing extra to run.
 
@@ -157,6 +166,9 @@ bun run typecheck
 | `LOG_LEVEL` | info | fatal/error/warn/info/debug/trace |
 | `PROXY_SECRET` | unset | Signing secret for the /media relay; unset → /media returns 501 |
 | `PUPPETEER_EXECUTABLE_PATH` | — | Pinned to `/usr/bin/chromium` inside the container (set in the Dockerfile) |
+| `PROXY_<PLATFORM>` | unset | Per-platform egress proxy (e.g. `PROXY_YOUTUBE`); highest priority |
+| `OUTBOUND_PROXY` | unset | Default egress proxy for overseas platforms (used when `PROXY_<PLATFORM>` is unset) |
+| `HTTPS_PROXY` | unset | Egress-proxy fallback (used when neither of the above is set). Resolution order: `PROXY_<PLATFORM>` → `OUTBOUND_PROXY` → `HTTPS_PROXY`; domestic platforms are unaffected (the proxy is injected only into overseas platforms' fetches and the matching `/media` relay) |
 
 See `.env.example`. The production `.env` stays on the server (chmod 600), never in the repo.
 
@@ -164,25 +176,11 @@ See `.env.example`. The production `.env` stays on the server (chmod 600), never
 
 ### Image
 
-Multi-stage build: `oven/bun:alpine` compiles a single binary → `alpine:3.22` + chromium runtime (the Xiaohongshu channel needs a real browser engine). Runs as non-root (uid 10001), tini reaps zombies, HEALTHCHECK hits /health.
+Multi-stage build: `oven/bun:alpine` compiles a single binary → `alpine:3.22` + chromium runtime (the browser-fallback paths need a real browser engine). Runs as non-root (uid 10001), tini reaps zombies, HEALTHCHECK hits /health.
 
-Measured size (built locally 2026-10-25): **830MB → 495MB** (-335MB, -40%), meeting the <700MB goal. Layer breakdown: alpine base 8.5MB + runtime layer 386MB (721MB before slimming) + bun single binary 100MB.
+Slimming approach (measured in the 2026-10-25 build): delete what headless parsing never needs — the mesa/LLVM software-rendering stack, system ICU data, ANGLE/SwiftShader and the like; chromium itself, its ffmpeg dynamic dependencies and fonts/nss/ca-certificates cannot be cut. This card does not build the image; the v2.1 measured size will be added after the main session builds it. The apk mirror defaults to Aliyun (measured during the build: `dl-cdn.alpinelinux.org` crawled at 14KB/s vs Aliyun at 1.4MB/s). To use the official mirror: `docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
 
-Slimming here means "delete the files headless parsing never needs, in the same layer that installs them", and each deletion was kept only after real Xiaohongshu links still parsed inside the container (video + album, browser channel actually running):
-
-| Removed | Size | Rationale |
-|---|---|---|
-| mesa/LLVM software-rendering stack (libLLVM, libgallium, gallium-pipe drivers) | 247MB | No GPU in headless; not in chromium's dynamic dependency closure |
-| System ICU data + libicu | 30MB | chromium ships its own ICU and never reads the system data |
-| mime libraries, icon themes, gtk data, typelib, pci.ids, pipewire plugins etc. | 38MB | Data files headless parsing never touches |
-| ANGLE/SwiftShader (libEGL / libGLESv2 / libvulkan) | 7MB | Xiaohongshu browser channel unchanged after removal |
-| locales (kept zh-CN / en-US), extra font weights, 2x UI assets | 4MB | |
-
-What could not be cut: chromium itself at 233MB, plus the ffmpeg family it hard-depends on (x265 / aom / SvtAv1Enc and friends at ~40MB are chromium dynamic dependencies — delete them and the binary won't start), nss / freetype / harfbuzz / fontconfig, ca-certificates; the bun single binary at 100MB is left as is (--minify is already on).
-
-The apk mirror defaults to Aliyun (measured during the build: `dl-cdn.alpinelinux.org` crawled at 14KB/s vs Aliyun at 1.4MB/s). To use the official mirror: `docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
-
-Post-build acceptance: `/health` 200 inside the container, `/ready` reports 4 platforms, real Xiaohongshu links (video + album) and real Douyin links parse successfully, `bun test` all green (100), `tsc --noEmit` zero errors.
+Post-build acceptance checklist: `/health` 200 inside the container, `/ready` reports 7 platforms, one real link per platform parses successfully, `bun test` all green (180 tests), `tsc --noEmit` zero errors.
 
 ```bash
 docker build -t short-video-extractor:v2 .
@@ -211,4 +209,4 @@ The service ships its own status page: open `http://<server>:7777/status` in a b
 
 ## Design Documents
 
-- `docs/research/` — platform API research and measured notes
+- `docs/research/` — platform API research and measured notes (01 Douyin/TikTok API, 02 domestic platforms, 03 architecture, 04 Xiaohongshu HTTP channel, 05 overseas platforms and the egress proxy)
