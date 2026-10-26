@@ -17,7 +17,7 @@
 
 </div>
 
-短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。v2.1 现支持 7 个平台：抖音、小红书、快手、B 站、微博、X/Twitter、YouTube（Instagram Reels 与 TikTok 已完成可行性调研，adapter 落地合入后见[新增平台](#新增平台（占位）)）。默认返回直链（客户端请求时不带 Referer 即可下载），服务器零带宽；`/media` 中转作为可选增强。
+短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。v2.1 现支持 9 个平台：抖音、小红书、快手、B 站、微博、X/Twitter、YouTube、Instagram Reels、TikTok。默认返回直链（客户端请求时不带 Referer 即可下载），服务器零带宽；`/media` 中转作为可选增强。
 
 ## 架构
 
@@ -68,12 +68,11 @@ src/
 | 微博 | 纯 HTTP（statuses/show 匿名 JSON；视频直链页 fid 换 mid；t.cn 短链 302 展开） | 视频、图集 | 1080P/720P/480P 等服务端给的档位（component 档位比 show 全） | 否 |
 | X/Twitter | 纯 HTTP（cdn.syndication.twimg.com/tweet-result，token=0 免签名） | 单条推文视频、GIF、图集 | mp4 按 bitrate 多档 + HLS 备选 | 否（twimg 直链不校验出口 IP） |
 | YouTube / Shorts | 纯 API（innertube /player，ANDROID_VR→IOS 失败自动换 client，免 PO Token 免 cookie） | 视频、Shorts | 144p–2160p 按源返回（ANDROID_VR 可到 4K），DASH 音视频分离 + 合并档 | **是**（googlevideo 直链绑解析出口 IP，约 6h 过期，直链须经 `/media` 服务端中转，中转与解析走同一代理出口） |
+| Instagram Reels | 纯 HTTP（匿名 GraphQL `doc_id` 口子，免登录免 cookie，需配 `IG_GRAPHQL_DOC_ID`） | Reels、Post、IGTV 视频、图文图集 | mp4 按源返回 | 否（fbcdn 直链无 ip= 绑定） |
+| TikTok | 纯 HTTP（tikwm 公开接口：无水印直链/图集/音乐；解析出站走代理） | 视频、图集、音乐 | 无水印 play/hdplay 双档 | 否（tiktokcdn 直链不绑 IP） |
 
 代理：国内平台直连不走代理；海外平台（YouTube 等）经 `PROXY_<PLATFORM>` / `OUTBOUND_PROXY` / `HTTPS_PROXY` 出站代理（见[环境变量](#环境变量)）。
 
-### 新增平台（占位）
-
-Instagram Reels 与 TikTok 的可行性调研已完成（IG 匿名 GraphQL `doc_id` 通道实测通、TikTok 走 tikwm 通道，调研记录在海外平台分支），adapter 实现卡尚未合入 main。合入后本节与平台状态表将同步补齐。
 
 ## API
 
@@ -180,7 +179,7 @@ bun run typecheck
 
 瘦身思路（2026-10-25 构建实测）：删掉无头解析用不到的文件——mesa/LLVM 软渲染栈、系统 ICU 数据、ANGLE/SwiftShader 等；chromium 本体、其 ffmpeg 动态依赖与字体/nss/ca-certificates 砍不动。本卡不构建镜像，v2.1 的体积实测数字待主会话构建后补充。apk 源默认走阿里云镜像（构建实测 `dl-cdn.alpinelinux.org` 仅 14KB/s，阿里云 1.4MB/s），换官方源：`docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
 
-构建后验收清单：容器内 `/health` 200、`/ready` 7 平台、每平台一条真实链接解析通过、`bun test` 全绿（180 用例）、`tsc --noEmit` 零错。
+构建后验收清单：容器内 `/health` 200、`/ready` 9 平台、每平台一条真实链接解析通过、`bun test` 全绿（216 用例）、`tsc --noEmit` 零错。
 
 ```bash
 docker build -t short-video-extractor:v2 .

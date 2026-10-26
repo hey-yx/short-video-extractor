@@ -17,7 +17,7 @@
 
 </div>
 
-A short-video parsing API: give it a share link, get watermark-free video / photo-album direct links back. v2.1 supports 7 platforms: Douyin, Xiaohongshu (RedNote), Kuaishou, Bilibili, Weibo, X/Twitter and YouTube (Instagram Reels and TikTok have completed feasibility research — see [New Platforms](#new-platforms-placeholder) once those adapters land). The default response is direct links (the client downloads without a Referer header), so the server carries zero bandwidth; the `/media` relay is an optional add-on.
+A short-video parsing API: give it a share link, get watermark-free video / photo-album direct links back. v2.1 supports 9 platforms: Douyin, Xiaohongshu (RedNote), Kuaishou, Bilibili, Weibo, X/Twitter, YouTube, Instagram Reels and TikTok. The default response is direct links (the client downloads without a Referer header), so the server carries zero bandwidth; the `/media` relay is an optional add-on.
 
 ## Architecture
 
@@ -57,7 +57,7 @@ Tech stack: Bun + Elysia. The only runtime dependencies are elysia, @elysiajs/co
 
 ## Platform Status
 
-All 7 platforms produce the same unified `ParseResult` envelope. Channels and capabilities follow each adapter's `capabilities` declaration plus the measured notes under `docs/research/`:
+All 9 platforms produce the same unified `ParseResult` envelope. Channels and capabilities follow each adapter's `capabilities` declaration plus the measured notes under `docs/research/`:
 
 | Platform | Channel | Content | Quality tiers | Direct link IP-bound |
 |---|---|---|---|---|
@@ -68,12 +68,10 @@ All 7 platforms produce the same unified `ParseResult` envelope. Channels and ca
 | Weibo | Pure HTTP (anonymous statuses/show JSON; video direct-page fid exchanged for a mid; t.cn short links expanded via 302) | Video, albums | 1080P/720P/480P as served (the component tier list is richer than show) | No |
 | X/Twitter | Pure HTTP (cdn.syndication.twimg.com/tweet-result, token=0, signature-free) | Single-tweet video, GIF, albums | mp4 tiers by bitrate + HLS fallback | No (twimg direct links don't check the egress IP) |
 | YouTube / Shorts | Pure API (innertube /player, automatic ANDROID_VR→IOS client fallback, no PO Token, no cookies) | Video, Shorts | 144p–2160p as returned by the source (ANDROID_VR reaches 4K), DASH audio/video split plus merged tiers | **Yes** (googlevideo direct links are bound to the resolving egress IP, ~6h expiry; download via the `/media` server relay, whose egress must match the resolver's) |
+| Instagram Reels | Pure HTTP (anonymous GraphQL `doc_id` channel, no login/cookies; requires `IG_GRAPHQL_DOC_ID`) | Reels, post and IGTV videos, photo albums | mp4 as returned | No (fbcdn links carry no ip= binding) |
+| TikTok | Pure HTTP (tikwm public API: watermark-free links, albums, music; parsing goes through the egress proxy) | Video, albums, music | Watermark-free play/hdplay tiers | No (tiktokcdn links are not IP-bound) |
 
 Proxying: domestic platforms connect directly and never use a proxy; overseas platforms (YouTube etc.) go through the `PROXY_<PLATFORM>` / `OUTBOUND_PROXY` / `HTTPS_PROXY` egress proxy (see [Environment Variables](#environment-variables)).
-
-### New Platforms (placeholder)
-
-Feasibility research for Instagram Reels and TikTok is done (the IG anonymous GraphQL `doc_id` channel was verified live; TikTok goes through the tikwm channel — research notes live on the overseas-platforms branch); the adapter implementation cards have not merged into main yet. This section and the status table will be updated once they land.
 
 ## API
 
@@ -180,7 +178,7 @@ Multi-stage build: `oven/bun:alpine` compiles a single binary → `alpine:3.22` 
 
 Slimming approach (measured in the 2026-10-25 build): delete what headless parsing never needs — the mesa/LLVM software-rendering stack, system ICU data, ANGLE/SwiftShader and the like; chromium itself, its ffmpeg dynamic dependencies and fonts/nss/ca-certificates cannot be cut. This card does not build the image; the v2.1 measured size will be added after the main session builds it. The apk mirror defaults to Aliyun (measured during the build: `dl-cdn.alpinelinux.org` crawled at 14KB/s vs Aliyun at 1.4MB/s). To use the official mirror: `docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
 
-Post-build acceptance checklist: `/health` 200 inside the container, `/ready` reports 7 platforms, one real link per platform parses successfully, `bun test` all green (180 tests), `tsc --noEmit` zero errors.
+Post-build acceptance checklist: `/health` 200 inside the container, `/ready` reports 9 platforms, one real link per platform parses successfully, `bun test` all green (216 tests), `tsc --noEmit` zero errors.
 
 ```bash
 docker build -t short-video-extractor:v2 .
