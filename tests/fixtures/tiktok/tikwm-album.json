@@ -1,0 +1,72 @@
+{
+  "code": 0,
+  "msg": "success",
+  "processed_time": 0.883,
+  "data": {
+    "id": "7398188624526724358",
+    "region": "TN",
+    "title": "#fyp #foryou #foryoupage #trending #viral #amd #ryzen #nvidia #geforce #aorus #sony #playstation #xbox #microsoft #windows #pc ",
+    "content_desc": [],
+    "cover": "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image-cover:640:0:q72.heic",
+    "ai_dynamic_cover": "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image-cover:640:0:q72.heic",
+    "origin_cover": "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image-cover:640:0:q72.heic",
+    "duration": 0,
+    "play": "https://v16-ies-music.tiktokcdn-us.com/REDACTED-SIG/6ae81ccd/video/tos/useast5/tos-useast5-ve-27dcd7c799-tx/oIqlJIyMD3DZUB91QEfpC4D5tFAtAmBU4eEJLW/",
+    "wmplay": "https://v16-ies-music.tiktokcdn-us.com/REDACTED-SIG/6ae81ccd/video/tos/useast5/tos-useast5-ve-27dcd7c799-tx/oIqlJIyMD3DZUB91QEfpC4D5tFAtAmBU4eEJLW/",
+    "hdplay": "https://v16-ies-music.tiktokcdn-us.com/REDACTED-SIG/6ae81ccd/video/tos/useast5/tos-useast5-ve-27dcd7c799-tx/oIqlJIyMD3DZUB91QEfpC4D5tFAtAmBU4eEJLW/",
+    "size": 0,
+    "wm_size": 0,
+    "hd_size": 0,
+    "music": "https://v16-ies-music.tiktokcdn-us.com/REDACTED-SIG/6ae81ccd/video/tos/useast5/tos-useast5-ve-27dcd7c799-tx/oIqlJIyMD3DZUB91QEfpC4D5tFAtAmBU4eEJLW/",
+    "music_info": {
+      "id": "7391891811619785477",
+      "title": "original sound - pxskills",
+      "play": "https://v16-ies-music.tiktokcdn-us.com/REDACTED-SIG/6ae81ccd/video/tos/useast5/tos-useast5-ve-27dcd7c799-tx/oIqlJIyMD3DZUB91QEfpC4D5tFAtAmBU4eEJLW/",
+      "cover": "https://p19-common-sign.tiktokcdn-us.com/tos-maliva-avt-0068/REDACTED-HASH~tplv-tiktokx-cropcenter-q:1080:1080:q70.jpeg",
+      "author": "pietrxsl 7️⃣",
+      "original": true,
+      "duration": 24,
+      "album": "",
+      "create_time": 0
+    },
+    "play_count": 0,
+    "digg_count": 0,
+    "comment_count": 0,
+    "share_count": 0,
+    "download_count": 0,
+    "collect_count": 0,
+    "create_time": 0,
+    "anchors": null,
+    "anchors_extras": "",
+    "is_ad": false,
+    "commerce_info": {
+      "adv_promotable": false,
+      "auction_ad_invited": false,
+      "branded_content_type": 0,
+      "is_diversion_ad": 0,
+      "organic_log_extra": "{\"req_id\":\"20261026051613EB388DD79E5AE71A112E\"}",
+      "with_comment_filter_words": false
+    },
+    "commercial_video_info": "",
+    "item_comment_settings": 0,
+    "mentioned_users": "",
+    "author": {
+      "id": "7371830223157838853",
+      "unique_id": "dx_r13",
+      "nickname": "D̶X̶",
+      "avatar": "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-avt-0068/REDACTED-HASH~tplv-tiktokx-cropcenter-q:300:300:q70.jpeg"
+    },
+    "is_nff_or_nr": false,
+    "images": [
+      "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image.jpeg",
+      "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image.jpeg",
+      "https://p19-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image.jpeg",
+      "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image.jpeg",
+      "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image.jpeg",
+      "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image.jpeg",
+      "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image.jpeg",
+      "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image.jpeg",
+      "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-i-photomode-us/REDACTED-HASH~tplv-photomode-image.jpeg"
+    ]
+  }
+}

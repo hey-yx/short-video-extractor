@@ -12,6 +12,8 @@ export const PLATFORM_HOSTS: Record<Platform, readonly string[]> = {
   youtube: ['youtube.com', 'youtu.be', 'youtube-nocookie.com'],
   // instagr.am 301 到 instagram.com（实测），但分享口令可能直接带原始短域
   instagram: ['instagram.com', 'instagr.am'],
+  // vm./vt. 已被 tiktok.com 后缀覆盖，单列对齐分享域；短链展开走通用 resolve
+  tiktok: ['tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com'],
 };
 
 /** host 是否属于平台（后缀匹配：news.douyin.com ∈ douyin.com） */

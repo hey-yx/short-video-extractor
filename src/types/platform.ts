@@ -4,7 +4,7 @@
  */
 
 export type Platform =
-  'douyin' | 'xhs' | 'kuaishou' | 'bilibili' | 'weibo' | 'twitter' | 'youtube' | 'instagram';
+  'douyin' | 'xhs' | 'kuaishou' | 'bilibili' | 'weibo' | 'twitter' | 'youtube' | 'instagram' | 'tiktok';
 
 export type AssetType = 'video' | 'image' | 'audio' | 'cover';
 

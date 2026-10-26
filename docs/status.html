@@ -538,7 +538,7 @@
       <section>
         <h2>解析演示</h2>
         <div class="field">
-          <label for="share">粘贴一条分享链接或分享口令（抖音 / 快手 / B 站 / 小红书 / YouTube）</label>
+          <label for="share">粘贴一条分享链接或分享口令（抖音 / 快手 / B 站 / 小红书 / YouTube / TikTok）</label>
           <div class="row">
             <input
               id="share"
@@ -780,7 +780,7 @@
           UPSTREAM_TIMEOUT: '平台响应太慢',
           RISK_CONTROL: '平台风控拦截',
         };
-        var PLATFORM_NAMES = { douyin: '抖音', kuaishou: '快手', bilibili: 'B 站', xhs: '小红书', weibo: '微博', twitter: 'X（推特）', youtube: 'YouTube', instagram: 'Instagram' };
+        var PLATFORM_NAMES = { douyin: '抖音', kuaishou: '快手', bilibili: 'B 站', xhs: '小红书', weibo: '微博', twitter: 'X（推特）', youtube: 'YouTube', instagram: 'Instagram', tiktok: 'TikTok' };
         var KIND_NAMES = { video: '视频', album: '图集', images: '图集', unknown: '其他' };
         function pName(p) {
           return PLATFORM_NAMES[p] || p;
@@ -985,7 +985,7 @@
 
         var HINTS = {
           INVALID_URL: ['链接不完整或不是视频分享链接', '检查是否复制了完整分享口令（含 https:// 链接），或换一条链接'],
-          UNSUPPORTED_PLATFORM: ['暂不支持这个平台', '目前支持 抖音 / 快手 / B 站 / 小红书 / X / YouTube / Instagram 的分享链接'],
+          UNSUPPORTED_PLATFORM: ['暂不支持这个平台', '目前支持 抖音 / 小红书 / 快手 / B 站 / 微博 / X / YouTube / Instagram / TikTok 的分享链接'],
           UNSUPPORTED_CONTENT: ['地址不对或内容类型不支持', '检查服务地址是否填对（默认 http://127.0.0.1:7777）'],
           CONTENT_NOT_FOUND: ['作品不存在或已删除', '在平台 App 里确认作品还在，再复制一条新链接'],
           CONTENT_RESTRICTED: ['作品不可见（私密 / 仅自己可见 / 地区限制）', '换一条公开作品的链接'],

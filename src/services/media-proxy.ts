@@ -57,6 +57,13 @@ const CDN_HOSTS = [
   // Instagram 媒体 CDN（视频直链实域 *.fna.fbcdn.net；cdninstagram.com 为备用图床域）
   'fbcdn.net',
   'cdninstagram.com',
+  // TikTok：媒体直链全在 tiktokcdn 家族（2026-10-26 实测 v16m/v19/v16-notes.*.tiktokcdn-us.com 家族）；
+  // tikwm 偶发把 play 回成相对路径（/video/tos/...），parse 会补成 tikwm.com 中转域 — 一并白名单
+  'tiktokcdn.com',
+  'tiktokcdn-us.com',
+  'tiktokcdn-eu.com',
+  'tiktok.com',
+  'tikwm.com',
 ];
 
 /** SSRF 白名单：已注册平台的分享域 + 对应 CDN 域 */
@@ -91,6 +98,13 @@ const UPSTREAM_HEADERS: Array<{ match: string; referer?: string }> = [
   // 视频直链实域是 *.fna.fbcdn.net，fbcdn.net 后缀匹配全覆盖（cdninstagram.com 备用域一并放行）
   { match: 'fbcdn.net', referer: undefined },
   { match: 'cdninstagram.com', referer: undefined },
+  // tiktokcdn 实测（2026-10-26）：直链不绑 IP、不带 Referer 206（带不带均可），按不带处理；
+  // www.tiktok.com 不出媒体直链，仅兜 302 后的 CDN 域
+  { match: 'tiktokcdn.com', referer: undefined },
+  { match: 'tiktokcdn-us.com', referer: undefined },
+  { match: 'tiktokcdn-eu.com', referer: undefined },
+  { match: 'tiktok.com', referer: undefined },
+  { match: 'tikwm.com', referer: undefined },
 ];
 
 function upstreamHeadersFor(host: string): Record<string, string> {

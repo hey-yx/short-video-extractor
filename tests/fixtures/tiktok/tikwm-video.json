@@ -1,0 +1,61 @@
+{
+  "code": 0,
+  "msg": "success",
+  "processed_time": 0.829,
+  "data": {
+    "id": "7665075736742530317",
+    "region": "US",
+    "title": "Something big just landed on TikTok.",
+    "content_desc": [],
+    "cover": "https://p16-common-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/oAUhkWfCZC7g6ALj2HZgOeELFvIrALeFYOoGI4~tplv-tiktokx-cropcenter-q:300:400:q70.jpeg",
+    "ai_dynamic_cover": "https://p16-common-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/oME7OZ4ejUIyFkHXCrGfZOL6EeFvAA2gCDougI~tplv-tiktokx-origin.image",
+    "origin_cover": "https://p16-common-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/o0HdfAsh9SB9VEQqqXFfDBgq90rHH8QBRvD7EM~tplv-tiktokx-shrink-aq:360:360:q75.webp",
+    "duration": 25,
+    "play": "https://v16m.tiktokcdn-us.com/REDACTED-SIG/6adf3694/video/tos/useast5/tos-useast5-ve-0068c001-tx/okRjOkUA6WdCIZ4fGHgZ7vLlpMACrAe2IoIzOf/",
+    "wmplay": "https://v16m.tiktokcdn-us.com/REDACTED-SIG/6adf3694/video/tos/useast5/tos-useast5-ve-0068c002-tx/osBro6wCGRle4f2OAZLAktjZ7CeGUMHgISAOIv/",
+    "hdplay": "https://v16-notes.tiktokcdn-us.com/REDACTED-SIG/6adf3694/video/tos/useast5/tos-useast5-ve-0068c001-tx/ocLONLLUvAgZH7ZAI2O63jfCkePeR5rpIC4AgG/",
+    "size": 3356735,
+    "wm_size": 3152325,
+    "hd_size": 3054949,
+    "music": "https://v19-ies-music.tiktokcdn-us.com/REDACTED-SIG/6ae81ccd/video/tos/useast5/tos-useast5-v-27dcd7-tx/oEqvSio8vBwIeCiJwDkMw3LGKXUEgWfJZjpBiq/",
+    "music_info": {
+      "id": "7665075815390645006",
+      "title": "original sound - nasa",
+      "play": "https://v19-ies-music.tiktokcdn-us.com/REDACTED-SIG/6ae81ccd/video/tos/useast5/tos-useast5-v-27dcd7-tx/oEqvSio8vBwIeCiJwDkMw3LGKXUEgWfJZjpBiq/",
+      "cover": "https://p19-common-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/REDACTED-HASH~tplv-tiktokx-cropcenter-q:1080:1080:q70.jpeg",
+      "author": "NASA",
+      "original": true,
+      "duration": 25,
+      "album": "",
+      "create_time": 0
+    },
+    "play_count": 0,
+    "digg_count": 0,
+    "comment_count": 0,
+    "share_count": 0,
+    "download_count": 0,
+    "collect_count": 0,
+    "create_time": 0,
+    "anchors": null,
+    "anchors_extras": "",
+    "is_ad": false,
+    "commerce_info": {
+      "adv_promotable": false,
+      "auction_ad_invited": false,
+      "branded_content_type": 0,
+      "is_diversion_ad": 0,
+      "organic_log_extra": "{\"req_id\":\"20261026051610716ADA5239112836E4A8\"}",
+      "with_comment_filter_words": false
+    },
+    "commercial_video_info": "",
+    "item_comment_settings": 0,
+    "mentioned_users": "",
+    "author": {
+      "id": "7664638705177150477",
+      "unique_id": "nasa",
+      "nickname": "NASA",
+      "avatar": "https://p16-common-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/REDACTED-HASH~tplv-tiktokx-cropcenter-q:300:300:q70.jpeg"
+    },
+    "is_nff_or_nr": false
+  }
+}

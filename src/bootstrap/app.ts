@@ -11,6 +11,7 @@ import { weiboAdapter } from '@/platforms/weibo/adapter';
 import { twitterAdapter } from '@/platforms/twitter/adapter';
 import { youtubeAdapter } from '@/platforms/youtube/adapter';
 import { instagramAdapter } from '@/platforms/instagram/adapter';
+import { tiktokAdapter } from '@/platforms/tiktok/adapter';
 import { browserGateway } from '@/infra/browser';
 import { redactRequestUrl, reqIdOf, reqStartedAt, requestLogger } from '@/infra/logger';
 import { parseRoutes } from '@/routes/parse.routes';
@@ -28,6 +29,7 @@ export function createApp() {
   register(twitterAdapter);
   register(youtubeAdapter);
   register(instagramAdapter);
+  register(tiktokAdapter);
 
   const app = new Elysia()
     .use(cors({ origin: '*' }))

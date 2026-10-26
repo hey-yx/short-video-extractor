@@ -42,6 +42,7 @@ describe('ops 路由（/health /ready /platforms /metrics）', () => {
       'douyin',
       'instagram',
       'kuaishou',
+      'tiktok',
       'twitter',
       'weibo',
       'xhs',
