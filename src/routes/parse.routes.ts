@@ -16,6 +16,8 @@ const httpCtx = (request: Request): FetchCtx => ({
   // 需要浏览器的平台（小红书）从这里拿页面操作能力；平台包不见 puppeteer
   browser: browserGateway,
   logger: asFetchLogger(requestLogger(request)),
+  // 海外平台出站代理（部署目标网络出不了境时必配）；平台包不读 env，代理串从这里注入
+  proxyUrl: process.env.TWITTER_PROXY || undefined,
 });
 
 const UPSTREAM_CODES = new Set(['UPSTREAM_ERROR', 'UPSTREAM_CHANGED', 'UPSTREAM_TIMEOUT', 'RISK_CONTROL']);

@@ -49,6 +49,7 @@ const CDN_HOSTS = [
   'hdslb.com',
   'weibocdn.com',
   'sinaimg.cn',
+  'twimg.com',
 ];
 
 /** SSRF 白名单：已注册平台的分享域 + 对应 CDN 域 */
@@ -74,6 +75,8 @@ const UPSTREAM_HEADERS: Array<{ match: string; referer?: string }> = [
   { match: 'gifshow.com', referer: undefined },
   { match: 'weibocdn.com', referer: 'https://weibo.com/' },
   { match: 'sinaimg.cn', referer: 'https://weibo.com/' },
+  // twimg 实测（2026-10-26）：video.twimg.com 与 pbs.twimg.com 直链无 Referer 206/200，带不带均可
+  { match: 'twimg.com', referer: undefined },
 ];
 
 function upstreamHeadersFor(host: string): Record<string, string> {

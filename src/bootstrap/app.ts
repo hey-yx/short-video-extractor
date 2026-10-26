@@ -8,6 +8,7 @@ import { kuaishouAdapter } from '@/platforms/kuaishou/adapter';
 import { bilibiliAdapter } from '@/platforms/bilibili/adapter';
 import { xhsAdapter } from '@/platforms/xhs/adapter';
 import { weiboAdapter } from '@/platforms/weibo/adapter';
+import { twitterAdapter } from '@/platforms/twitter/adapter';
 import { browserGateway } from '@/infra/browser';
 import { redactRequestUrl, reqIdOf, reqStartedAt, requestLogger } from '@/infra/logger';
 import { parseRoutes } from '@/routes/parse.routes';
@@ -22,6 +23,7 @@ export function createApp() {
   register(bilibiliAdapter);
   register(xhsAdapter);
   register(weiboAdapter);
+  register(twitterAdapter);
 
   const app = new Elysia()
     .use(cors({ origin: '*' }))

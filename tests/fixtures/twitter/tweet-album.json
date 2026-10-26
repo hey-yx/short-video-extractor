@@ -1,0 +1,511 @@
+{
+  "__typename": "Tweet",
+  "favorite_count": 55,
+  "lang": "en",
+  "possibly_sensitive": false,
+  "created_at": "2026-10-21T04:31:18.000Z",
+  "display_text_range": [
+    0,
+    42
+  ],
+  "entities": {
+    "media": [
+      {
+        "display_url": "pic.x.com/example00",
+        "expanded_url": "https://x.com/user/status/0/video/1",
+        "indices": [
+          43,
+          66
+        ],
+        "url": "https://t.co/example00"
+      }
+    ]
+  },
+  "id_str": "2112763635378663468",
+  "text": "Example tweet text with media",
+  "user": {
+    "id_str": "1000000",
+    "name": "Test User",
+    "screen_name": "user",
+    "is_blue_verified": true,
+    "profile_image_shape": "Circle",
+    "verified": false,
+    "profile_image_url_https": "https://pbs.twimg.com/profile_images/0/example_normal.jpg"
+  },
+  "edit_control": {
+    "edit_tweet_ids": [
+      "2112763635378663468"
+    ],
+    "editable_until_msecs": "1792560678000",
+    "edits_remaining": "5",
+    "is_edit_eligible": true
+  },
+  "mediaDetails": [
+    {
+      "display_url": "pic.x.com/example00",
+      "expanded_url": "https://x.com/user/status/0/photo/1",
+      "ext_media_availability": {
+        "status": "Available"
+      },
+      "indices": [
+        43,
+        66
+      ],
+      "media_url_https": "https://pbs.twimg.com/media/HVILPczXAAE9Xn4.jpg",
+      "original_info": {
+        "focus_rects": [
+          {
+            "h": 573,
+            "w": 1024,
+            "x": 0,
+            "y": 679
+          },
+          {
+            "h": 1024,
+            "w": 1024,
+            "x": 0,
+            "y": 453
+          },
+          {
+            "h": 1167,
+            "w": 1024,
+            "x": 0,
+            "y": 382
+          },
+          {
+            "h": 2048,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "h": 2272,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "height": 2272,
+        "width": 1024
+      },
+      "sizes": {
+        "large": {
+          "h": 2048,
+          "resize": "fit",
+          "w": 923
+        },
+        "medium": {
+          "h": 1200,
+          "resize": "fit",
+          "w": 541
+        },
+        "small": {
+          "h": 680,
+          "resize": "fit",
+          "w": 306
+        },
+        "thumb": {
+          "h": 150,
+          "resize": "crop",
+          "w": 150
+        }
+      },
+      "type": "photo",
+      "url": "https://t.co/example00"
+    },
+    {
+      "display_url": "pic.x.com/example00",
+      "expanded_url": "https://x.com/user/status/0/photo/1",
+      "ext_media_availability": {
+        "status": "Available"
+      },
+      "indices": [
+        43,
+        66
+      ],
+      "media_url_https": "https://pbs.twimg.com/media/HVILQKXWsAAFoUl.jpg",
+      "original_info": {
+        "focus_rects": [
+          {
+            "h": 573,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "h": 1024,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "h": 1167,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "h": 2048,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "h": 2272,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "height": 2272,
+        "width": 1024
+      },
+      "sizes": {
+        "large": {
+          "h": 2048,
+          "resize": "fit",
+          "w": 923
+        },
+        "medium": {
+          "h": 1200,
+          "resize": "fit",
+          "w": 541
+        },
+        "small": {
+          "h": 680,
+          "resize": "fit",
+          "w": 306
+        },
+        "thumb": {
+          "h": 150,
+          "resize": "crop",
+          "w": 150
+        }
+      },
+      "type": "photo",
+      "url": "https://t.co/example00"
+    },
+    {
+      "display_url": "pic.x.com/example00",
+      "expanded_url": "https://x.com/user/status/0/photo/1",
+      "ext_media_availability": {
+        "status": "Available"
+      },
+      "indices": [
+        43,
+        66
+      ],
+      "media_url_https": "https://pbs.twimg.com/media/HVILQuPWUAASJQg.jpg",
+      "original_info": {
+        "focus_rects": [
+          {
+            "h": 573,
+            "w": 1024,
+            "x": 0,
+            "y": 225
+          },
+          {
+            "h": 1024,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "h": 1167,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "h": 2048,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "h": 2272,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "height": 2272,
+        "width": 1024
+      },
+      "sizes": {
+        "large": {
+          "h": 2048,
+          "resize": "fit",
+          "w": 923
+        },
+        "medium": {
+          "h": 1200,
+          "resize": "fit",
+          "w": 541
+        },
+        "small": {
+          "h": 680,
+          "resize": "fit",
+          "w": 306
+        },
+        "thumb": {
+          "h": 150,
+          "resize": "crop",
+          "w": 150
+        }
+      },
+      "type": "photo",
+      "url": "https://t.co/example00"
+    },
+    {
+      "display_url": "pic.x.com/example00",
+      "expanded_url": "https://x.com/user/status/0/photo/1",
+      "ext_media_availability": {
+        "status": "Available"
+      },
+      "indices": [
+        43,
+        66
+      ],
+      "media_url_https": "https://pbs.twimg.com/media/HVILRJqW0AAidfX.jpg",
+      "original_info": {
+        "focus_rects": [
+          {
+            "h": 573,
+            "w": 1024,
+            "x": 0,
+            "y": 906
+          },
+          {
+            "h": 1024,
+            "w": 1024,
+            "x": 0,
+            "y": 680
+          },
+          {
+            "h": 1167,
+            "w": 1024,
+            "x": 0,
+            "y": 609
+          },
+          {
+            "h": 2048,
+            "w": 1024,
+            "x": 0,
+            "y": 168
+          },
+          {
+            "h": 2272,
+            "w": 1024,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "height": 2272,
+        "width": 1024
+      },
+      "sizes": {
+        "large": {
+          "h": 2048,
+          "resize": "fit",
+          "w": 923
+        },
+        "medium": {
+          "h": 1200,
+          "resize": "fit",
+          "w": 541
+        },
+        "small": {
+          "h": 680,
+          "resize": "fit",
+          "w": 306
+        },
+        "thumb": {
+          "h": 150,
+          "resize": "crop",
+          "w": 150
+        }
+      },
+      "type": "photo",
+      "url": "https://t.co/example00"
+    }
+  ],
+  "photos": [
+    {
+      "backgroundColor": {
+        "red": 204,
+        "green": 214,
+        "blue": 221
+      },
+      "cropCandidates": [
+        {
+          "h": 573,
+          "w": 1024,
+          "x": 0,
+          "y": 679
+        },
+        {
+          "h": 1024,
+          "w": 1024,
+          "x": 0,
+          "y": 453
+        },
+        {
+          "h": 1167,
+          "w": 1024,
+          "x": 0,
+          "y": 382
+        },
+        {
+          "h": 2048,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 2272,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "expandedUrl": "https://x.com/BluesOfBirds/status/2112763635378663468/photo/1",
+      "url": "https://pbs.twimg.com/media/HVILPczXAAE9Xn4.jpg",
+      "width": 1024,
+      "height": 2272
+    },
+    {
+      "backgroundColor": {
+        "red": 204,
+        "green": 214,
+        "blue": 221
+      },
+      "cropCandidates": [
+        {
+          "h": 573,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 1024,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 1167,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 2048,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 2272,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "expandedUrl": "https://x.com/BluesOfBirds/status/2112763635378663468/photo/1",
+      "url": "https://pbs.twimg.com/media/HVILQKXWsAAFoUl.jpg",
+      "width": 1024,
+      "height": 2272
+    },
+    {
+      "backgroundColor": {
+        "red": 204,
+        "green": 214,
+        "blue": 221
+      },
+      "cropCandidates": [
+        {
+          "h": 573,
+          "w": 1024,
+          "x": 0,
+          "y": 225
+        },
+        {
+          "h": 1024,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 1167,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 2048,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 2272,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "expandedUrl": "https://x.com/BluesOfBirds/status/2112763635378663468/photo/1",
+      "url": "https://pbs.twimg.com/media/HVILQuPWUAASJQg.jpg",
+      "width": 1024,
+      "height": 2272
+    },
+    {
+      "backgroundColor": {
+        "red": 204,
+        "green": 214,
+        "blue": 221
+      },
+      "cropCandidates": [
+        {
+          "h": 573,
+          "w": 1024,
+          "x": 0,
+          "y": 906
+        },
+        {
+          "h": 1024,
+          "w": 1024,
+          "x": 0,
+          "y": 680
+        },
+        {
+          "h": 1167,
+          "w": 1024,
+          "x": 0,
+          "y": 609
+        },
+        {
+          "h": 2048,
+          "w": 1024,
+          "x": 0,
+          "y": 168
+        },
+        {
+          "h": 2272,
+          "w": 1024,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "expandedUrl": "https://x.com/BluesOfBirds/status/2112763635378663468/photo/1",
+      "url": "https://pbs.twimg.com/media/HVILRJqW0AAidfX.jpg",
+      "width": 1024,
+      "height": 2272
+    }
+  ],
+  "conversation_count": 21,
+  "news_action_type": "conversation",
+  "isEdited": false,
+  "isStaleEdit": false
+}

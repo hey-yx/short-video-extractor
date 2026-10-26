@@ -1,0 +1,196 @@
+{
+  "__typename": "Tweet",
+  "favorite_count": 3,
+  "lang": "en",
+  "possibly_sensitive": false,
+  "created_at": "2026-10-25T07:44:27.000Z",
+  "display_text_range": [
+    0,
+    248
+  ],
+  "entities": {
+    "hashtags": [
+      {
+        "indices": [
+          39,
+          46
+        ],
+        "text": "Russia"
+      },
+      {
+        "indices": [
+          51,
+          59
+        ],
+        "text": "Ukraine"
+      },
+      {
+        "indices": [
+          133,
+          142
+        ],
+        "text": "Kupiansk"
+      },
+      {
+        "indices": [
+          197,
+          205
+        ],
+        "text": "Kharkiv"
+      }
+    ],
+    "media": [
+      {
+        "display_url": "pic.x.com/example00",
+        "expanded_url": "https://x.com/user/status/0/video/1",
+        "indices": [
+          249,
+          272
+        ],
+        "url": "https://t.co/example00"
+      }
+    ]
+  },
+  "id_str": "2114261795426963926",
+  "text": "Example tweet text with media",
+  "user": {
+    "id_str": "1000000",
+    "name": "Test User",
+    "screen_name": "user",
+    "is_blue_verified": false,
+    "profile_image_shape": "Circle",
+    "verified": false,
+    "profile_image_url_https": "https://pbs.twimg.com/profile_images/0/example_normal.jpg"
+  },
+  "edit_control": {
+    "edit_tweet_ids": [
+      "2114261795426963926"
+    ],
+    "editable_until_msecs": "1792917867000",
+    "edits_remaining": "5",
+    "is_edit_eligible": false
+  },
+  "mediaDetails": [
+    {
+      "display_url": "pic.x.com/example00",
+      "expanded_url": "https://x.com/user/status/0/photo/1",
+      "ext_media_availability": {
+        "status": "Available"
+      },
+      "indices": [
+        249,
+        272
+      ],
+      "media_url_https": "https://pbs.twimg.com/media/HVdd479XcAA_1kv.jpg",
+      "original_info": {
+        "focus_rects": [
+          {
+            "h": 717,
+            "w": 1280,
+            "x": 0,
+            "y": 0
+          },
+          {
+            "h": 720,
+            "w": 720,
+            "x": 184,
+            "y": 0
+          },
+          {
+            "h": 720,
+            "w": 632,
+            "x": 228,
+            "y": 0
+          },
+          {
+            "h": 720,
+            "w": 360,
+            "x": 364,
+            "y": 0
+          },
+          {
+            "h": 720,
+            "w": 1280,
+            "x": 0,
+            "y": 0
+          }
+        ],
+        "height": 720,
+        "width": 1280
+      },
+      "sizes": {
+        "large": {
+          "h": 720,
+          "resize": "fit",
+          "w": 1280
+        },
+        "medium": {
+          "h": 675,
+          "resize": "fit",
+          "w": 1200
+        },
+        "small": {
+          "h": 383,
+          "resize": "fit",
+          "w": 680
+        },
+        "thumb": {
+          "h": 150,
+          "resize": "crop",
+          "w": 150
+        }
+      },
+      "type": "photo",
+      "url": "https://t.co/example00"
+    }
+  ],
+  "photos": [
+    {
+      "backgroundColor": {
+        "red": 204,
+        "green": 214,
+        "blue": 221
+      },
+      "cropCandidates": [
+        {
+          "h": 717,
+          "w": 1280,
+          "x": 0,
+          "y": 0
+        },
+        {
+          "h": 720,
+          "w": 720,
+          "x": 184,
+          "y": 0
+        },
+        {
+          "h": 720,
+          "w": 632,
+          "x": 228,
+          "y": 0
+        },
+        {
+          "h": 720,
+          "w": 360,
+          "x": 364,
+          "y": 0
+        },
+        {
+          "h": 720,
+          "w": 1280,
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "expandedUrl": "https://x.com/royy_tweets/status/2114261795426963926/photo/1",
+      "url": "https://pbs.twimg.com/media/HVdd479XcAA_1kv.jpg",
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "conversation_count": 1,
+  "news_action_type": "conversation",
+  "isEdited": false,
+  "isStaleEdit": false
+}
