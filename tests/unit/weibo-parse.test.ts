@@ -13,7 +13,7 @@ const component = (await Bun.file(
   'tests/fixtures/weibo/component-playinfo.json',
 ).json()) as WeiboPayload['component'];
 
-const payload = (body: unknown): RawPayload => ({ via: 'api', fetchedAt: 1_700_000_000, body });
+const payload = (body: unknown): RawPayload => ({ via: 'api', channel: 'http', fetchedAt: 1_700_000_000, body });
 
 describe('weibo parseWeibo（真实响应 fixture 回归）', () => {
   test('视频帖：三档 urls，主 URL 取最大像素，variants 收其余档', () => {

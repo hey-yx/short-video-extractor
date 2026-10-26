@@ -216,6 +216,7 @@ export const weiboAdapter: PlatformAdapter = {
     const body: WeiboPayload = component ? { show, component } : { show };
     return {
       via: 'api',
+      channel: 'http',
       fetchedAt: Math.floor(Date.now() / 1000),
       body,
     };
