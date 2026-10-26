@@ -47,6 +47,8 @@ const CDN_HOSTS = [
   'bilivideo.com',
   'bilivideo.cn',
   'hdslb.com',
+  'weibocdn.com',
+  'sinaimg.cn',
 ];
 
 /** SSRF 白名单：已注册平台的分享域 + 对应 CDN 域 */
@@ -70,6 +72,8 @@ const UPSTREAM_HEADERS: Array<{ match: string; referer?: string }> = [
   { match: 'kwimgs.com', referer: undefined },
   { match: 'chenzhongtech.com', referer: undefined },
   { match: 'gifshow.com', referer: undefined },
+  { match: 'weibocdn.com', referer: 'https://weibo.com/' },
+  { match: 'sinaimg.cn', referer: 'https://weibo.com/' },
 ];
 
 function upstreamHeadersFor(host: string): Record<string, string> {

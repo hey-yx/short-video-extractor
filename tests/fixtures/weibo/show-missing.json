@@ -1,0 +1,7 @@
+{
+ "ok": 0,
+ "errno": "20101",
+ "msg": "该微博不存在",
+ "error_type": "alert",
+ "extra": "target weibo does not exist!"
+}

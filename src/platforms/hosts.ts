@@ -6,6 +6,7 @@ export const PLATFORM_HOSTS: Record<Platform, readonly string[]> = {
   xhs: ['xiaohongshu.com', 'xhslink.com', 'xhslink.cn'],
   kuaishou: ['kuaishou.com', 'chenzhongtech.com', 'v.kuaishou.com'],
   bilibili: ['bilibili.com', 'b23.tv'],
+  weibo: ['weibo.com', 'weibo.cn', 'weibo.com.cn', 't.cn'],
 };
 
 /** host 是否属于平台（后缀匹配：news.douyin.com ∈ douyin.com） */

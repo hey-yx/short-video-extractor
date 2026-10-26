@@ -1,0 +1,155 @@
+{
+ "ok": 1,
+ "data": {
+  "visible": {
+   "type": 0,
+   "list_id": 0
+  },
+  "created_at": "Sat Sep 05 23:31:46 +0800 2026",
+  "id": "5339931342014513",
+  "mid": "5339931342014513",
+  "can_edit": false,
+  "text": "【视频】<a  href=\"https://m.weibo.cn/p/index?extparam=AKB48&containerid=100808ed2c28f9a273ffeda9bc9c78d062f4f6&launchid=10000360-page_H5\" data-hide=\"\"><span class='url-icon'><img style='width: 1rem;height: 1rem' src='https://n.sinaimg.cn/photo/5213b46e/20180926/timeline_card_small_super_default.png'></span><span class=\"surl-text\">AKB48</span></a><a  href=\"https://m.weibo.cn/p/index?extparam=%E7%A7%8B%E5%B1%B1%E7%94%B1%E5%A5%88&containerid=100808137f6ecae5250809d3be38a4c38f027e&launchid=10000360-page_H5\" data-hide=\"\"><span class='url-icon'><img style='width: 1rem;height: 1rem' src='https://n.sinaimg.cn/photo/5213b46e/20180926/timeline_card_small_super_default.png'></span><span class=\"surl-text\">秋山由奈</span></a><a  href=\"https://m.weibo.cn/p/index?extparam=%E5%85%AB%E6%9C%A8%E7%88%B1%E6%9C%88&containerid=100808f68a58b120d20d3a3db0ee319673e4fd&launchid=10000360-page_H5\" data-hide=\"\"><span class='url-icon'><img style='width: 1rem;height: 1rem' src='https://n.sinaimg.cn/photo/5213b46e/20180926/timeline_card_small_super_default.png'></span><span class=\"surl-text\">八木爱月</span></a> 双子感覚 <a  href=\"https://video.weibo.com/show?fid=1034:5339930738753551\" data-hide=\"\"><span class='url-icon'><img style='width: 1rem;height: 1rem' src='https://h5.sinaimg.cn/upload/2015/09/25/3/timeline_card_small_video_default.png'></span><span class=\"surl-text\">AKB48通讯社的微博视频</span></a> ",
+  "textLength": 83,
+  "source": "AKB48超话",
+  "favorited": false,
+  "pic_ids": [],
+  "is_paid": false,
+  "mblog_vip_type": 0,
+  "user": {
+   "id": 3161347567,
+   "screen_name": "AKB48通讯社",
+   "profile_image_url": "https://tvax4.sinaimg.cn/crop.0.0.512.512.180/bc6e55efly8gtvnxq9utgj20e80e80sx.jpg?KID=imgbed,tva&Expires=1792956735&ssig={{SECRET_ssig}}",
+   "profile_url": "https://m.weibo.cn/u/3161347567?launchid=10000360-page_H5",
+   "close_blue_v": false,
+   "description": "支持安利投稿，Q玩耍群：6886936。组织群：937623699。“AKB48应援会”改名“AKB48通讯社”",
+   "follow_me": false,
+   "following": false,
+   "follow_count": 134,
+   "followers_count": "18.7万",
+   "cover_image_phone": "https://wx4.sinaimg.cn/crop.0.0.640.640.640/bc6e55efgy1ihh5hhso9wj21kw1kwtru.jpg",
+   "avatar_hd": "https://wx4.sinaimg.cn/orj480/bc6e55efly8gtvnxq9utgj20e80e80sx.jpg",
+   "badge": {
+    "dzwbqlx_2016": 1,
+    "follow_whitelist_video": 1,
+    "panda": 1,
+    "user_name_certificate": 1,
+    "qixi_2018": 1,
+    "relation_display": 1,
+    "hongbao_2020": 2,
+    "pc_new": 7,
+    "hongbaofeifuniu_2021": 1,
+    "fishfarm_2021": 1,
+    "hongbaofei2022_2021": 2,
+    "iplocationchange_2022": 1,
+    "gaokao_2022": 1,
+    "gaokao_2023": 1,
+    "user_identity_auth": 1
+   },
+   "statuses_count": 94742,
+   "verified": true,
+   "verified_type": 0,
+   "gender": "f",
+   "mbtype": 12,
+   "svip": 0,
+   "urank": 48,
+   "mbrank": 7,
+   "followers_count_str": "18.7万",
+   "verified_type_ext": 2,
+   "verified_reason": "娱乐博主",
+   "like": false,
+   "like_me": false,
+   "special_follow": false,
+   "user_token": "a0.MTg1ZGEwZWU0OWVhNGQyYxd38_-mEpUW1_F7RbJVrOPA1FWxe8D6w-pnf-_o3W1S"
+  },
+  "reposts_count": 11,
+  "comments_count": 0,
+  "reprint_cmt_count": 0,
+  "attitudes_count": 24,
+  "mixed_count": 0,
+  "favorites_count": 0,
+  "pending_approval_count": 0,
+  "isLongText": false,
+  "show_mlevel": 0,
+  "topic_id": "1022:100808ed2c28f9a273ffeda9bc9c78d062f4f6",
+  "sync_mblog": true,
+  "is_imported_topic": true,
+  "darwin_tags": [],
+  "ad_marked": false,
+  "mblogtype": 0,
+  "item_category": "status",
+  "rid": "0_0_0_2023296232015955206_0_0_0",
+  "cardid": "star_005",
+  "number_display_strategy": {
+   "apply_scenario_flag": 51,
+   "display_text_min_number": 1000000,
+   "display_text": "100万+"
+  },
+  "comment_guide_ext": "guide_type:-1|source:1",
+  "content_auth": 0,
+  "ask_zhisou": false,
+  "is_show_mixed": false,
+  "safe_tags": 524288,
+  "comment_manage_info": {
+   "comment_permission_type": -1,
+   "approval_comment_type": 0,
+   "comment_sort_type": 0,
+   "comment_anon_type": 0
+  },
+  "pic_num": 0,
+  "fid": 5339930749567266,
+  "jump_type": 1,
+  "mlevel": 0,
+  "region_name": "发布于 浙江",
+  "region_opt": 1,
+  "detail_bottom_bar": 0,
+  "style_config": {
+   "remove_blank_line_flag": 1
+  },
+  "page_info": {
+   "type": "video",
+   "object_type": 11,
+   "url_ori": "http://t.cn/AX0CCdCG",
+   "page_pic": {
+    "width": "480",
+    "pid": "bc6e55efly1igt7r73ye8j20u01hcdhu",
+    "source": "21",
+    "is_self_cover": "0",
+    "type": "0",
+    "url": "https://wx3.sinaimg.cn/orj480/bc6e55efly1igt7r73ye8j20u01hcdhu.jpg",
+    "height": "853"
+   },
+   "page_url": "https://video.weibo.com/show?fid=1034%3A5339930738753551&launchid=10000360-page_H5",
+   "object_id": "1034:5339930738753551",
+   "page_title": "AKB48通讯社的微博视频",
+   "title": "",
+   "content1": "AKB48通讯社的微博视频",
+   "content2": "【视频】#AKB48[超话]##秋山由奈[超话]##八木爱月[超话]# 双子感覚",
+   "video_orientation": "vertical",
+   "play_count": "2676次播放",
+   "media_info": {
+    "stream_url": "https://f.video.weibocdn.com/o0/KHvMlYVslx08Azlf1XP20104120045eV0E010.mp4?label=mp4_hd&template=540x960.24.0&ori=0&ps=1BThihd3VLAY5R&Expires=1792949535&ssig={{SECRET_ssig}}&KID=unistore,video",
+    "stream_url_hd": "https://f.video.weibocdn.com/o0/KHvMlYVslx08Azlf1XP20104120045eV0E010.mp4?label=mp4_hd&template=540x960.24.0&ori=0&ps=1BThihd3VLAY5R&Expires=1792949535&ssig={{SECRET_ssig}}&KID=unistore,video",
+    "duration": 11.215
+   },
+   "urls": {
+    "mp4_720p_mp4": "https://f.video.weibocdn.com/o0/4c3iGxEmlx08AzleEin6010412006sWd0E010.mp4?label=mp4_720p&template=720x1280.24.0&ori=0&ps=1BThihd3VLAY5R&Expires=1792949535&ssig={{SECRET_ssig}}&KID=unistore,video",
+    "mp4_hd_mp4": "https://f.video.weibocdn.com/o0/KHvMlYVslx08Azlf1XP20104120045eV0E010.mp4?label=mp4_hd&template=540x960.24.0&ori=0&ps=1BThihd3VLAY5R&Expires=1792949535&ssig={{SECRET_ssig}}&KID=unistore,video",
+    "mp4_ld_mp4": "https://f.video.weibocdn.com/o0/KHvMlYVslx08Azlf1XP20104120045eV0E010.mp4?label=mp4_hd&template=540x960.24.0&ori=0&ps=1BThihd3VLAY5R&Expires=1792949535&ssig={{SECRET_ssig}}&KID=unistore,video"
+   }
+  },
+  "bid": "RgKNo8s49",
+  "buttons": [
+   {
+    "type": "follow",
+    "name": "关注",
+    "sub_type": 0,
+    "params": {
+     "uid": 3161347567
+    }
+   }
+  ],
+  "status_title": "【视频】AKB48秋山由奈八木爱月...",
+  "ok": 1
+ }
+}

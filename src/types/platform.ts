@@ -3,7 +3,7 @@
  * 平台适配层（src/platforms/**）的 parse() 输出此结构；对外 API 直接序列化它。
  */
 
-export type Platform = 'douyin' | 'xhs' | 'kuaishou' | 'bilibili';
+export type Platform = 'douyin' | 'xhs' | 'kuaishou' | 'bilibili' | 'weibo';
 
 export type AssetType = 'video' | 'image' | 'audio' | 'cover';
 
