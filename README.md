@@ -46,13 +46,20 @@ src/
 
 Three hard rules for the platform layer: `platforms/**` never imports Elysia, never reads env, never calls console.log; `parse()` is a pure function (same input, same output) covered by fixture-based offline regression tests; IO goes only through `fetch()` and the injected `FetchCtx`. When a platform changes its pages/APIs, the symptom is "the unit test goes red first" — not silently empty results in production.
 
-Tech stack: Bun + Elysia. The only runtime dependencies are elysia, @elysiajs/cors, lru-cache, pino, and puppeteer (the browser is used only by the Xiaohongshu channel).
+Tech stack: Bun + Elysia. The only runtime dependencies are elysia, @elysiajs/cors, lru-cache, pino, and puppeteer (the primary channel for Xiaohongshu, the risk-control fallback for Douyin).
+
+## Stability
+
+- **Douyin dual channel**: pure HTTP by default (the L1 signature-free detail API). Once it returns 403 `ArgusSecurityPlugin` (L1 risk-controlled), the service automatically downgrades to the browser — it opens the video page and intercepts the `/aweme/v1/web/aweme/detail/` XHR that the page itself issues from the response stream; the `via` field honestly reports `browser`. Downgrade counts land in `channel_downgrade_total`.
+- **Transient retries**: `UPSTREAM_TIMEOUT` / `UPSTREAM_ERROR` (network-layer and upstream 5xx) are retried once at the orchestration layer with exponential backoff (500ms→1s), bounded by the 15s request ceiling. `RISK_CONTROL`, content errors and input errors are never retried (retrying risk control means more risk control). Counts land in `parse_retry_total`.
+- **Browser concurrency gate**: all browser channels share one semaphore — at most 2 concurrent pages, the rest queue, and queueing aborts immediately when the request is cancelled (AbortSignal) — so concurrency cannot exhaust memory (roughly 30–110 MB per Chrome page).
+- **Honest risk-control classification**: Xiaohongshu error pages such as `error_code=300012` (IP at risk) map to `RISK_CONTROL` (503, human-readable message) instead of posing as an upstream redesign.
 
 ## Platform Status
 
 | Platform | Channel | Content | Browser |
 |---|---|---|---|
-| Douyin | Pure HTTP (detail API + play direct links) | Video (four tiers: 540p/720p/1080p/original), photo albums, live photos | No |
+| Douyin | HTTP first (detail API + play direct links); auto-downgrades to the browser (intercepting the detail XHR) when the L1 endpoint is risk-controlled | Video (four tiers: 540p/720p/1080p/original), photo albums, live photos | Fallback (automatic on risk control) |
 | Xiaohongshu | Browser fetches the main document HTML → `__INITIAL_STATE__` | Note images, video | Required (TLS-fingerprint allowlist) |
 | Kuaishou | Pure HTTP (short-link 302 + share page INIT_STATE) | Video, multiple qualities | No |
 | Bilibili | Pure HTTP (view + playurl try_look) | Video, multi-part, DASH audio/video split | No |
@@ -118,6 +125,8 @@ Prometheus text format (hand-rolled renderer, no prom-client):
 | `parse_duration_ms` | histogram | Parse latency distribution (milliseconds, by platform) |
 | `cache_hit_total` | counter | Cache hit count |
 | `upstream_error_total{platform,reason}` | counter | Upstream failure / risk-control count |
+| `channel_downgrade_total{platform,from,to}` | counter | Automatic channel downgrades (e.g. Douyin http→browser) |
+| `parse_retry_total{platform}` | counter | Transient-error (timeout / 5xx) retry count |
 
 ## Observability
 

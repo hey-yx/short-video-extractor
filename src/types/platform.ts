@@ -106,6 +106,16 @@ export interface FetchCtx {
   browser?: {
     /** 导航并截取主文档 HTML（小红书用；hydration 前抢快照） */
     getDocumentHtml(url: string, timeoutMs: number): Promise<string>;
+    /**
+     * 导航后监听 response，截取 urlIncludes 命中的 XHR JSON（抖音兜底用）。
+     * 首个命中即返回解析后的 body；signal 取消时立即中止导航与等待。
+     */
+    interceptJson(
+      url: string,
+      urlIncludes: string,
+      timeoutMs: number,
+      signal?: AbortSignal,
+    ): Promise<unknown>;
   };
 }
 
@@ -114,6 +124,8 @@ export interface RawPayload {
   via: 'api' | 'html-embedded-json' | 'browser-intercept';
   fetchedAt: number;
   body: unknown;
+  /** 实际取数通道：http = 纯 HTTP，browser = 浏览器兜底（adapter 降级后如实标注） */
+  channel: 'http' | 'browser';
 }
 
 /**

@@ -7,7 +7,7 @@ import type { RawPayload } from '@/types/platform';
 const html = readFileSync(new URL('../fixtures/kuaishou/share-page.html', import.meta.url), 'utf8');
 
 function payload(body: string): RawPayload {
-  return { via: 'html-embedded-json', fetchedAt: 1_700_000_000, body };
+  return { via: 'html-embedded-json', fetchedAt: 1_700_000_000, body, channel: 'http' };
 }
 
 describe('kuaishou parseKuaishou（真实分享页 fixture 回归）', () => {
@@ -69,7 +69,7 @@ describe('kuaishou parseKuaishou（真实分享页 fixture 回归）', () => {
 
   test('非 html-embedded-json 载荷拒绝', () => {
     try {
-      parseKuaishou({ via: 'api', fetchedAt: 1, body: {} });
+      parseKuaishou({ via: 'api', fetchedAt: 1, body: {}, channel: 'http' });
       expect.unreachable();
     } catch (e) {
       expect((e as AppError).code).toBe('UPSTREAM_CHANGED');

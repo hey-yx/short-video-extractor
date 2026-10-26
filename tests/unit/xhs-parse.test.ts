@@ -15,6 +15,7 @@ const input = (id = ''): MatchResult => ({
 const payload = (body: unknown): RawPayload => ({
   via: 'browser-intercept',
   fetchedAt: 1_700_000_000,
+  channel: 'browser',
   body,
 });
 
@@ -96,6 +97,29 @@ describe('xhs __INITIAL_STATE__ 提取（非法 JSON 处理）', () => {
       expect.unreachable();
     } catch (e) {
       expect((e as AppError).code).toBe('RISK_CONTROL');
+    }
+  });
+
+  test('300012 IP at risk 错误页（无 __INITIAL_STATE__）：RISK_CONTROL，不落 UPSTREAM_CHANGED', () => {
+    const errorPage =
+      '<!doctype html><html><body><h1>当前环境异常，完成验证后即可继续访问</h1>' +
+      '<a href="/website-login/error?error_code=300012&error_msg=IP%20at%20risk.">IP at risk</a></body></html>';
+    try {
+      parseNote(payload(errorPage), input('6aa0343c00000000270173b7'));
+      expect.unreachable();
+    } catch (e) {
+      const err = e as AppError;
+      expect(err.code).toBe('RISK_CONTROL');
+      expect(err.message).toContain('风控');
+    }
+  });
+
+  test('无 __INITIAL_STATE__ 且无风控特征：仍是 UPSTREAM_CHANGED（真改版）', () => {
+    try {
+      parseNote(payload('<html><body>moved or redesigned</body></html>'), input('x'));
+      expect.unreachable();
+    } catch (e) {
+      expect((e as AppError).code).toBe('UPSTREAM_CHANGED');
     }
   });
 

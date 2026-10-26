@@ -73,7 +73,12 @@ export const kuaishouAdapter: PlatformAdapter = {
         finalUrl: res.url,
       });
     }
-    return { via: 'html-embedded-json', fetchedAt: Math.floor(Date.now() / 1000), body: html };
+    return {
+      via: 'html-embedded-json',
+      fetchedAt: Math.floor(Date.now() / 1000),
+      body: html,
+      channel: 'http',
+    };
   },
 
   parse: parseKuaishou,

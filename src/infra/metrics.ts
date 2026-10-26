@@ -81,6 +81,14 @@ export const metrics = {
     lines.push('# TYPE upstream_error_total counter');
     emitCounter(lines, counters, 'upstream_error_total');
 
+    lines.push('# HELP channel_downgrade_total 解析通道降级次数（platform, from→to）');
+    lines.push('# TYPE channel_downgrade_total counter');
+    emitCounter(lines, counters, 'channel_downgrade_total');
+
+    lines.push('# HELP parse_retry_total 瞬态错误重试次数');
+    lines.push('# TYPE parse_retry_total counter');
+    emitCounter(lines, counters, 'parse_retry_total');
+
     return `${lines.join('\n')}\n`;
   },
 
@@ -94,6 +102,8 @@ export const metrics = {
 function prewarm(): void {
   metrics.inc('cache_hit_total', undefined, 0);
   metrics.inc('upstream_error_total', undefined, 0);
+  metrics.inc('channel_downgrade_total', undefined, 0);
+  metrics.inc('parse_retry_total', undefined, 0);
 }
 
 function emitCounter(lines: string[], source: Map<string, number>, prefix: string): void {
@@ -127,3 +137,8 @@ export const recordCacheHit = (): void => metrics.inc('cache_hit_total');
 
 export const recordUpstreamError = (platform: string, reason: string): void =>
   metrics.inc('upstream_error_total', { platform, reason });
+
+export const recordChannelDowngrade = (platform: string, from: string, to: string): void =>
+  metrics.inc('channel_downgrade_total', { platform, from, to });
+
+export const recordParseRetry = (platform: string): void => metrics.inc('parse_retry_total', { platform });

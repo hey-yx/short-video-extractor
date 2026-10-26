@@ -1,5 +1,6 @@
 import type { ParseResult } from '@/types/platform';
 import { AppError } from '@/core/errors';
+import { recordParseRetry } from '@/infra/metrics';
 import { dispatch, matchAdapter } from '@/platforms/registry';
 import { cacheKey, parseCache } from '@/services/cache';
 import type { FetchCtx } from '@/types/platform';
@@ -10,9 +11,35 @@ export interface ParseOutcome {
   cached: boolean;
 }
 
+/** 只重试瞬态网络层失败（网络抖动/上游 5xx）；重试风控=加重风控，重试 404=浪费 */
+const RETRYABLE_CODES = new Set(['UPSTREAM_TIMEOUT', 'UPSTREAM_ERROR']);
+
+/** 退避节奏（毫秒）：第 1 次重试前 500ms，第 2 次 1s（当前上限 1 次，留作节奏定义） */
+const RETRY_BACKOFF_MS = [500, 1000];
+
+/** 退避等待：受 ctx.signal 约束（15s 总上限到期立即放弃，不拖过请求时限） */
+function backoff(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException('aborted', 'AbortError'));
+      return;
+    }
+    const timer = setTimeout(done, ms);
+    function done() {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }
+    function onAbort() {
+      clearTimeout(timer);
+      reject(new DOMException('aborted', 'AbortError'));
+    }
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
 /**
  * 解析编排：match（取缓存 key）→ 缓存/singleflight → dispatch（短链展开）→ fetch → parse。
- * 通道选择与降级在平台 adapter 内部声明；这里只管流程、缓存与错误归一。
+ * 通道选择与降级在平台 adapter 内部声明；这里只管流程、缓存、瞬态重试与错误归一。
  */
 export async function parseUrl(rawUrl: string, ctx: FetchCtx): Promise<ParseOutcome> {
   let url: URL;
@@ -40,7 +67,21 @@ export async function parseUrl(rawUrl: string, ctx: FetchCtx): Promise<ParseOutc
   const { cached, result } = await parseCache.wrap(key, async () => {
     const { adapter: finalAdapter, input, url: finalUrl } = await dispatch(url, ctx);
     const started = Date.now();
-    const payload = await finalAdapter.fetch(input, finalUrl, ctx);
+    let payload;
+    try {
+      payload = await finalAdapter.fetch(input, finalUrl, ctx);
+    } catch (err) {
+      // 瞬态失败重试 1 次（指数退避）；RISK_CONTROL / CONTENT_* / INVALID_* 一律不重试
+      const retryable = err instanceof AppError && RETRYABLE_CODES.has(err.code) && !ctx.signal.aborted;
+      if (!retryable) throw err;
+      ctx.logger.warn('transient upstream error, retrying once', {
+        platform: finalAdapter.platform,
+        code: err.code,
+      });
+      recordParseRetry(finalAdapter.platform);
+      await backoff(RETRY_BACKOFF_MS[0]!, ctx.signal);
+      payload = await finalAdapter.fetch(input, finalUrl, ctx);
+    }
     const parsed = finalAdapter.parse(payload, input);
     // 短链 key 与展开后的稳定 id 不同：回填一份，长短链共享缓存
     const canonical = cacheKey(parsed.platform, parsed.id, finalUrl.href);

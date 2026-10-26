@@ -150,6 +150,8 @@ export function parseAweme(raw: RawPayload): ParseResult {
   if (raw.via !== 'api') {
     throw new AppError('UPSTREAM_CHANGED', `抖音解析收到未知载荷类型: ${raw.via}`);
   }
+  // via 字段如实反映实际通道（L1 被风控时 adapter 已自动降级浏览器）
+  const via: ParseResult['via'] = raw.channel === 'browser' ? 'browser' : 'http';
   const body = raw.body as DetailResponse;
   const d: AwemeDetail | null | undefined = body.aweme_detail;
   if (!d) {
@@ -183,6 +185,6 @@ export function parseAweme(raw: RawPayload): ParseResult {
     assets,
     expiresAt,
     parsedAt: raw.fetchedAt,
-    via: 'http',
+    via,
   };
 }

@@ -14,6 +14,7 @@ function singlePayload(): RawPayload {
   return {
     via: 'api',
     fetchedAt: FETCHED_AT,
+    channel: 'http',
     body: {
       view: { code: 0, message: 'OK', data },
       streams: [
@@ -35,6 +36,7 @@ function multiPayload(): RawPayload {
   return {
     via: 'api',
     fetchedAt: FETCHED_AT,
+    channel: 'http',
     body: {
       view: { code: 0, message: 'OK', data },
       streams: data.pages.map((p, i) => ({
@@ -115,6 +117,7 @@ describe('bilibili parseBilibili（真实 view/playurl fixture 回归）', () =>
       parseBilibili({
         via: 'api',
         fetchedAt: FETCHED_AT,
+        channel: 'http',
         body: { view: { code: 0, data: viewVideo.data }, streams: [] },
       });
       expect.unreachable();
@@ -129,6 +132,7 @@ describe('bilibili parseBilibili（真实 view/playurl fixture 回归）', () =>
       parseBilibili({
         via: 'api',
         fetchedAt: FETCHED_AT,
+        channel: 'http',
         body: {
           view: { code: 0, data: viewVideo.data },
           streams: [
@@ -152,6 +156,7 @@ describe('bilibili parseBilibili（真实 view/playurl fixture 回归）', () =>
       parseBilibili({
         via: 'html-embedded-json',
         fetchedAt: FETCHED_AT,
+        channel: 'http',
         body: {},
       });
       expect.unreachable();

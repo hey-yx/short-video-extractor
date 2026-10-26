@@ -719,6 +719,8 @@
             fail: 0,
             cacheHits: null,
             upstream: 0,
+            downgrades: null,
+            retries: null,
             avgMs: null,
             events: [],
           };
@@ -750,6 +752,10 @@
               else out.fail += s.value;
             } else if (key === 'cache_hit_total') {
               out.cacheHits = (out.cacheHits || 0) + s.value;
+            } else if (key === 'channel_downgrade_total') {
+              out.downgrades = (out.downgrades || 0) + s.value;
+            } else if (key === 'parse_retry_total') {
+              out.retries = (out.retries || 0) + s.value;
             } else if (key === 'upstream_error_total' && s.value > 0) {
               out.upstream += s.value;
               out.events.push({ platform: s.labels.platform || '未知来源', reason: s.labels.reason || 'UNKNOWN', count: s.value });
@@ -858,6 +864,12 @@
           html += card(m.cacheHits == null ? '—' : String(fmtNum(m.cacheHits)), '缓存命中');
           html += card(String(fmtNum(m.upstream)), '平台问题', m.upstream > 0);
           html += '</div>';
+          if (m.downgrades != null || m.retries != null) {
+            html += '<div class="cards" style="margin-top:10px">';
+            html += card(m.downgrades == null ? '—' : String(fmtNum(m.downgrades)), '通道自动降级');
+            html += card(m.retries == null ? '—' : String(fmtNum(m.retries)), '瞬时错误重试');
+            html += '</div>';
+          }
           if (m.avgMs != null) {
             html += '<p class="hint" style="margin:10px 0 0">平均每次解析约 ' + esc(String(m.avgMs)) + ' 毫秒。</p>';
           }

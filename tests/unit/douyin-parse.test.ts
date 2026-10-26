@@ -7,7 +7,7 @@ import album from '../fixtures/douyin/aweme-album.json';
 import filtered from '../fixtures/douyin/aweme-filtered.json';
 
 function payload(body: unknown): RawPayload {
-  return { via: 'api', fetchedAt: 1_700_000_000, body };
+  return { via: 'api', fetchedAt: 1_700_000_000, body, channel: 'http' };
 }
 
 describe('douyin parseAweme（fixture 回归）', () => {

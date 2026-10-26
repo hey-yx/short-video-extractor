@@ -46,13 +46,20 @@ src/
 
 平台层三条硬约束：`platforms/**` 不 import Elysia、不读 env、不 console.log；`parse()` 是纯函数（同输入同输出），用 fixture 离线回归；IO 只经 `fetch()` 和注入的 `FetchCtx`。平台改版时表现是「单测先红」，不是线上悄悄返回空结果。
 
-技术栈：Bun + Elysia。运行时依赖只有 elysia、@elysiajs/cors、lru-cache、pino、puppeteer（仅小红书通道用浏览器）。
+技术栈：Bun + Elysia。运行时依赖只有 elysia、@elysiajs/cors、lru-cache、pino、puppeteer（小红书主力通道，抖音风控兜底）。
+
+## 稳定性
+
+- **抖音双通道**：默认纯 HTTP（L1 零签名 detail 接口）；一旦 403 `ArgusSecurityPlugin`（L1 被风控），自动降级浏览器——打开作品页并从 response 事件截取页面自己发出的 `/aweme/v1/web/aweme/detail/` XHR JSON，`via` 字段如实标 `browser`。降级计数见 `channel_downgrade_total`。
+- **瞬态重试**：`UPSTREAM_TIMEOUT` / `UPSTREAM_ERROR`（网络层与上游 5xx）在编排层重试 1 次，指数退避（500ms→1s），总耗时受请求 15s 上限约束；`RISK_CONTROL`、内容类与参数类错误一律不重试（重试风控=加重风控）。计数见 `parse_retry_total`。
+- **浏览器并发闸**：所有浏览器通道共享一个信号量，最多 2 个并发 page，超出的排队，排队期间随请求取消（AbortSignal）立即退出——防止并发打满内存（Chrome 每页约 30–110 MB）。
+- **风控如实分类**：小红书 `error_code=300012`（IP at risk）等错误页归 `RISK_CONTROL`（503，带可读文案），不冒充改版。
 
 ## 平台状态
 
 | 平台 | 通道 | 支持内容 | 浏览器 |
 |---|---|---|---|
-| 抖音 | 纯 HTTP（detail 接口 + play 直链） | 视频（540p/720p/1080p/原片四档）、图集、实况照片 | 否 |
+| 抖音 | HTTP 优先（detail 接口 + play 直链），L1 被风控时自动降级浏览器截 detail XHR | 视频（540p/720p/1080p/原片四档）、图集、实况照片 | 兜底（风控时自动） |
 | 小红书 | 浏览器抓主文档 HTML → `__INITIAL_STATE__` | 笔记图片、视频 | 需要（TLS 指纹放行） |
 | 快手 | 纯 HTTP（短链 302 + 分享页 INIT_STATE） | 视频、多清晰度 | 否 |
 | B 站 | 纯 HTTP（view + playurl try_look） | 视频、多 P、DASH 音视频分离 | 否 |
@@ -118,6 +125,8 @@ Prometheus 文本格式（自写渲染，未引 prom-client）：
 | `parse_duration_ms` | histogram | 解析耗时分布（毫秒，按 platform） |
 | `cache_hit_total` | counter | 缓存命中次数 |
 | `upstream_error_total{platform,reason}` | counter | 上游失败/风控次数 |
+| `channel_downgrade_total{platform,from,to}` | counter | 解析通道自动降级次数（如抖音 http→browser） |
+| `parse_retry_total{platform}` | counter | 瞬态错误（超时/5xx）重试次数 |
 
 ## 可观测性
 

@@ -64,6 +64,9 @@ interface NoteState {
 
 const STATE_RE = /window\.__INITIAL_STATE__\s*=\s*/;
 
+/** 页面里没有 __INITIAL_STATE__ 的信号（内部流转用；由 parseNote 转成业务错误） */
+const NO_INITIAL_STATE = Symbol('NO_INITIAL_STATE');
+
 /**
  * 从主文档 HTML 抠出 state 并转成合法 JSON。
  * state 里混有裸 `undefined`（非法 JSON，调研 §1.8 坑 4）；字符串字面量里可能出现
@@ -72,7 +75,8 @@ const STATE_RE = /window\.__INITIAL_STATE__\s*=\s*/;
 export function extractInitialState(html: string): NoteState {
   const m = html.match(STATE_RE);
   if (!m || m.index === undefined) {
-    throw new AppError('UPSTREAM_CHANGED', '页面里没有 window.__INITIAL_STATE__（可能被改版或落到安全页）');
+    // 没有 state ≠ 一定是改版：IP 风控/登录墙错误页同样没有（300012），由 parseNote 结合页面特征归类
+    throw NO_INITIAL_STATE;
   }
   const start = m.index + m[0].length;
   // 从第一个 `{` 起做字符串感知的括号配对，到配对收尾为止——后面的 `;` 等尾随字符一并剪掉
@@ -216,7 +220,19 @@ export function parseNote(raw: RawPayload, input: MatchResult): ParseResult {
   if (typeof html !== 'string') {
     throw new AppError('UPSTREAM_CHANGED', '小红书载荷不是 HTML 文本');
   }
-  const state = extractInitialState(html);
+  let state: NoteState;
+  try {
+    state = extractInitialState(html);
+  } catch (err) {
+    if (err !== NO_INITIAL_STATE) throw err;
+    // IP 风控（error_code=300012 "IP at risk"）/登录墙错误页没有 state，归 RISK_CONTROL 不落 UPSTREAM_CHANGED
+    if (isRiskPage(html)) {
+      throw new AppError('RISK_CONTROL', '小红书风控拦截（出口 IP 被平台限制或未登录，换网络后重试）', {
+        noteId: input.id || undefined,
+      });
+    }
+    throw new AppError('UPSTREAM_CHANGED', '页面里没有 window.__INITIAL_STATE__（可能被改版或落到安全页）');
+  }
   const detailMap = state.note?.noteDetailMap ?? {};
 
   // noteId 优先取 match 结果；短链场景 match 拿不到，由 state.currentNoteId 兜底

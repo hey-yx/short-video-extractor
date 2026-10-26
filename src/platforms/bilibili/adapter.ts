@@ -125,6 +125,7 @@ export const bilibiliAdapter: PlatformAdapter = {
       via: 'api',
       fetchedAt: Math.floor(Date.now() / 1000),
       body: { view, streams },
+      channel: 'http',
     };
   },
 

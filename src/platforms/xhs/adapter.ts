@@ -50,6 +50,7 @@ export const xhsAdapter: PlatformAdapter = {
       via: 'browser-intercept',
       fetchedAt: Math.floor(Date.now() / 1000),
       body: html,
+      channel: 'browser',
     };
   },
 
