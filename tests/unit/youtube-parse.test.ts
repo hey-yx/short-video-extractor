@@ -104,12 +104,17 @@ describe('youtube parseYoutube（真实 player 响应 fixture 回归）', () => 
   });
 
   test('载荷缺 player / via 不对 → UPSTREAM_CHANGED', () => {
-    expect(() => parseYoutube({ via: 'api', channel: 'http', fetchedAt: FETCHED_AT, body: null }, { id: 'x' })).toThrow(
-      /UPSTREAM_CHANGED|载荷/,
-    );
+    expect(() =>
+      parseYoutube({ via: 'api', channel: 'http', fetchedAt: FETCHED_AT, body: null }, { id: 'x' }),
+    ).toThrow(/UPSTREAM_CHANGED|载荷/);
     expect(() =>
       parseYoutube(
-        { via: 'html-embedded-json', channel: 'http', fetchedAt: FETCHED_AT, body: { client: 'IOS', player: {} } },
+        {
+          via: 'html-embedded-json',
+          channel: 'http',
+          fetchedAt: FETCHED_AT,
+          body: { client: 'IOS', player: {} },
+        },
         { id: 'x' },
       ),
     ).toThrow(AppError);

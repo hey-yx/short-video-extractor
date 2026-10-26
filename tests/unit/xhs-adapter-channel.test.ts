@@ -74,7 +74,11 @@ afterEach(() => {
 describe('xhs HTTP 主通道（注入假 client）', () => {
   test('200：HTML 原样进载荷，via/browser-intercept + channel=http', async () => {
     const upstream = stubHttp(() => new Response(videoHtml, { status: 200 }));
-    const raw = await xhsAdapter.fetch(input('6aa0343c00000000270173b7', 'tok'), new URL('https://www.xiaohongshu.com/explore'), makeCtx(false));
+    const raw = await xhsAdapter.fetch(
+      input('6aa0343c00000000270173b7', 'tok'),
+      new URL('https://www.xiaohongshu.com/explore'),
+      makeCtx(false),
+    );
     expect(upstream.calls()).toBe(1);
     expect(raw.channel).toBe('http');
     expect(raw.via).toBe('browser-intercept');
@@ -84,7 +88,11 @@ describe('xhs HTTP 主通道（注入假 client）', () => {
   test('登录墙 302：换连接重试 1 次，连续 2 次且无浏览器 → UPSTREAM_ERROR', async () => {
     const upstream = stubHttp(loginwallRes);
     try {
-      await xhsAdapter.fetch(input('6aa0343c00000000270173b7'), new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'), makeCtx(false));
+      await xhsAdapter.fetch(
+        input('6aa0343c00000000270173b7'),
+        new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+        makeCtx(false),
+      );
       expect.unreachable();
     } catch (e) {
       expect((e as AppError).code).toBe('UPSTREAM_ERROR');
@@ -93,8 +101,14 @@ describe('xhs HTTP 主通道（注入假 client）', () => {
   });
 
   test('登录墙第 1 次 + 第 2 次 200：重试成功，不降级', async () => {
-    const upstream = stubHttp((call) => (call === 1 ? loginwallRes() : new Response(videoHtml, { status: 200 })));
-    const raw = await xhsAdapter.fetch(input('6aa0343c00000000270173b7'), new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'), makeCtx(true));
+    const upstream = stubHttp((call) =>
+      call === 1 ? loginwallRes() : new Response(videoHtml, { status: 200 }),
+    );
+    const raw = await xhsAdapter.fetch(
+      input('6aa0343c00000000270173b7'),
+      new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+      makeCtx(true),
+    );
     expect(upstream.calls()).toBe(2);
     expect(raw.channel).toBe('http');
   });
@@ -102,7 +116,11 @@ describe('xhs HTTP 主通道（注入假 client）', () => {
   test('登录墙 2 次 + 浏览器可用：降级兜底成功，channel_downgrade_total 计数', async () => {
     const upstream = stubHttp(loginwallRes);
     const ctx = makeCtx(true);
-    const raw = await xhsAdapter.fetch(input('6aa0343c00000000270173b7'), new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'), ctx);
+    const raw = await xhsAdapter.fetch(
+      input('6aa0343c00000000270173b7'),
+      new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+      ctx,
+    );
     expect(upstream.calls()).toBe(2);
     expect(ctx.docCalls()).toBe(1);
     expect(raw.channel).toBe('browser');
@@ -112,7 +130,11 @@ describe('xhs HTTP 主通道（注入假 client）', () => {
   test('登录墙 2 次 + 无浏览器环境：UPSTREAM_ERROR 如实上抛', async () => {
     stubHttp(loginwallRes);
     try {
-      await xhsAdapter.fetch(input('6aa0343c00000000270173b7'), new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'), makeCtx(false));
+      await xhsAdapter.fetch(
+        input('6aa0343c00000000270173b7'),
+        new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+        makeCtx(false),
+      );
       expect.unreachable();
     } catch (e) {
       expect((e as AppError).code).toBe('UPSTREAM_ERROR');
@@ -124,12 +146,19 @@ describe('xhs HTTP 主通道（注入假 client）', () => {
       () =>
         new Response(null, {
           status: 302,
-          headers: { location: 'https://www.xiaohongshu.com/website-login/error?error_code=300012&error_msg=IP%20at%20risk.' },
+          headers: {
+            location:
+              'https://www.xiaohongshu.com/website-login/error?error_code=300012&error_msg=IP%20at%20risk.',
+          },
         }),
     );
     const ctx = makeCtx(true);
     try {
-      await xhsAdapter.fetch(input('6aa0343c00000000270173b7'), new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'), ctx);
+      await xhsAdapter.fetch(
+        input('6aa0343c00000000270173b7'),
+        new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+        ctx,
+      );
       expect.unreachable();
     } catch (e) {
       expect((e as AppError).code).toBe('RISK_CONTROL');
@@ -148,7 +177,11 @@ describe('xhs HTTP 主通道（注入假 client）', () => {
     );
     const ctx = makeCtx(true);
     try {
-      await xhsAdapter.fetch(input('6aa0343c00000000270173b7'), new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'), ctx);
+      await xhsAdapter.fetch(
+        input('6aa0343c00000000270173b7'),
+        new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+        ctx,
+      );
       expect.unreachable();
     } catch (e) {
       expect((e as AppError).code).toBe('CONTENT_NOT_FOUND');

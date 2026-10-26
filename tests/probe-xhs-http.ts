@@ -46,7 +46,16 @@ interface Outcome {
 
 async function verifyUrl(rawUrl: string, ctx: FetchCtx): Promise<Outcome> {
   const t0 = Date.now();
-  const base: Outcome = { url: rawUrl, ok: false, ms: 0, kind: '', via: '', title: '', assets: 0, directLinks: [] };
+  const base: Outcome = {
+    url: rawUrl,
+    ok: false,
+    ms: 0,
+    kind: '',
+    via: '',
+    title: '',
+    assets: 0,
+    directLinks: [],
+  };
   try {
     const out = (await parseUrl(rawUrl, ctx)) as unknown as { result?: ParseResult } & Partial<ParseResult>;
     const r = (out.result ?? (out as ParseResult))!;
@@ -58,7 +67,10 @@ async function verifyUrl(rawUrl: string, ctx: FetchCtx): Promise<Outcome> {
     base.assets = r.assets.length;
     for (const a of r.assets) {
       try {
-        const res = await fetch(a.url, { headers: { Range: 'bytes=0-65535' }, signal: AbortSignal.timeout(15_000) });
+        const res = await fetch(a.url, {
+          headers: { Range: 'bytes=0-65535' },
+          signal: AbortSignal.timeout(15_000),
+        });
         await res.body?.cancel();
         base.directLinks.push(`${res.status} ${res.headers.get('content-type') ?? '-'}`);
       } catch (e) {
@@ -142,7 +154,9 @@ if (cmpTarget?.id) {
   const tBr = Date.now();
   const brHtml = await browserGateway.getDocumentHtml(url, 15_000);
   const brMs = Date.now() - tBr;
-  console.log(`[cmp] browser raw: ${brMs}ms html=${brHtml.length}B hasState=${brHtml.includes('__INITIAL_STATE__')}`);
+  console.log(
+    `[cmp] browser raw: ${brMs}ms html=${brHtml.length}B hasState=${brHtml.includes('__INITIAL_STATE__')}`,
+  );
 }
 await closeBrowser();
 console.log('[done] http-channel picks:', picks.length, 'video:', sawVideo, 'album:', sawAlbum);

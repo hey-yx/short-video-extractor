@@ -136,7 +136,10 @@ describe('twitter parseTwitter（真实 syndication fixture 回归）', () => {
 
   test('via 非 api → UPSTREAM_CHANGED', () => {
     try {
-      parseTwitter({ via: 'browser-intercept', channel: 'browser', fetchedAt: 0, body: tweetVideo }, { id: '1' });
+      parseTwitter(
+        { via: 'browser-intercept', channel: 'browser', fetchedAt: 0, body: tweetVideo },
+        { id: '1' },
+      );
       throw new Error('should throw');
     } catch (e) {
       expect((e as AppError).code).toBe('UPSTREAM_CHANGED');

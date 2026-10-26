@@ -87,7 +87,12 @@ async function fetchViaHttp(input: MatchResult, url: URL, ctx: FetchCtx): Promis
       continue;
     }
     const html = await res.text();
-    return { via: 'browser-intercept', fetchedAt: Math.floor(Date.now() / 1000), body: html, channel: 'http' };
+    return {
+      via: 'browser-intercept',
+      fetchedAt: Math.floor(Date.now() / 1000),
+      body: html,
+      channel: 'http',
+    };
   }
 }
 
