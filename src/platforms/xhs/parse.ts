@@ -278,7 +278,8 @@ export function parseNote(raw: RawPayload, input: MatchResult): ParseResult {
     author: authorOf(note),
     assets,
     parsedAt: raw.fetchedAt,
-    via: 'browser',
+    // via 字段如实反映实际通道（HTTP 主通道或浏览器兜底）
+    via: raw.channel === 'http' ? 'http' : 'browser',
   };
 }
 

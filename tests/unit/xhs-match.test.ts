@@ -39,10 +39,10 @@ describe('xhs match（纯函数）', () => {
     expect(xhsAdapter.match(u('https://www.xiaohongshu.com/user/profile/59ed510b4e'))).toBeNull();
   });
 
-  test('capabilities：浏览器通道 + TLS 指纹', () => {
-    expect(xhsAdapter.capabilities.http).toBe(false);
+  test('capabilities：HTTP 主通道 + 浏览器兜底（三件套放行后不再依赖 TLS 指纹）', () => {
+    expect(xhsAdapter.capabilities.http).toBe(true);
     expect(xhsAdapter.capabilities.browser).toBe(true);
-    expect(xhsAdapter.capabilities.tlsImpersonation).toBe(true);
+    expect(xhsAdapter.capabilities.tlsImpersonation).toBe(false);
   });
 });
 
