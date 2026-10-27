@@ -6,9 +6,6 @@
 
 **[简体中文](README.md) | [English](README.en.md)**
 
-> [!WARNING]
-> 该项目正在重构整改，接口与行为可能随时调整，接入前请先确认最新实现。
-
 *短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。*
 
 [![CI](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml)
@@ -19,6 +16,9 @@
 [架构](#架构) • [平台状态](#平台状态) • [API](#api) • [可观测性](#可观测性) • [本地开发](#本地开发) • [环境变量](#环境变量) • [部署](#部署) • [CI](#ci) • [设计文档](#设计文档)
 
 </div>
+
+> [!WARNING]
+> 该项目正在重构整改，接口与行为可能随时调整，接入前请先确认最新实现。
 
 短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。v2.1 现支持 9 个平台：抖音、小红书、快手、B 站、微博、X/Twitter、YouTube、Instagram Reels、TikTok。默认返回直链（客户端请求时不带 Referer 即可下载），服务器零带宽；`/media` 中转作为可选增强。
 

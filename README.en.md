@@ -6,9 +6,6 @@
 
 **[简体中文](README.md) | [English](README.en.md)**
 
-> [!WARNING]
-> This project is being refactored: APIs and behavior may change at any time. Check the latest implementation before integrating.
-
 *Short-video parsing API — paste a share link, get watermark-free video / photo-album direct links.*
 
 [![CI](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml)
@@ -19,6 +16,9 @@
 [Architecture](#architecture) • [Platform Status](#platform-status) • [API](#api) • [Observability](#observability) • [Local Development](#local-development) • [Environment Variables](#environment-variables) • [Deployment](#deployment) • [CI](#ci) • [Design Documents](#design-documents)
 
 </div>
+
+> [!WARNING]
+> This project is being refactored: APIs and behavior may change at any time. Check the latest implementation before integrating.
 
 A short-video parsing API: give it a share link, get watermark-free video / photo-album direct links back. v2.1 supports 9 platforms: Douyin, Xiaohongshu (RedNote), Kuaishou, Bilibili, Weibo, X/Twitter, YouTube, Instagram Reels and TikTok. The default response is direct links (the client downloads without a Referer header), so the server carries zero bandwidth; the `/media` relay is an optional add-on.
 
