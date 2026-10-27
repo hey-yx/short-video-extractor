@@ -8,6 +8,7 @@ import { asFetchLogger, requestLogger } from '@/infra/logger';
 import { observeParseDuration, recordCacheHit, recordParse, recordUpstreamError } from '@/infra/metrics';
 import { findPlatform } from '@/platforms/hosts';
 import { resolveProxy } from '@/infra/proxy';
+import { signIpBoundLinks } from '@/services/media-proxy';
 import type { FetchCtx, Platform } from '@/types/platform';
 
 /** 浏览器兜底开关：默认开；BROWSER_FALLBACK=off（大小写不敏感）时全平台纯 HTTP */
@@ -59,7 +60,10 @@ async function handleParse(
     recordParse(result.platform, 'ok');
     observeParseDuration(result.platform, performance.now() - startedAt);
     if (cached) recordCacheHit();
-    return { ...ok(result), cached };
+    // 绑 IP 直链（googlevideo）改写为签名 /media 链接：必须在缓存之后（签名 600s TTL，进缓存会存死）；
+    // 未配 PROXY_SECRET 或无绑 IP 直链时原样返回，直链主路径不受影响
+    const out = signIpBoundLinks(result, new URL(request.url).origin);
+    return { ...ok(out), cached };
   } catch (error) {
     const platform = guessPlatform(rawUrl) ?? 'unknown';
     const code = error instanceof AppError ? error.code : 'INTERNAL';

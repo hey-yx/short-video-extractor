@@ -4,6 +4,7 @@ import { AppError } from '@/core/errors';
 import { proxiedFetch } from '@/core/fetch-proxy';
 import { resolveProxy } from '@/infra/proxy';
 import { hostMatches, PLATFORM_HOSTS } from '@/platforms/hosts';
+import type { MediaAsset, ParseResult } from '@/types/platform';
 
 /**
  * /media 中转：HMAC 签名 + 手动跟 302（每跳 SSRF 校验）+ Range 透传。
@@ -69,6 +70,18 @@ const CDN_HOSTS = [
 /** SSRF 白名单：已注册平台的分享域 + 对应 CDN 域 */
 export function allowedHosts(): string[] {
   return [...Object.values(PLATFORM_HOSTS).flat(), ...CDN_HOSTS];
+}
+
+/** 直链绑出口 IP 的 CDN 域（googlevideo URL 含 ip= 参数，客户端拿直链必 403）。
+ *  与 fetchUpstream 的代理注入共用判据——新平台 CDN 若加 IP 校验，改这一处即全链路同步。 */
+const IP_BOUND_HOSTS = ['googlevideo.com'];
+
+export function isIpBoundUrl(rawUrl: string): boolean {
+  try {
+    return IP_BOUND_HOSTS.some((d) => hostMatches(new URL(rawUrl).hostname, d));
+  } catch {
+    return false;
+  }
 }
 
 /** 每个域名的上游请求头（research/03 §4.1 实测矩阵） */
@@ -150,6 +163,69 @@ export function signMediaUrl(url: string, nowSec = Math.floor(Date.now() / 1000)
 export interface VerifiedMedia {
   url: string;
   exp: number;
+}
+
+/** 一个资产里所有可能承载媒体直链的字段（coverUrl 除外——封面不绑 IP，走直链） */
+function assetLinkFields(a: MediaAsset): Array<{ get: () => string | undefined; set: (v: string) => void }> {
+  return [
+    { get: () => a.url, set: (v) => void (a.url = v) },
+    { get: () => a.audioUrl, set: (v) => void (a.audioUrl = v) },
+    { get: () => a.liveClipUrl, set: (v) => void (a.liveClipUrl = v) },
+    ...(a.backups ?? []).map((_, i) => ({
+      get: () => a.backups?.[i],
+      set: (v: string) => void (a.backups && (a.backups[i] = v)),
+    })),
+    ...(a.variants ?? []).map((_, i) => ({
+      get: () => a.variants?.[i]?.url,
+      set: (x: string) => void (a.variants && (a.variants[i]!.url = x)),
+    })),
+  ];
+}
+
+/**
+ * 把 ParseResult 里绑 IP 的直链改写为签名 /media 链接，返回新对象（缓存共享，绝不原地改）。
+ * - 只在 PROXY_SECRET 配置时改写（未配置 = 直链主路径原样返回）
+ * - 只改绑 IP 域：能直连的直链保持主路径，不把服务器带宽搬成瓶颈
+ * - 必须在缓存读取之后调用：签名 600s TTL，进缓存会把签名存死
+ * - 改写后 expiresAt 落到签名 exp（客户端对 /media 链接的真实可用期），比直链短
+ */
+export function signIpBoundLinks(
+  result: ParseResult,
+  origin: string,
+  nowSec = Math.floor(Date.now() / 1000),
+): ParseResult {
+  if (!isProxyConfigured()) return result;
+  const assets = result.assets.map((a) => ({
+    ...a,
+    ...(a.variants ? { variants: a.variants.map((v) => ({ ...v })) } : {}),
+    ...(a.backups ? { backups: [...a.backups] } : {}),
+  }));
+  const hasIpBound = assets.some((a) =>
+    assetLinkFields(a).some((f) => (f.get() ? isIpBoundUrl(f.get()!) : false)),
+  );
+  if (!hasIpBound) return result;
+
+  let minExp = Number.POSITIVE_INFINITY;
+  assets.forEach((a, idx) => {
+    let assetExp = Number.POSITIVE_INFINITY;
+    for (const f of assetLinkFields(a)) {
+      const u = f.get();
+      if (!u || !isIpBoundUrl(u)) continue;
+      const { exp, sig } = signMediaUrl(u, nowSec);
+      const q = new URLSearchParams({
+        u: Buffer.from(u).toString('base64url'),
+        exp: String(exp),
+        sig,
+      });
+      const title = assets.length > 1 ? `${result.title}-${idx + 1}` : result.title;
+      if (title) q.set('title', title);
+      f.set(`${origin}/media?${q}`);
+      assetExp = Math.min(assetExp, exp);
+    }
+    if (Number.isFinite(assetExp)) a.expiresAt = assetExp;
+    minExp = Math.min(minExp, assetExp);
+  });
+  return { ...result, assets, expiresAt: Number.isFinite(minExp) ? minExp : result.expiresAt };
 }
 
 /**
@@ -247,7 +323,7 @@ export async function fetchUpstream(
   }
 
   // googlevideo 直链绑解析出口 IP：拉流与解析走同一代理（resolveProxy 同源取值），跨出口必 403
-  const proxy = hostMatches(u.hostname, 'googlevideo.com') ? resolveProxy('youtube') : undefined;
+  const proxy = isIpBoundUrl(u.href) ? resolveProxy('youtube') : undefined;
   const res = await proxiedFetch(u, { method, headers, redirect: 'manual', proxy });
   if (res.status >= 300 && res.status < 400) {
     const loc = res.headers.get('location');
