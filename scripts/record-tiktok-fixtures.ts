@@ -3,11 +3,11 @@
  * 录制 tikwm 真实响应 → tests/fixtures/tiktok/（脱敏）。
  * 脱敏原则：字段名照实；URL 里一次性签名段打码但保持结构；统计类计数归零。
  * 脚本不在 src/ 下，不参与 tsconfig include，Bun 运行时的 process/Bun 全局由 bun 提供。
- * 用法：OUTBOUND_PROXY=<本地代理地址> bun scripts/record-tiktok-fixtures.ts
+ * 用法：HTTPS_PROXY=<本地代理地址> bun scripts/record-tiktok-fixtures.ts
  */
 export {};
 
-const PROXY = process.env.OUTBOUND_PROXY;
+const PROXY = process.env.HTTPS_PROXY;
 
 const VIDEO_URL = 'https://www.tiktok.com/@nasa/video/7665075736742530317';
 const PHOTO_URL = 'https://www.tiktok.com/@dx_r13/photo/7398188624526724358';

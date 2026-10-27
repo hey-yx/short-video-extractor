@@ -103,7 +103,7 @@ All 9 platforms produce the same unified `ParseResult` envelope. Channels and ca
 | Instagram Reels | Pure HTTP (anonymous GraphQL `doc_id` channel, no login/cookies; requires `IG_GRAPHQL_DOC_ID`) | Reels, post and IGTV videos, photo albums | mp4 as returned | No (fbcdn links carry no ip= binding) |
 | TikTok | Pure HTTP (tikwm public API: watermark-free links, albums, music; parsing goes through the egress proxy) | Video, albums, music | Watermark-free play/hdplay tiers | No (tiktokcdn links are not IP-bound) |
 
-Proxying: domestic platforms connect directly and never use a proxy; overseas platforms (YouTube etc.) go through the `PROXY_<PLATFORM>` / `OUTBOUND_PROXY` / `HTTPS_PROXY` egress proxy (see [Environment Variables](#environment-variables)).
+Proxying: domestic platforms connect directly and never use a proxy; overseas platforms (YouTube etc.) go through the `PROXY_<PLATFORM>` / `HTTPS_PROXY` egress proxy (see [Environment Variables](#environment-variables)).
 
 ## API
 
@@ -199,8 +199,7 @@ bun run typecheck
 | `PROXY_SECRET` | unset | Signing secret for the /media relay; unset → /media returns 501 |
 | `PUPPETEER_EXECUTABLE_PATH` | - | Pinned to `/usr/bin/chromium` inside the container (set in the Dockerfile) |
 | `PROXY_<PLATFORM>` | unset | Per-platform egress proxy (e.g. `PROXY_YOUTUBE`); highest priority |
-| `OUTBOUND_PROXY` | unset | Default egress proxy for overseas platforms (used when `PROXY_<PLATFORM>` is unset) |
-| `HTTPS_PROXY` | unset | Egress-proxy fallback (used when neither of the above is set). Resolution order: `PROXY_<PLATFORM>` → `OUTBOUND_PROXY` → `HTTPS_PROXY`; domestic platforms are unaffected (the proxy is injected only into overseas platforms' fetches and the matching `/media` relay) |
+| `HTTPS_PROXY` | unset | Egress-proxy fallback (used when `PROXY_<PLATFORM>` is unset). Resolution order: `PROXY_<PLATFORM>` → `HTTPS_PROXY`; domestic platforms are unaffected (the proxy is injected only into overseas platforms' fetches and the matching `/media` relay) |
 
 See `.env.example`. The production `.env` stays on the server (chmod 600), never in the repo.
 

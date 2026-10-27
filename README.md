@@ -106,7 +106,7 @@ src/
 | Instagram Reels | 纯 HTTP（匿名 GraphQL `doc_id` 口子，免登录免 cookie，需配 `IG_GRAPHQL_DOC_ID`） | Reels、Post、IGTV 视频、图文图集 | mp4 按源返回 | 否（fbcdn 直链无 ip= 绑定） |
 | TikTok | 纯 HTTP（tikwm 公开接口：无水印直链/图集/音乐；解析出站走代理） | 视频、图集、音乐 | 无水印 play/hdplay 双档 | 否（tiktokcdn 直链不绑 IP） |
 
-代理：国内平台直连不走代理；海外平台（YouTube 等）经 `PROXY_<PLATFORM>` / `OUTBOUND_PROXY` / `HTTPS_PROXY` 出站代理（见[环境变量](#环境变量)）。
+代理：国内平台直连不走代理；海外平台（YouTube 等）经 `PROXY_<PLATFORM>` / `HTTPS_PROXY` 出站代理（见[环境变量](#环境变量)）。
 
 ## API
 
@@ -204,8 +204,7 @@ bun run typecheck
 | `PROXY_SECRET` | 未配置 | /media 中转签名密钥；不配则 /media 返回 501 |
 | `PUPPETEER_EXECUTABLE_PATH` | - | 容器内固定 `/usr/bin/chromium`（Dockerfile 已设） |
 | `PROXY_<PLATFORM>` | 未配置 | 按平台出站代理（如 `PROXY_YOUTUBE`），优先级最高 |
-| `OUTBOUND_PROXY` | 未配置 | 海外平台默认出站代理（`PROXY_<PLATFORM>` 未设时生效） |
-| `HTTPS_PROXY` | 未配置 | 出站代理兜底（前两者都未设时生效）。解析顺序：`PROXY_<PLATFORM>` → `OUTBOUND_PROXY` → `HTTPS_PROXY`；国内平台不受影响（代理只注入海外平台的 fetch 与对应 `/media` 中转） |
+| `HTTPS_PROXY` | 未配置 | 出站代理兜底（`PROXY_<PLATFORM>` 未设时生效）。解析顺序：`PROXY_<PLATFORM>` → `HTTPS_PROXY`；国内平台不受影响（代理只注入海外平台的 fetch 与对应 `/media` 中转） |
 
 参考 `.env.example`。生产 `.env` 放服务器本地（chmod 600），不进仓库。
 

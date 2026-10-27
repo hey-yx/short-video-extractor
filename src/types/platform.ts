@@ -120,7 +120,7 @@ export interface FetchCtx {
   };
   /**
    * 海外平台出站代理（http://host:port）。
-   * 由 app/routes 层从 env 读出注入（resolveProxy：PROXY_<PLATFORM> 覆盖 → OUTBOUND_PROXY → HTTPS_PROXY），
+   * 由 app/routes 层从 env 读出注入（resolveProxy：PROXY_<PLATFORM> 覆盖 → HTTPS_PROXY），
    * 平台包不读 env；平台侧经 src/core/fetch-proxy.ts 的 proxiedFetch 使用；未配置 = 直连。
    * YouTube 直链绑 IP：解析与 /media 中转必须用同一个值。
    */

@@ -259,25 +259,24 @@ GET https://www.tikwm.com/api/?url=https://www.tiktok.com/@nasa/video/7665075736
 
 ```bash
 # ---- .env（部署机）----
-# 默认出站：海外平台（YouTube / Instagram / TikTok）走这里
-OUTBOUND_PROXY=http://<user>:<pass>@proxy-host:port
-
-# 按平台覆盖（可选；缺省回落 OUTBOUND_PROXY）
+# 按平台出站（谁设了谁走）
 PROXY_YOUTUBE=http://<user>:<pass>@yt-proxy:port
 PROXY_INSTAGRAM=
 PROXY_TIKTOK=
 
-# 保底（不设 OUTBOUND_PROXY 时 Bun 自己也会读）
+# 兜底（平台级都未设时生效）
 # HTTPS_PROXY=http://...
 ```
+
+> 落地修订（2026-10-27）：实现只保留 `PROXY_<PLATFORM> → HTTPS_PROXY` 两级，OUTBOUND_PROXY 已移除（与 HTTPS_PROXY 同为全局兜底，性质重复）。
 
 解析顺序（单函数，全局唯一）：
 
 ```ts
-// src/infra/proxy.ts（建议新增，10 行内）
+// src/infra/proxy.ts
 export function resolveProxy(platform: Platform): string | undefined {
   const byPlatform = process.env[`PROXY_${platform.toUpperCase()}`];
-  return byPlatform || process.env.OUTBOUND_PROXY || process.env.HTTPS_PROXY;
+  return byPlatform || process.env.HTTPS_PROXY;
 }
 ```
 
