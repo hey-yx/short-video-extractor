@@ -51,6 +51,8 @@ curl -X POST http://127.0.0.1:7777/parse \
 
 返回统一信封（见 [API](#api)），`data.assets[].url` 就是无水印直链，直接下载即可（不带 Referer）。不想装环境可以直接 `docker compose up -d`，见[部署](#部署)。
 
+更多场景（选清晰度、图集、YouTube 中转、错误码处置、限流）见 [`docs/调用案例.md`](docs/调用案例.md)。
+
 ## 架构
 
 请求流程：**match（识别平台）→ 缓存 → dispatch（短链展开）→ fetch（平台适配层）→ parse（纯函数）→ 统一信封返回**。
@@ -243,6 +245,7 @@ docker compose up -d
 
 ## 设计文档
 
+- `docs/调用案例.md`：面向调用方的场景示例（最简调用、图集、选清晰度、DASH 合成、YouTube 中转签名、错误码处置、限流）
 - `docs/开发者指南.md`：本地开发、目录导览、代码约定、加平台步骤、测试写法与维护手册（改代码前从这里开始）
 - `docs/research/`：平台 API 调研与实测记录（01 抖音/TikTok API、02 国内平台、03 架构、04 小红书 HTTP 通道、05 海外平台与出站代理）
 - `docs/image-build-notes.md`：镜像裁剪明细与构建验收清单
