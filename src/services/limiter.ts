@@ -55,7 +55,7 @@ export class IpRateLimiter {
 
 export const ipRateLimiter = new IpRateLimiter();
 
-/** X-Real-IP（1Panel 反代注入）优先，缺省退回 Bun server 的 remoteAddress */
+/** X-Real-IP（反代注入）优先，缺省退回 Bun server 的 remoteAddress */
 export function clientIp(
   headers: Headers,
   request: Request,

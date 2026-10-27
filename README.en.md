@@ -39,6 +39,7 @@ git clone https://github.com/hey-yx/short-video-extractor.git
 cd short-video-extractor
 bun install
 bun dev          # start the dev server, port 7777 by default
+curl http://127.0.0.1:7777/health   # {"status":"ok",...} once it is up
 ```
 
 Point it at any share link:
@@ -50,6 +51,8 @@ curl -X POST http://127.0.0.1:7777/parse \
 ```
 
 You get the unified envelope (see [API](#api)); `data.assets[].url` is the watermark-free direct link, ready to download (without a Referer). No local setup? Run `docker compose up -d` instead, see [Deployment](#deployment).
+
+More scenarios (picking a quality tier, albums, the YouTube proxy route, error-code handling, rate limits) live in [`docs/调用案例.md`](docs/调用案例.md), Chinese for now.
 
 ## Architecture
 
@@ -236,5 +239,6 @@ The repo uses GitHub Actions for continuous integration: on every push to main a
 
 ## Design Documents
 
+- `docs/调用案例.md`: scenario-shaped usage examples: first call, albums, quality tiers, DASH audio/video merging, the YouTube proxy signature, error-code handling, rate limits (Chinese)
 - `docs/research/`: platform API research and measured notes (01 Douyin/TikTok API, 02 domestic platforms, 03 architecture, 04 Xiaohongshu HTTP channel, 05 overseas platforms and the egress proxy)
 - `docs/image-build-notes.md`: image slimming breakdown and build acceptance checklist

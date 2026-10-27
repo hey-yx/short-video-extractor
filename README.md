@@ -39,6 +39,7 @@ git clone https://github.com/hey-yx/short-video-extractor.git
 cd short-video-extractor
 bun install
 bun dev          # 启动开发服务，默认端口 7777
+curl http://127.0.0.1:7777/health   # 服务起来了会返回 {"status":"ok",...}
 ```
 
 拿一条分享链接就能解析：
