@@ -27,7 +27,7 @@
 |---|---|
 | 时间 | 2026-10-24 15:50–16:10 CST |
 | HTTP 客户端 | `curl` 8.x（系统自带）+ `curl_cffi` 0.13.0（`impersonate="chrome"` / `"safari"`） |
-| 出口 | 本机经本地代理 `127.0.0.1:<本地代理端口>`，香港机房出口（IP 已脱敏）；浏览器另有一次云出口 |
+| 出口 | 本机经本地代理（端口已脱敏），香港机房出口（IP 已脱敏）；浏览器另有一次云出口 |
 | UA | `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36` |
 | 判断手段 | 看 HTTP 状态码 + 响应体积 + 是否含目标 JSON 键（如 `noteDetailMap`/`mainMvUrls`），不做 OCR/视觉比对 |
 

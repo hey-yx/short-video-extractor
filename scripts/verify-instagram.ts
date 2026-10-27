@@ -2,9 +2,9 @@
  * Instagram 实链验证（t_cf9cf657 验收项，可重复执行）：
  *   视频 Reel 1 条 + 单图 post 1 条 + 图集 post 1 条 + doc_id 缺失路径 1 项
  *   每条：GET /parse 解析成功 → 直链 Range 0-2047 返回 206（带/不带 Referer 各一次）
- *   需要配置：IG_GRAPHQL_DOC_ID（env 注入），出站代理走 HTTPS_PROXY（本机 127.0.0.1:<本地代理端口>）
+ *   需要配置：IG_GRAPHQL_DOC_ID（env 注入），出站代理走 HTTPS_PROXY
  * 全部进程内 app.handle 驱动，不启服务。用法：
- *   IG_GRAPHQL_DOC_ID=27128499623469141 HTTPS_PROXY=http://127.0.0.1:<本地代理端口> bun scripts/verify-instagram.ts
+ *   IG_GRAPHQL_DOC_ID=<doc_id> HTTPS_PROXY=<本地代理地址> bun scripts/verify-instagram.ts
  */
 import { createApp } from '../src/bootstrap/app';
 import type { ParseResult } from '../src/types/platform';
