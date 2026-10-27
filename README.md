@@ -243,5 +243,6 @@ docker compose up -d
 
 ## 设计文档
 
+- `docs/开发者指南.md`：本地开发、目录导览、代码约定、加平台步骤、测试写法与维护手册（改代码前从这里开始）
 - `docs/research/`：平台 API 调研与实测记录（01 抖音/TikTok API、02 国内平台、03 架构、04 小红书 HTTP 通道、05 海外平台与出站代理）
 - `docs/image-build-notes.md`：镜像裁剪明细与构建验收清单
