@@ -65,12 +65,14 @@ export async function parseUrl(rawUrl: string, ctx: FetchCtx): Promise<ParseOutc
   }
   const key = cacheKey(matched.platform, matched.id, url.href);
 
-  // 平台风控止血窗口：该平台刚命中不可恢复风控（无兜底可用）时 45s 内直接 503，不撞上游
-  //（重试风控=加重风控）。有浏览器兜底时不会进这个窗口——降级在 adapter 内部消化。
-  const risk = parseCache.getPlatformRisk(adapter.platform);
-  if (risk) throw new AppError('RISK_CONTROL', risk.message);
-
   const { cached, result } = await parseCache.wrap(key, async () => {
+    // 平台风控止血窗口：无兜底可用时刚命中风控后，窗口内所有请求直接 503，不撞上游
+    //（重试风控=加重风控）。放 loader 开头：缓存/负缓存/singleflight 命中都还能正常返回，
+    // 只拦真正要打上游的请求。有浏览器兜底时不拦——降级在 adapter 内部消化，BROWSER_FALLBACK
+    // 开关切换后（off→on）窗口自动失效，立即恢复降级链。
+    const risk = parseCache.getPlatformRisk(adapter.platform);
+    if (!ctx.browser && risk) throw new AppError('RISK_CONTROL', risk.message);
+
     const { adapter: finalAdapter, input, url: finalUrl } = await dispatch(url, ctx);
     const started = Date.now();
     let payload;

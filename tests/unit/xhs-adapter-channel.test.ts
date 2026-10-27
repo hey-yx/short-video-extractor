@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { xhsAdapter, setXhsClientForTests, type XhsFetchClient } from '@/platforms/xhs/adapter';
 import { metrics } from '@/infra/metrics';
+import { resetChannelPolicyForTests } from '@/infra/channel-policy';
 import { AppError } from '@/core/errors';
 import type { FetchCtx, MatchResult, RawPayload } from '@/types/platform';
 
@@ -64,6 +65,7 @@ const loginwallRes = (): Response =>
 
 beforeEach(() => {
   metrics.reset();
+  resetChannelPolicyForTests();
 });
 
 afterEach(() => {
@@ -204,6 +206,44 @@ describe('xhs HTTP 主通道（注入假 client）', () => {
     const final = await xhsAdapter.resolve!(new URL('https://xhslink.com/a/abc123'), makeCtx(false));
     expect(final.pathname).toBe('/discovery/item/6ac016680000000002029db8');
     expect(final.searchParams.get('xsec_token')).toBe('ABxyz');
+  });
+
+  test('熔断粘性：连续 2 次登录墙降级后，第三次直接走浏览器不打 HTTP', async () => {
+    // 两次登录墙 + 浏览器兜底成功 → 熔断达阈值
+    for (let i = 0; i < 2; i++) {
+      stubHttp(loginwallRes);
+      await xhsAdapter.fetch(
+        input('6aa0343c00000000270173b7'),
+        new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+        makeCtx(true),
+      );
+    }
+    // 第三次：HTTP 通道零调用，直接浏览器
+    const upstream = stubHttp(() => new Response(videoHtml, { status: 200 }));
+    const ctx = makeCtx(true);
+    const raw = await xhsAdapter.fetch(
+      input('6aa0343c00000000270173b7'),
+      new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+      ctx,
+    );
+    expect(upstream.calls()).toBe(0);
+    expect(ctx.docCalls()).toBe(1);
+    expect(raw.channel).toBe('browser');
+  });
+
+  test('熔断粘性但无浏览器：不短路，照常打 HTTP（无兜底不空转）', async () => {
+    // 预置熔断打开
+    const { recordHttpRiskControl } = await import('@/infra/channel-policy');
+    recordHttpRiskControl('xhs');
+    recordHttpRiskControl('xhs');
+    const upstream = stubHttp(() => new Response(videoHtml, { status: 200 }));
+    const raw = await xhsAdapter.fetch(
+      input('6aa0343c00000000270173b7', 'tok'),
+      new URL('https://www.xiaohongshu.com/explore'),
+      makeCtx(false),
+    );
+    expect(upstream.calls()).toBe(1);
+    expect(raw.channel).toBe('http');
   });
 });
 

@@ -67,6 +67,12 @@ export class ParseCache {
   private readonly store = new LRUCache<string, Entry>({ max: MAX_ENTRIES });
   /** singleflight：同 key 并发只有一个在途解析 */
   private readonly inflight = new Map<string, Promise<ParseResult>>();
+  /** 风控止血窗口时长（毫秒）；单测可注入短值验证过期恢复 */
+  private readonly riskTtlMs: number;
+
+  constructor(opts: { riskTtlMs?: number } = {}) {
+    this.riskTtlMs = opts.riskTtlMs ?? RISK_TTL_MS;
+  }
 
   /** 单测隔离用：清空全部条目与在途请求 */
   resetForTests(): void {
@@ -96,9 +102,9 @@ export class ParseCache {
     this.store.set(key, negative, { ttl: NEGATIVE_TTL_MS });
   }
 
-  /** 平台级风控止血：该平台 45s 内的所有请求直接 503，不撞上游（重试风控=加重风控） */
+  /** 平台级风控止血：该平台窗口内所有请求直接 503，不撞上游（重试风控=加重风控） */
   setPlatformRisk(platform: string, err: AppError): void {
-    this.store.set(riskKey(platform), { kind: 'risk', message: err.message }, { ttl: RISK_TTL_MS });
+    this.store.set(riskKey(platform), { kind: 'risk', message: err.message }, { ttl: this.riskTtlMs });
   }
 
   getPlatformRisk(platform: string): RiskEntry | undefined {

@@ -115,6 +115,23 @@ describe('平台级风控止血缓存', () => {
     expect(c.get('douyin:x')).toBe(r);
     expect(c.getPlatformRisk('douyin')?.kind).toBe('risk');
   });
+
+  test('窗口过期自动恢复：TTL 到点后 getPlatformRisk 为 undefined', async () => {
+    const c = new ParseCache({ riskTtlMs: 20 });
+    c.setPlatformRisk('douyin', new AppError('RISK_CONTROL', '风控'));
+    expect(c.getPlatformRisk('douyin')).toBeDefined();
+    await new Promise((r) => setTimeout(r, 60));
+    expect(c.getPlatformRisk('douyin')).toBeUndefined();
+  });
+
+  test('resetForTests 清空止血窗口与内容缓存', () => {
+    const c = new ParseCache();
+    c.setPlatformRisk('douyin', new AppError('RISK_CONTROL', '风控'));
+    c.set('douyin:1', result());
+    c.resetForTests();
+    expect(c.getPlatformRisk('douyin')).toBeUndefined();
+    expect(c.get('douyin:1')).toBeUndefined();
+  });
 });
 
 describe('singleflight', () => {

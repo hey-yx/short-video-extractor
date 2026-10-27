@@ -84,4 +84,41 @@ describe('熔断粘性状态机', () => {
     recordHttpSuccess('douyin');
     expect(shouldSkipHttp('douyin', now.t)).toBe(false);
   });
+
+  test('resetForTests：清空全部状态', () => {
+    riskAt('douyin');
+    riskAt('douyin');
+    expect(shouldSkipHttp('douyin', now.t)).toBe(true);
+    resetChannelPolicyForTests();
+    expect(shouldSkipHttp('douyin', now.t)).toBe(false);
+    expect(breakerSnapshot().size).toBe(0);
+  });
+
+  test('平台隔离：douyin 熔断期间 xhs 成功清零不影响 douyin', () => {
+    riskAt('douyin');
+    riskAt('douyin');
+    riskAt('xhs');
+    recordHttpSuccess('xhs');
+    expect(shouldSkipHttp('douyin', now.t)).toBe(true);
+    expect(shouldSkipHttp('xhs', now.t)).toBe(false);
+  });
+
+  test('多次成功清零后重新计数：1 次风控不熔断', () => {
+    riskAt('douyin');
+    riskAt('douyin');
+    recordHttpSuccess('douyin');
+    riskAt('douyin');
+    expect(shouldSkipHttp('douyin', now.t)).toBe(false);
+    riskAt('douyin');
+    expect(shouldSkipHttp('douyin', now.t)).toBe(true);
+  });
+
+  test('探针放行后不自动熔断：试探中 shouldSkipHttp 持续 false', () => {
+    riskAt('douyin');
+    riskAt('douyin');
+    tick(60_001);
+    expect(shouldSkipHttp('douyin', now.t)).toBe(false);
+    // 试探期间（没成功也没失败）连续问：不应再次粘住
+    expect(shouldSkipHttp('douyin', now.t)).toBe(false);
+  });
 });
