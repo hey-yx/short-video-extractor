@@ -13,7 +13,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-1f6feb?style=flat-square)](LICENSE)
 
-[架构](#架构) • [平台状态](#平台状态) • [API](#api) • [可观测性](#可观测性) • [本地开发](#本地开发) • [环境变量](#环境变量) • [部署](#部署) • [CI](#ci) • [设计文档](#设计文档)
+[快速开始](#快速开始) • [架构](#架构) • [平台状态](#平台状态) • [API](#api) • [可观测性](#可观测性) • [本地开发](#本地开发) • [环境变量](#环境变量) • [部署](#部署) • [CI](#ci) • [设计文档](#设计文档)
 
 </div>
 
@@ -21,6 +21,35 @@
 > 该项目正在重构整改，接口与行为可能随时调整，接入前请先确认最新实现。
 
 短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。v2.1 现支持 9 个平台：抖音、小红书、快手、B 站、微博、X/Twitter、YouTube、Instagram Reels、TikTok。默认返回直链（客户端请求时不带 Referer 即可下载），服务器零带宽；`/media` 中转作为可选增强。
+
+- 9 个平台统一 JSON 信封，直链无水印
+- 纯 HTTP 主通道，默认零浏览器依赖；风控自动降级浏览器兜底
+- 缓存、限流、结构化日志、Prometheus 指标开箱即用
+- 一条命令 Docker 部署，镜像 495MB 起
+
+> [!NOTE]
+> 本项目仅供学习与技术研究。请遵守目标平台的服务条款与当地法律法规，解析内容的版权归原平台及作者所有。
+
+## 快速开始
+
+前置：装好 [Bun](https://bun.sh)（1.2+）。
+
+```bash
+git clone https://github.com/hey-yx/short-video-extractor.git
+cd short-video-extractor
+bun install
+bun dev          # 启动开发服务，默认端口 7777
+```
+
+拿一条分享链接就能解析：
+
+```bash
+curl -X POST http://127.0.0.1:7777/parse \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "<分享链接>"}'
+```
+
+返回统一信封（见 [API](#api)），`data.assets[].url` 就是无水印直链，直接下载即可（不带 Referer）。不想装环境可以直接 `docker compose up -d`，见[部署](#部署)。
 
 ## 架构
 
@@ -53,9 +82,9 @@ src/
 
 ## 稳定性
 
-- **抖音双通道**：默认纯 HTTP（L1 零签名 detail 接口）；一旦 403 `ArgusSecurityPlugin`（L1 被风控），自动降级浏览器——打开作品页并从 response 事件截取页面自己发出的 `/aweme/v1/web/aweme/detail/` XHR JSON，`via` 字段如实标 `browser`。降级计数见 `channel_downgrade_total`。
+- **抖音双通道**：默认纯 HTTP（L1 零签名 detail 接口）；一旦 403 `ArgusSecurityPlugin`（L1 被风控），自动降级浏览器：打开作品页并从 response 事件截取页面自己发出的 `/aweme/v1/web/aweme/detail/` XHR JSON，`via` 字段如实标 `browser`。降级计数见 `channel_downgrade_total`。
 - **瞬态重试**：`UPSTREAM_TIMEOUT` / `UPSTREAM_ERROR`（网络层与上游 5xx）在编排层重试 1 次，指数退避（500ms→1s），总耗时受请求 15s 上限约束；`RISK_CONTROL`、内容类与参数类错误一律不重试（重试风控=加重风控）。计数见 `parse_retry_total`。
-- **浏览器并发闸**：所有浏览器通道共享一个信号量，最多 2 个并发 page，超出的排队，排队期间随请求取消（AbortSignal）立即退出——防止并发打满内存（Chrome 每页约 30–110 MB）。
+- **浏览器并发闸**：所有浏览器通道共享一个信号量，最多 2 个并发 page，超出的排队，排队期间随请求取消（AbortSignal）立即退出，防止并发打满内存（Chrome 每页约 30-110 MB）。
 - **风控如实分类**：小红书 `error_code=300012`（IP at risk）等错误页归 `RISK_CONTROL`（503，带可读文案），不冒充改版。
 
 ## 平台状态
@@ -67,15 +96,14 @@ src/
 | 抖音 | HTTP 主通道（零签名 detail 接口 + play 直链），L1 被风控时自动降级浏览器截 detail XHR | 视频、图集、实况照片 | 540p/720p/1080p/原片四档（另附 720p 水印档） | 否（play 直链空 Referer 可下） |
 | 小红书 | 纯 HTTP 主通道（请求头三件套放行，见下）+ 风控/登录墙自动降级浏览器兜底 | 笔记视频、图集图片 | 视频出 master 流（h264 优先）；图片原图 | 否 |
 | 快手 | 纯 HTTP（短链 302 取 photoId + 移动端分享页 INIT_STATE，零 cookie） | 视频、图集 | 服务端返回的全部分辨率（按高度排序，最高档为主 URL） | 否 |
-| B 站 | 纯 HTTP（view + playurl try_look=1） | 视频（多 P 逐个出 asset）、DASH 音视频分离 | 360P–4K 按 DASH id 映射（120=4K、116=1080P60、80=1080P…） | 否 |
+| B 站 | 纯 HTTP（view + playurl try_look=1） | 视频（多 P 逐个出 asset）、DASH 音视频分离 | 360P-4K 按 DASH id 映射（120=4K、116=1080P60、80=1080P…） | 否 |
 | 微博 | 纯 HTTP（statuses/show 匿名 JSON；视频直链页 fid 换 mid；t.cn 短链 302 展开） | 视频、图集 | 1080P/720P/480P 等服务端给的档位（component 档位比 show 全） | 否 |
 | X/Twitter | 纯 HTTP（cdn.syndication.twimg.com/tweet-result，token=0 免签名） | 单条推文视频、GIF、图集 | mp4 按 bitrate 多档 + HLS 备选 | 否（twimg 直链不校验出口 IP） |
-| YouTube / Shorts | 纯 API（innertube /player，ANDROID_VR→IOS 失败自动换 client，免 PO Token 免 cookie） | 视频、Shorts | 144p–2160p 按源返回（ANDROID_VR 可到 4K），DASH 音视频分离 + 合并档 | **是**（googlevideo 直链绑解析出口 IP，约 6h 过期，直链须经 `/media` 服务端中转，中转与解析走同一代理出口） |
+| YouTube / Shorts | 纯 API（innertube /player，ANDROID_VR→IOS 失败自动换 client，免 PO Token 免 cookie） | 视频、Shorts | 144p-2160p 按源返回（ANDROID_VR 可到 4K），DASH 音视频分离 + 合并档 | **是**（googlevideo 直链绑解析出口 IP，约 6h 过期，直链须经 `/media` 服务端中转，中转与解析走同一代理出口） |
 | Instagram Reels | 纯 HTTP（匿名 GraphQL `doc_id` 口子，免登录免 cookie，需配 `IG_GRAPHQL_DOC_ID`） | Reels、Post、IGTV 视频、图文图集 | mp4 按源返回 | 否（fbcdn 直链无 ip= 绑定） |
 | TikTok | 纯 HTTP（tikwm 公开接口：无水印直链/图集/音乐；解析出站走代理） | 视频、图集、音乐 | 无水印 play/hdplay 双档 | 否（tiktokcdn 直链不绑 IP） |
 
 代理：国内平台直连不走代理；海外平台（YouTube 等）经 `PROXY_<PLATFORM>` / `OUTBOUND_PROXY` / `HTTPS_PROXY` 出站代理（见[环境变量](#环境变量)）。
-
 
 ## API
 
@@ -100,13 +128,15 @@ src/
 | `expiresAt` | 所有直链里最早过期的时刻（Unix 秒），缓存与重取依据 |
 | `via` | 解析通道：`http` 或 `browser`（取数语义，全平台统一） |
 
-`assets[]`（MediaAsset）：`type`（video/image/audio/cover）、`url`（**直连地址**，客户端请求时不要带 Referer；YouTube 除外——googlevideo 直链绑解析出口 IP，必须经 `/media` 服务端中转下载）、`variants[]`（同资源的其他档位，抖音给全四档）、`width` / `height` / `durationMs` / `size`、`backups[]`（备用 CDN）、`liveClipUrl`（实况照片的 5s 视频）。B 站与 YouTube 视频另带 `audioUrl`（DASH 音轨，需与视频分别拉取后合成）。
+`assets[]`（MediaAsset）：`type`（video/image/audio/cover）、`url`（**直连地址**，客户端请求时不要带 Referer；YouTube 除外：googlevideo 直链绑解析出口 IP，必须经 `/media` 服务端中转下载）、`variants[]`（同资源的其他档位，抖音给全四档）、`width` / `height` / `durationMs` / `size`、`backups[]`（备用 CDN）、`liveClipUrl`（实况照片的 5s 视频）。B 站与 YouTube 视频另带 `audioUrl`（DASH 音轨，需与视频分别拉取后合成）。
 
 错误码与 HTTP 状态：`INVALID_URL`(400)、`UNSUPPORTED_PLATFORM`(422)、`CONTENT_NOT_FOUND`(404)、`CONTENT_RESTRICTED`(403)、`RISK_CONTROL`(503)、`UPSTREAM_ERROR` / `UPSTREAM_CHANGED`(502)、`UPSTREAM_TIMEOUT`(504)、`RATE_LIMITED`(429)、`MEDIA_*`（见下）、`INTERNAL`(500)。
 
 ### GET /media?u=&exp=&sig=（可选，默认关闭）
 
 流式中转，三种用途：强制下载文件名（Content-Disposition）、兜底会强制带 Referer 的容器（微信内置浏览器等）、链接过期后透明重取。
+
+调用 `/parse` 的客户端用不到这个接口：正常情况直链拿来就能用，无需任何配置。它只服务两类场景：YouTube 直链绑 IP 必须经服务端中转（见[平台状态](#平台状态)）；自部署的维护者想要上面三种增强能力。
 
 > [!NOTE]
 > 配置 `PROXY_SECRET` 后启用（未配置返回 501，直链主路径不受影响）。
@@ -142,7 +172,7 @@ Prometheus 文本格式（自写渲染，未引 prom-client）：
 ## 可观测性
 
 - **结构化日志**：pino，一行一请求 JSON。每请求生成/透传 `x-request-id`（响应头回写，日志字段 `reqId`），访问日志含 method、path、status、耗时，平台解析事件另带 platform / id / 耗时。
-- **敏感信息脱敏**：所有日志输出经深度 redact——URL 的 query 值整体打码（防 `xsec_token` 等凭据进日志），消息文本里的内联链接同样处理，Error 实例与 detail 递归脱敏。参数名保留，值一律 `REDACTED`。
+- **敏感信息脱敏**：所有日志输出经深度 redact，URL 的 query 值整体打码（防 `xsec_token` 等凭据进日志），消息文本里的内联链接同样处理，Error 实例与 detail 递归脱敏。参数名保留，值一律 `REDACTED`。
 - 日志级别由 `LOG_LEVEL` 控制（默认 `info`）。
 
 ## 本地开发
@@ -155,10 +185,10 @@ bun run test:status  # 一条命令看全状态：格式 / 类型 / 单测 / 覆
 bun run typecheck
 ```
 
+`docs/status.html` 是零依赖检测站：状态总览、服务健康、平台状态、使用计数与解析演示一页全有。file:// 直接打开（手动填服务地址），部署后浏览器访问 `http://<服务器>:7777/status` 即看。
+
 > [!TIP]
 > 浏览器兜底路径（抖音风控降级、小红书降级兜底）需要本机有 Chrome（Puppeteer 自动管理）；纯 HTTP 通道无此要求。
-
-`docs/status.html` 是零依赖检测站——状态总览、服务健康、平台状态、使用计数与解析演示一页全有。file:// 直接打开（手动填服务地址）；部署后浏览器访问 `http://<服务器>:7777/status` 即看，无需起任何额外服务。
 
 ## 环境变量
 
@@ -167,7 +197,7 @@ bun run typecheck
 | `PORT` | 7777 | 监听端口 |
 | `LOG_LEVEL` | info | fatal/error/warn/info/debug/trace |
 | `PROXY_SECRET` | 未配置 | /media 中转签名密钥；不配则 /media 返回 501 |
-| `PUPPETEER_EXECUTABLE_PATH` | — | 容器内固定 `/usr/bin/chromium`（Dockerfile 已设） |
+| `PUPPETEER_EXECUTABLE_PATH` | - | 容器内固定 `/usr/bin/chromium`（Dockerfile 已设） |
 | `PROXY_<PLATFORM>` | 未配置 | 按平台出站代理（如 `PROXY_YOUTUBE`），优先级最高 |
 | `OUTBOUND_PROXY` | 未配置 | 海外平台默认出站代理（`PROXY_<PLATFORM>` 未设时生效） |
 | `HTTPS_PROXY` | 未配置 | 出站代理兜底（前两者都未设时生效）。解析顺序：`PROXY_<PLATFORM>` → `OUTBOUND_PROXY` → `HTTPS_PROXY`；国内平台不受影响（代理只注入海外平台的 fetch 与对应 `/media` 中转） |
@@ -178,11 +208,7 @@ bun run typecheck
 
 ### 镜像
 
-多阶段构建：`oven/bun:alpine` 编译单二进制 → `alpine:3.22` + chromium 运行（浏览器兜底路径需要真实浏览器内核）。非 root（uid 10001）运行，tini 收僵尸进程，HEALTHCHECK 打 /health。
-
-镜像体积实测（2026-10-25 构建）：arm64 **495MB**、amd64 **527MB**，初始构建 830MB。删除项都在 apk 同层完成：mesa/LLVM 软渲染栈（-247MB）、系统 ICU 数据（-30MB）、ANGLE/SwiftShader（-7MB）及若干无头解析用不到的数据文件，装完即删，每删一项都在容器内实测小红书浏览器通道真实解析通过才保留。chromium 本体、其 ffmpeg 编码器依赖、nss/字体与 100MB 的 bun 单二进制不动。apk 源默认走阿里云镜像（构建实测 `dl-cdn.alpinelinux.org` 仅 14KB/s，阿里云 1.4MB/s），换官方源：`docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
-
-构建后验收清单：容器内 `/health` 200、`/ready` 9 平台、每平台一条真实链接解析通过、`bun test` 全绿（216 用例）、`tsc --noEmit` 零错。
+多阶段构建：`oven/bun:alpine` 编译单二进制 → `alpine:3.22` + chromium 运行时（浏览器兜底路径需要真实浏览器内核）。非 root（uid 10001）运行，tini 收僵尸进程，HEALTHCHECK 打 /health。实测体积：arm64 **495MB**、amd64 **527MB**（初始 830MB）；裁剪明细、构建后验收清单与 apk 镜像源切换见 `docs/image-build-notes.md`。apk 源默认走阿里云镜像（官方源实测仅 14KB/s），换官方源：`docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
 
 ```bash
 docker build -t short-video-extractor:v2 .
@@ -199,7 +225,7 @@ docker compose up -d
 
 ### 升级
 
-重新构建镜像后 `docker compose up -d`，确认 `/health`、`/ready` 与每平台一条真实链接解析通过即完成——回滚就是换回旧镜像 tag。偶尔跑一次 `docker image prune` 清构建缓存。
+重新构建镜像后 `docker compose up -d`，确认 `/health`、`/ready` 与每平台一条真实链接解析通过即完成，回滚就是换回旧镜像 tag。偶尔跑一次 `docker image prune` 清构建缓存。
 
 ### 检测站
 
@@ -207,8 +233,9 @@ docker compose up -d
 
 ## CI
 
-`.github/workflows/test.yml`：push（main）与 PR 跑 `bun run typecheck` + `bun test`，环境变量 `PUPPETEER_SKIP_DOWNLOAD: "true"` 避免 CI 拉浏览器。
+仓库用 GitHub Actions 做持续集成：push 到 main 或提交 PR 时，GitHub 自动拉起干净环境运行 `bun run typecheck` 和全部单测，README 顶部的 CI 徽章显示结果（绿色 = 通过）。配置在 `.github/workflows/test.yml`，其中 `PUPPETEER_SKIP_DOWNLOAD: "true"` 避免 CI 拉浏览器。
 
 ## 设计文档
 
-- `docs/research/` — 平台 API 调研与实测记录（01 抖音/TikTok API、02 国内平台、03 架构、04 小红书 HTTP 通道、05 海外平台与出站代理）
+- `docs/research/`：平台 API 调研与实测记录（01 抖音/TikTok API、02 国内平台、03 架构、04 小红书 HTTP 通道、05 海外平台与出站代理）
+- `docs/image-build-notes.md`：镜像裁剪明细与构建验收清单
