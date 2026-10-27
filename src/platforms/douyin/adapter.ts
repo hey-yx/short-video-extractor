@@ -1,5 +1,6 @@
 import { AppError } from '@/core/errors';
 import { recordChannelDowngrade } from '@/infra/metrics';
+import { recordHttpRiskControl, shouldSkipHttp } from '@/infra/channel-policy';
 import type { FetchCtx, MatchResult, PlatformAdapter, RawPayload } from '@/types/platform';
 import { hostMatches } from '../hosts';
 import { parseAweme } from './parse';
@@ -128,6 +129,11 @@ export const douyinAdapter: PlatformAdapter = {
   },
 
   async fetch(input: MatchResult, url: URL, ctx: FetchCtx): Promise<RawPayload> {
+    // 熔断粘性：L1 连续被风控期间直接走浏览器，不再每请求先吃一次 403（半开态探针放行 HTTP）
+    if (ctx.browser && shouldSkipHttp('douyin')) {
+      ctx.logger.warn('douyin circuit sticky: skip L1, go browser directly', { id: input.id });
+      return fetchViaBrowser(input, url, ctx);
+    }
     try {
       return await fetchViaHttp(input, ctx);
     } catch (err) {
@@ -140,6 +146,8 @@ export const douyinAdapter: PlatformAdapter = {
       }
       ctx.logger.warn('douyin L1 risk control, downgrade to browser channel', { id: input.id });
       recordChannelDowngrade('douyin', 'http', 'browser');
+      // L1 风控进熔断记账：连续达阈值后粘住浏览器（半开态探针由 shouldSkipHttp 控制）
+      recordHttpRiskControl('douyin');
       return fetchViaBrowser(input, url, ctx);
     }
   },

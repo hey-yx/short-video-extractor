@@ -14,6 +14,8 @@ const MAX_TTL_MS = 30 * 60 * 1000;
 const DEFAULT_TTL_MS = 10 * 60 * 1000;
 /** 负缓存（稳定失败）TTL */
 const NEGATIVE_TTL_MS = 10 * 60 * 1000;
+/** 风控止血负缓存 TTL：IP 被风控期间少打上游，别每个请求都全额撞一次墙 */
+const RISK_TTL_MS = 45_000;
 /** LRU 容量（research/03 §5.1：起步 max 5000） */
 const MAX_ENTRIES = 5000;
 
@@ -31,7 +33,13 @@ interface ErrorEntry {
   message: string;
 }
 
-type Entry = ValueEntry | ErrorEntry;
+/** 风控止血条目：按平台聚合（key = `risk:<platform>`），不按内容 */
+interface RiskEntry {
+  kind: 'risk';
+  message: string;
+}
+
+type Entry = ValueEntry | ErrorEntry | RiskEntry;
 
 export interface CacheOutcome {
   /** true = 缓存直接返回，未打上游 */
@@ -60,6 +68,12 @@ export class ParseCache {
   /** singleflight：同 key 并发只有一个在途解析 */
   private readonly inflight = new Map<string, Promise<ParseResult>>();
 
+  /** 单测隔离用：清空全部条目与在途请求 */
+  resetForTests(): void {
+    this.store.clear();
+    this.inflight.clear();
+  }
+
   get(key: string): ParseResult | undefined {
     const e = this.store.get(key);
     return e?.kind === 'value' ? e.result : undefined;
@@ -80,6 +94,16 @@ export class ParseCache {
     const negative = negativeOf(err);
     if (!negative) return;
     this.store.set(key, negative, { ttl: NEGATIVE_TTL_MS });
+  }
+
+  /** 平台级风控止血：该平台 45s 内的所有请求直接 503，不撞上游（重试风控=加重风控） */
+  setPlatformRisk(platform: string, err: AppError): void {
+    this.store.set(riskKey(platform), { kind: 'risk', message: err.message }, { ttl: RISK_TTL_MS });
+  }
+
+  getPlatformRisk(platform: string): RiskEntry | undefined {
+    const e = this.store.get(riskKey(platform));
+    return e?.kind === 'risk' ? e : undefined;
   }
 
   /** 缓存命中 → 直接返回；未命中 → singleflight 只放一个请求去上游 */
@@ -123,4 +147,9 @@ export const parseCache = new ParseCache();
 export function cacheKey(platform: string, id: string, fallbackUrl: string): string {
   const identity = id || fallbackUrl;
   return `${platform}:${identity}`;
+}
+
+/** 平台风控止血 key：与内容 key 共用同一 LRU 但命名空间隔离 */
+function riskKey(platform: string): string {
+  return `risk:${platform}`;
 }

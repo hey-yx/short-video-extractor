@@ -1,7 +1,30 @@
 import { Elysia } from 'elysia';
 import { listAdapters } from '@/platforms/registry';
 import { ok } from '@/core/envelope';
-import { metrics } from '@/infra/metrics';
+import { metrics, recordChannelBreaker } from '@/infra/metrics';
+import { breakerSnapshot } from '@/infra/channel-policy';
+import type { Platform } from '@/types/platform';
+
+const ALL_PLATFORMS: Platform[] = [
+  'douyin',
+  'xhs',
+  'kuaishou',
+  'bilibili',
+  'weibo',
+  'twitter',
+  'youtube',
+  'instagram',
+  'tiktok',
+];
+
+/** 熔断状态刷进 gauge：开着的记 1，关着的记 0（保证 Prometheus 抓得到回落） */
+function publishBreakerGauges(): void {
+  const snapshot = breakerSnapshot();
+  for (const p of ALL_PLATFORMS) {
+    const s = snapshot.get(p);
+    recordChannelBreaker(p, s?.openedAt !== undefined && s.openedAt !== null);
+  }
+}
 
 export const opsRoutes = new Elysia()
   // 存活探针：进程活着就 200，不查外部依赖（防外部抖动引发连环重启）
@@ -29,5 +52,6 @@ export const opsRoutes = new Elysia()
   // Prometheus 文本格式指标（自写渲染）
   .get('/metrics', ({ set }) => {
     set.headers['content-type'] = 'text/plain; version=0.0.4; charset=utf-8';
+    publishBreakerGauges();
     return metrics.render();
   });

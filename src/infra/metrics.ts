@@ -15,6 +15,8 @@ const DURATION_BUCKETS = [50, 100, 250, 500, 1000, 2000, 5000, 10000, 30000];
 
 const counters = new Map<string, number>();
 const histograms = new Map<string, { counts: number[]; sum: number; count: number }>();
+/** gauge（熔断等状态量）：每次 render 时取即时值，不累加 */
+const gauges = new Map<string, number>();
 
 function escapeLabelValue(v: string): string {
   return v.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
@@ -32,6 +34,11 @@ export const metrics = {
   inc(name: string, labels?: Labels, value = 1): void {
     const key = series(name, labels);
     counters.set(key, (counters.get(key) ?? 0) + value);
+  },
+
+  /** gauge：直接设值（不是累加）；render 时原样输出 */
+  setGauge(name: string, labels: Labels, value: number): void {
+    gauges.set(series(name, labels), value);
   },
 
   observe(name: string, labels: Labels, value: number): void {
@@ -89,12 +96,19 @@ export const metrics = {
     lines.push('# TYPE parse_retry_total counter');
     emitCounter(lines, counters, 'parse_retry_total');
 
+    lines.push('# HELP channel_breaker_open 通道熔断粘性状态（1=该平台 HTTP 通道熔断中，固定走浏览器）');
+    lines.push('# TYPE channel_breaker_open gauge');
+    for (const [key, v] of sortedEntries(gauges)) {
+      if (key.startsWith('channel_breaker_open')) lines.push(`${key} ${v}`);
+    }
+
     return `${lines.join('\n')}\n`;
   },
 
   reset(): void {
     counters.clear();
     histograms.clear();
+    gauges.clear();
     prewarm();
   },
 };
@@ -142,3 +156,8 @@ export const recordChannelDowngrade = (platform: string, from: string, to: strin
   metrics.inc('channel_downgrade_total', { platform, from, to });
 
 export const recordParseRetry = (platform: string): void => metrics.inc('parse_retry_total', { platform });
+
+/** 通道熔断状态发布到 /metrics（ops routes 每次抓取时刷新即时值） */
+export function recordChannelBreaker(platform: string, open: boolean): void {
+  metrics.setGauge('channel_breaker_open', { platform }, open ? 1 : 0);
+}

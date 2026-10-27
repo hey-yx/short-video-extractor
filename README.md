@@ -83,6 +83,9 @@ src/
 ## 稳定性
 
 - **抖音双通道**：默认纯 HTTP（L1 零签名 detail 接口）；一旦 403 `ArgusSecurityPlugin`（L1 被风控），自动降级浏览器：打开作品页并从 response 事件截取页面自己发出的 `/aweme/v1/web/aweme/detail/` XHR JSON，`via` 字段如实标 `browser`。降级计数见 `channel_downgrade_total`。
+- **熔断粘性**：HTTP 通道连续 2 次命中风控后，该平台 60s 内固定走浏览器，不再每个请求先吃一次 403 再冷启动浏览器（省 1-3s 延迟，也不加重风控画像）；60s 探针窗口到点放一个请求回 HTTP 试探，试探成功即回到纯 HTTP。状态见 `channel_breaker_open{platform}` gauge。
+- **风控止血**：无浏览器兜底可用（或 `BROWSER_FALLBACK=off`）时，最终风控会让该平台进入 45s 止血窗口——窗口内所有请求直接 503，不再全额撞上游（重试风控=加重风控）。有兜底时降级在 adapter 内部消化，不进窗口。
+- **纯 HTTP 部署开关**：`BROWSER_FALLBACK=off` 时不注入浏览器能力，风控如实 503；适合不想跑 Chrome 的部署（省 400-600 MB 常驻内存，puppeteer 依赖可移除）。
 - **瞬态重试**：`UPSTREAM_TIMEOUT` / `UPSTREAM_ERROR`（网络层与上游 5xx）在编排层重试 1 次，指数退避（500ms→1s），总耗时受请求 15s 上限约束；`RISK_CONTROL`、内容类与参数类错误一律不重试（重试风控=加重风控）。计数见 `parse_retry_total`。
 - **浏览器并发闸**：所有浏览器通道共享一个信号量，最多 2 个并发 page，超出的排队，排队期间随请求取消（AbortSignal）立即退出，防止并发打满内存（Chrome 每页约 30-110 MB）。
 - **风控如实分类**：小红书 `error_code=300012`（IP at risk）等错误页归 `RISK_CONTROL`（503，带可读文案），不冒充改版。
@@ -168,6 +171,7 @@ Prometheus 文本格式（自写渲染，未引 prom-client）：
 | `upstream_error_total{platform,reason}` | counter | 上游失败/风控次数 |
 | `channel_downgrade_total{platform,from,to}` | counter | 解析通道自动降级次数（抖音/小红书 http→browser） |
 | `parse_retry_total{platform}` | counter | 瞬态错误（超时/5xx）重试次数 |
+| `channel_breaker_open{platform}` | gauge | 通道熔断粘性状态（1 = 该平台 HTTP 通道熔断中，固定走浏览器） |
 
 ## 可观测性
 
@@ -196,6 +200,7 @@ bun run typecheck
 |---|---|---|
 | `PORT` | 7777 | 监听端口 |
 | `LOG_LEVEL` | info | fatal/error/warn/info/debug/trace |
+| `BROWSER_FALLBACK` | on | 浏览器兜底总开关；设 `off` 时全平台纯 HTTP，风控如实 503（免 Chrome 常驻内存） |
 | `PROXY_SECRET` | 未配置 | /media 中转签名密钥；不配则 /media 返回 501 |
 | `PUPPETEER_EXECUTABLE_PATH` | - | 容器内固定 `/usr/bin/chromium`（Dockerfile 已设） |
 | `PROXY_<PLATFORM>` | 未配置 | 按平台出站代理（如 `PROXY_YOUTUBE`），优先级最高 |

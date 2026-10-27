@@ -1,5 +1,6 @@
 import { AppError } from '@/core/errors';
 import { recordChannelDowngrade } from '@/infra/metrics';
+import { recordHttpRiskControl, shouldSkipHttp } from '@/infra/channel-policy';
 import type { FetchCtx, MatchResult, PlatformAdapter, RawPayload } from '@/types/platform';
 import { parseNote } from './parse';
 
@@ -156,6 +157,11 @@ export const xhsAdapter: PlatformAdapter = {
   },
 
   async fetch(input: MatchResult, url: URL, ctx: FetchCtx): Promise<RawPayload> {
+    // 熔断粘性：HTTP 通道连续被拒期间直接走浏览器，不再每请求先吃两连 302（半开态探针放行）
+    if (ctx.browser && shouldSkipHttp('xhs')) {
+      ctx.logger.warn('xhs circuit sticky: skip http channel, go browser directly', { id: input.id });
+      return fetchViaBrowser(url, ctx);
+    }
     try {
       return await fetchViaHttp(input, url, ctx);
     } catch (err) {
@@ -168,6 +174,8 @@ export const xhsAdapter: PlatformAdapter = {
       }
       ctx.logger.warn('xhs http channel risk signal, downgrade to browser channel', { id: input.id });
       recordChannelDowngrade('xhs', 'http', 'browser');
+      // HTTP 通道被拒进熔断记账：连续达阈值后粘住浏览器（半开态探针由 shouldSkipHttp 控制）
+      recordHttpRiskControl('xhs');
       return fetchViaBrowser(url, ctx);
     }
   },

@@ -10,12 +10,19 @@ import { findPlatform } from '@/platforms/hosts';
 import { resolveProxy } from '@/infra/proxy';
 import type { FetchCtx, Platform } from '@/types/platform';
 
+/** 浏览器兜底开关：默认开；BROWSER_FALLBACK=off（大小写不敏感）时全平台纯 HTTP */
+export function browserFallbackEnabled(): boolean {
+  return (process.env.BROWSER_FALLBACK ?? '').trim().toLowerCase() !== 'off';
+}
+
 /** 解析通道上下文：pino 子 logger（带 requestId），浏览器能力由 infra 注入 */
 const httpCtx = (request: Request, platform: Platform | null): FetchCtx => ({
   signal: AbortSignal.timeout(15_000),
   channel: 'http',
-  // 需要浏览器的平台（小红书）从这里拿页面操作能力；平台包不见 puppeteer
-  browser: browserGateway,
+  // 需要浏览器的平台（小红书）从这里拿页面操作能力；平台包不见 puppeteer。
+  // BROWSER_FALLBACK=off：不注入浏览器能力，风控走 503 如实报错（纯 HTTP 部署，
+  // 免 Chrome 常驻内存；幂等读 env，测试里改环境变量后仍生效）
+  browser: browserFallbackEnabled() ? browserGateway : undefined,
   logger: asFetchLogger(requestLogger(request)),
   // 海外平台出站代理（PROXY_<PLATFORM> 覆盖 → OUTBOUND_PROXY → HTTPS_PROXY 兜底）；
   // YouTube 直链绑 IP，/media 中转经 resolveProxy 同源取值；平台包不读 env

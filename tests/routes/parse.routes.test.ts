@@ -2,6 +2,8 @@ import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
 
 import { createApp } from '@/bootstrap/app';
 import { metrics } from '@/infra/metrics';
+import { resetChannelPolicyForTests } from '@/infra/channel-policy';
+import { parseCache } from '@/services/cache';
 import { ipRateLimiter } from '@/services/limiter';
 import fixture from '../fixtures/douyin/aweme-video.json';
 
@@ -39,6 +41,9 @@ beforeEach(() => {
   // 默认 stub 成失败，任何用例都不得误打真实网络
   stubFetch({ unexpected: true });
   upstreamCalls = 0;
+  // 通道熔断与平台止血是跨用例共享的单例状态，清掉防止前面测试文件的风控窗口串到这里
+  resetChannelPolicyForTests();
+  parseCache.resetForTests();
 });
 
 afterAll(() => {

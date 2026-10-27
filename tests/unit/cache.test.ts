@@ -92,6 +92,31 @@ describe('cache 命中与负缓存', () => {
   });
 });
 
+describe('平台级风控止血缓存', () => {
+  test('setPlatformRisk 后 getPlatformRisk 命中，消息一致', () => {
+    const c = new ParseCache();
+    c.setPlatformRisk('douyin', new AppError('RISK_CONTROL', '抖音风控拦截'));
+    const risk = c.getPlatformRisk('douyin');
+    expect(risk?.kind).toBe('risk');
+    expect(risk?.message).toBe('抖音风控拦截');
+  });
+
+  test('其他平台不受影响', () => {
+    const c = new ParseCache();
+    c.setPlatformRisk('douyin', new AppError('RISK_CONTROL', '抖音风控拦截'));
+    expect(c.getPlatformRisk('xhs')).toBeUndefined();
+  });
+
+  test('止血 key 与内容 key 不串（内容缓存照常工作）', () => {
+    const c = new ParseCache();
+    const r = result({ id: 'x' });
+    c.setPlatformRisk('douyin', new AppError('RISK_CONTROL', '风控'));
+    c.set('douyin:x', r);
+    expect(c.get('douyin:x')).toBe(r);
+    expect(c.getPlatformRisk('douyin')?.kind).toBe('risk');
+  });
+});
+
 describe('singleflight', () => {
   test('同 key 并发只放一个请求去上游，结果共享', async () => {
     const c = new ParseCache();

@@ -1,6 +1,7 @@
 import type { ParseResult } from '@/types/platform';
 import { AppError } from '@/core/errors';
 import { recordParseRetry } from '@/infra/metrics';
+import { recordHttpRiskControl, recordHttpSuccess } from '@/infra/channel-policy';
 import { dispatch, matchAdapter } from '@/platforms/registry';
 import { cacheKey, parseCache } from '@/services/cache';
 import type { FetchCtx } from '@/types/platform';
@@ -64,6 +65,11 @@ export async function parseUrl(rawUrl: string, ctx: FetchCtx): Promise<ParseOutc
   }
   const key = cacheKey(matched.platform, matched.id, url.href);
 
+  // 平台风控止血窗口：该平台刚命中不可恢复风控（无兜底可用）时 45s 内直接 503，不撞上游
+  //（重试风控=加重风控）。有浏览器兜底时不会进这个窗口——降级在 adapter 内部消化。
+  const risk = parseCache.getPlatformRisk(adapter.platform);
+  if (risk) throw new AppError('RISK_CONTROL', risk.message);
+
   const { cached, result } = await parseCache.wrap(key, async () => {
     const { adapter: finalAdapter, input, url: finalUrl } = await dispatch(url, ctx);
     const started = Date.now();
@@ -73,15 +79,33 @@ export async function parseUrl(rawUrl: string, ctx: FetchCtx): Promise<ParseOutc
     } catch (err) {
       // 瞬态失败重试 1 次（指数退避）；RISK_CONTROL / CONTENT_* / INVALID_* 一律不重试
       const retryable = err instanceof AppError && RETRYABLE_CODES.has(err.code) && !ctx.signal.aborted;
-      if (!retryable) throw err;
+      if (!retryable) {
+        // 真打了上游且最终风控：进熔断记账（半开态探针失败重新粘住）+ 平台止血窗口
+        if (err instanceof AppError && err.code === 'RISK_CONTROL') {
+          recordHttpRiskControl(finalAdapter.platform);
+          parseCache.setPlatformRisk(finalAdapter.platform, err);
+        }
+        throw err;
+      }
       ctx.logger.warn('transient upstream error, retrying once', {
         platform: finalAdapter.platform,
         code: err.code,
       });
       recordParseRetry(finalAdapter.platform);
       await backoff(RETRY_BACKOFF_MS[0]!, ctx.signal);
-      payload = await finalAdapter.fetch(input, finalUrl, ctx);
+      try {
+        payload = await finalAdapter.fetch(input, finalUrl, ctx);
+      } catch (retryErr) {
+        if (retryErr instanceof AppError && retryErr.code === 'RISK_CONTROL') {
+          recordHttpRiskControl(finalAdapter.platform);
+          parseCache.setPlatformRisk(finalAdapter.platform, retryErr);
+        }
+        throw retryErr;
+      }
     }
+    // 上游成功：只有 HTTP 主通道成功才清熔断计数（半开态探针试探成功 = 回到纯 HTTP）；
+    // 浏览器兜底成功不清——L1 仍然是被风控状态，不能误清粘性
+    if (payload.channel === 'http') recordHttpSuccess(finalAdapter.platform);
     const parsed = finalAdapter.parse(payload, input);
     // 短链 key 与展开后的稳定 id 不同：回填一份，长短链共享缓存
     const canonical = cacheKey(parsed.platform, parsed.id, finalUrl.href);

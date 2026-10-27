@@ -3,6 +3,8 @@ import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
 import { createApp } from '@/bootstrap/app';
 import { parseUrl } from '@/services/parse.service';
 import { metrics } from '@/infra/metrics';
+import { resetChannelPolicyForTests } from '@/infra/channel-policy';
+import { parseCache } from '@/services/cache';
 import { AppError } from '@/core/errors';
 import type { FetchCtx } from '@/types/platform';
 import fixture from '../fixtures/douyin/aweme-video.json';
@@ -89,6 +91,10 @@ async function expectAppError(p: Promise<unknown>, code: AppError['code']): Prom
 
 beforeEach(() => {
   metrics.reset();
+  // 通道熔断与平台止血是跨用例共享的单例状态：不重置会串扰（前面用例的风控窗口
+  // 让后面用例直接 503、上游 0 调用）
+  resetChannelPolicyForTests();
+  parseCache.resetForTests();
   fakeGateway = { interceptCalls: 0, urls: [] };
 });
 
