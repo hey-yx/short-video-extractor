@@ -1,6 +1,6 @@
 /**
  * 令牌桶限流：按客户端 IP，30 req/min/IP，超限 RATE_LIMITED(429)。
- * 1Panel 反代后 remote 是 127.0.0.1，客户端 IP 从 X-Real-IP 取。
+ * 反代（nginx 等）后 remote 是 127.0.0.1，客户端 IP 从 X-Real-IP 取。
  */
 
 const CAPACITY = 30;

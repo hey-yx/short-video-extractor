@@ -27,7 +27,7 @@
 |---|---|
 | 时间 | 2026-10-24 15:50–16:10 CST |
 | HTTP 客户端 | `curl` 8.x（系统自带）+ `curl_cffi` 0.13.0（`impersonate="chrome"` / `"safari"`） |
-| 出口 | 本机经本地代理 `127.0.0.1:<本地代理端口>`，出口 IP `海外出口（已脱敏）`（香港机房）；浏览器另有一次云出口 |
+| 出口 | 本机经本地代理 `127.0.0.1:<本地代理端口>`，香港机房出口（IP 已脱敏）；浏览器另有一次云出口 |
 | UA | `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36` |
 | 判断手段 | 看 HTTP 状态码 + 响应体积 + 是否含目标 JSON 键（如 `noteDetailMap`/`mainMvUrls`），不做 OCR/视觉比对 |
 
@@ -49,7 +49,7 @@
 | `curl_cffi` 带 token 但与笔记 id 不匹配 | 302 → `/404/sec_xxxx?error_code=300031&error_msg=当前笔记暂时无法浏览` 【实测】 |
 | 完全不带 `xsec_token` | 302 → 同上 300031 【实测】 |
 | 机房/云 IP（云浏览器执行 `goto('/explore')`） | 2~3 次请求后跳到 `/website-login/error?...error_code=300012&error_msg=IP at risk. Switch to a secure network and retry.` 【实测】 |
-| 同一台机器经本地代理（香港机房 IP `海外出口（已脱敏）`）走 `curl_cffi` | 200 正常 【实测】 |
+| 同一台机器经本地代理（香港机房出口）走 `curl_cffi` | 200 正常 【实测】 |
 
 > 结论 1：**决定生死的是 TLS 指纹，不是 cookie**。同一组 header 用 curl 就是 302 登录，用 curl_cffi 冒充 Chrome 就是 200。
 > 结论 2：**`xsec_token` 是必需项**，本次所有不带 token 的请求都落到 300031 安全页；生态里的实现（yt-dlp 测试用例、XHS-Downloader、parse-video）也都以带 token 的分享链接为前提。
@@ -376,7 +376,7 @@ POST https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCil
 ```
 
 - 直链实测：`-L` 跟随 302 → **206 `video/mp4`** 【实测】。
-- 直链里带 `ip=海外出口（已脱敏）&expire=1792850722` → **URL 绑定请求方 IP 且会过期**。所以「解析出链接丢给前端直下」对 YouTube **必然失败**，必须服务端中转。
+- 直链里带 `ip=<解析出口 IP>&expire=<unix 秒>` → **URL 绑定请求方 IP 且会过期**。所以「解析出链接丢给前端直下」对 YouTube **必然失败**，必须服务端中转。
 
 ### 6.3 官方 Data API
 

@@ -28,7 +28,7 @@ Short-video parsing API: give it a share link, get watermark-free video / photo-
 - One-command Docker deployment, image from 495MB
 
 > [!NOTE]
-> This project is for learning and technical research only. Follow the target platforms' terms of service and your local laws; parsed content belongs to the original platforms and authors.
+> This project only resolves links: it takes a share link and returns direct-link addresses, storing or re-hosting nothing. Only parse content you have the right to access (your own works or licensed material); you are responsible for how you use it. Platform names and trademarks belong to their respective owners.
 
 ## Quick Start
 
