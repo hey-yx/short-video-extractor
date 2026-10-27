@@ -135,7 +135,7 @@ describe('kuaishou fetch 链路（注入假 fetch）', () => {
     expect(err.detail?.photoId).toBe(PHOTO_ID);
   });
 
-  test('fetch 网络层抛错：原样上抛不包 AppError（疑似缺陷：parse.service 瞬态重试只认 UPSTREAM_* AppError）', async () => {
+  test('fetch 网络层抛错：归一成 UPSTREAM_ERROR，瞬态重试接得住', async () => {
     stubFetch(() => {
       throw new TypeError('fetch failed');
     });
@@ -143,8 +143,9 @@ describe('kuaishou fetch 链路（注入假 fetch）', () => {
       await kuaishouAdapter.fetch(input(PHOTO_ID), new URL('https://v.kuaishou.com/short1'), makeCtx());
       expect.unreachable();
     } catch (e) {
-      expect(e).toBeInstanceOf(TypeError);
-      expect((e as Error).message).toContain('fetch failed');
+      expect(e).toBeInstanceOf(AppError);
+      expect((e as AppError).code).toBe('UPSTREAM_ERROR');
+      expect((e as AppError).detail?.cause).toContain('fetch failed');
     }
   });
 });

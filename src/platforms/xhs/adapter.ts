@@ -174,8 +174,9 @@ export const xhsAdapter: PlatformAdapter = {
       }
       ctx.logger.warn('xhs http channel risk signal, downgrade to browser channel', { id: input.id });
       recordChannelDowngrade('xhs', 'http', 'browser');
-      // HTTP 通道被拒进熔断记账：连续达阈值后粘住浏览器（半开态探针由 shouldSkipHttp 控制）
-      recordHttpRiskControl('xhs');
+      // 失败四分类：登录墙（UPSTREAM_ERROR，身份被拒）才算风控进熔断记账；
+      // 200 壳页/结构变更（UPSTREAM_CHANGED）是改版信号，降级验证即可，不该粘住 HTTP 通道
+      if (err instanceof AppError && err.code === 'UPSTREAM_ERROR') recordHttpRiskControl('xhs');
       return fetchViaBrowser(url, ctx);
     }
   },

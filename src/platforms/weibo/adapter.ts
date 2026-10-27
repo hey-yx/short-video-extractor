@@ -1,4 +1,5 @@
 import { AppError } from '@/core/errors';
+import { proxiedFetch } from '@/core/fetch-proxy';
 import type { FetchCtx, MatchResult, PlatformAdapter, RawPayload } from '@/types/platform';
 import { hostMatches } from '@/platforms/hosts';
 import { parseWeibo, type WeiboPayload, type WeiboShowPayload } from './parse';
@@ -27,6 +28,11 @@ interface GuestTicket {
 }
 let guestTicket: GuestTicket | null = null;
 /** 票据复用窗口：访客 cookie 小时级有效，1 小时后重取（不做过期探测，失效靠 302 重取兜底） */
+
+/** 测试用：清空票据单例（模块级状态，跨用例会串味） */
+export function resetGuestTicketForTests(): void {
+  guestTicket = null;
+}
 const GUEST_TTL_SECONDS = 3600;
 
 async function fetchGuestTicket(ctx: FetchCtx): Promise<GuestTicket> {
@@ -37,7 +43,7 @@ async function fetchGuestTicket(ctx: FetchCtx): Promise<GuestTicket> {
     screenInfo: '1920*1080*24',
     plugins: '',
   });
-  const genRes = await fetch('https://passport.weibo.com/visitor/genvisitor2', {
+  const genRes = await proxiedFetch('https://passport.weibo.com/visitor/genvisitor2', {
     method: 'POST',
     headers: {
       'User-Agent': WEIBO_UA,
@@ -53,7 +59,7 @@ async function fetchGuestTicket(ctx: FetchCtx): Promise<GuestTicket> {
   if (!tid) {
     throw new AppError('UPSTREAM_CHANGED', '微博访客票据响应结构变化', { body: genText.slice(0, 120) });
   }
-  const incRes = await fetch(
+  const incRes = await proxiedFetch(
     `https://passport.weibo.com/visitor/visitor?a=incarnate&t=${encodeURIComponent(tid)}&w=2&c=095&gc=&cb=cross_domain&from=weibo&_rand=${Math.random()}`,
     {
       headers: { 'User-Agent': WEIBO_UA, Referer: 'https://passport.weibo.com/visitor/visitor' },
@@ -106,7 +112,7 @@ function stripJsonp(text: string): unknown {
 /** statuses/show：m 站匿名可取（2026-10-26 实测），bid/mid 通用 */
 async function requestShow(id: string, ctx: FetchCtx): Promise<WeiboShowPayload> {
   const url = `${SHOW_URL}?id=${encodeURIComponent(id)}`;
-  const res = await fetch(url, {
+  const res = await proxiedFetch(url, {
     headers: {
       'User-Agent': WEIBO_UA,
       Referer: 'https://m.weibo.cn/',
@@ -186,7 +192,7 @@ export const weiboAdapter: PlatformAdapter = {
   async resolve(url: URL, ctx: FetchCtx): Promise<URL> {
     // t.cn 302 一跳到 m 站 status 页或 video.weibo.com/show（实测 t.cn/AX0CCdCG → show?fid=）
     // 注意：t.cn 对 HEAD 返回 200 不跳转，必须 GET 才给 302（2026-10-26 实测）
-    const res = await fetch(url.href, {
+    const res = await proxiedFetch(url.href, {
       method: 'GET',
       redirect: 'manual',
       headers: { 'User-Agent': WEIBO_UA },

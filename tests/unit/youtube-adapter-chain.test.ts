@@ -218,7 +218,7 @@ describe('YouTube 网络层失败与 youtu.be 展开', () => {
     expect(calls).toHaveLength(2);
     const attempts = err.detail?.attempts as Array<{ client: string; reason: string }>;
     expect(attempts.map((a) => a.client)).toEqual(['ANDROID_VR', 'IOS']);
-    expect(attempts[0]!.reason).toContain('fetch failed');
+    expect(attempts[0]!.reason).toContain('网络失败');
   });
 
   test('player HTTP 500 全挂 → UPSTREAM_ERROR，attempt reason 含 HTTP 500', async () => {

@@ -1,4 +1,5 @@
 import { AppError } from '@/core/errors';
+import { proxiedFetch } from '@/core/fetch-proxy';
 import type { FetchCtx, MatchResult, PlatformAdapter, RawPayload } from '@/types/platform';
 import { hostMatches } from '@/platforms/hosts';
 import { parseBilibili } from './parse';
@@ -59,7 +60,7 @@ export const bilibiliAdapter: PlatformAdapter = {
 
   async resolve(url: URL, ctx: FetchCtx): Promise<URL> {
     // b23.tv 302 一跳到 www.bilibili.com/video/BVxxx
-    const res = await fetch(url.href, {
+    const res = await proxiedFetch(url.href, {
       method: 'HEAD',
       redirect: 'manual',
       headers: { 'User-Agent': BILIBILI_UA },
@@ -147,7 +148,7 @@ async function requestJson(
   message?: string;
   data: unknown;
 }> {
-  const res = await fetch(url, { headers, signal });
+  const res = await proxiedFetch(url, { headers, signal });
   const text = await res.text();
   if (res.status !== 200) {
     throw new AppError('UPSTREAM_ERROR', `B站接口 HTTP ${res.status}`, {

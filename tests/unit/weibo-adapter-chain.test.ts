@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { WEIBO_UA, weiboAdapter } from '@/platforms/weibo/adapter';
+import { WEIBO_UA, resetGuestTicketForTests, weiboAdapter } from '@/platforms/weibo/adapter';
 import { metrics } from '@/infra/metrics';
 import { resetChannelPolicyForTests } from '@/infra/channel-policy';
 import { AppError } from '@/core/errors';
@@ -19,12 +19,6 @@ import componentPlayinfo from '../fixtures/weibo/component-playinfo.json';
 
 const realFetch = globalThis.fetch;
 
-type WeiboModule = typeof import('@/platforms/weibo/adapter');
-let freshSeq = 0;
-async function freshWeibo(): Promise<WeiboModule> {
-  freshSeq += 1;
-  return (await import(`../../src/platforms/weibo/adapter?fresh=${freshSeq}`)) as WeiboModule;
-}
 
 interface UpstreamCall {
   kind: 'gen' | 'incarnate' | 'component' | 'show' | 'resolve';
@@ -156,7 +150,7 @@ describe('weibo fetch 成功链路', () => {
     expect(upstream.byKind('component')).toBe(0);
     const show = upstream.calls().find((c) => c.kind === 'show')!;
     expect(show.url).toContain('id=K5cI2eXlP');
-    expect((show.init.headers as Record<string, string>)['User-Agent']).toBe(WEIBO_UA);
+    expect(new Headers(show.init.headers).get('user-agent')).toBe(WEIBO_UA);
     expect(show.init.redirect).toBe('manual');
   });
 
@@ -179,14 +173,14 @@ describe('weibo fetch 成功链路', () => {
   });
 
   test('component 请求带访客 Cookie、data=oid 载荷与 referer', async () => {
-    const { weiboAdapter } = await freshWeibo();
+    resetGuestTicketForTests();
     const upstream = okChain();
     await weiboAdapter.fetch(input(FID), new URL(`https://video.weibo.com/show?fid=${FID}`), makeCtx());
     const comp = upstream.calls().find((c) => c.kind === 'component')!;
     expect(comp.init.method).toBe('POST');
-    const headers = comp.init.headers as Record<string, string>;
-    expect(headers.Cookie).toBe('SUB=real-sub; SUBP=real-subp');
-    expect(headers.Referer).toBe(`https://video.weibo.com/show?fid=${FID}`);
+    const headers = new Headers(comp.init.headers);
+    expect(headers.get('cookie')).toBe('SUB=real-sub; SUBP=real-subp');
+    expect(headers.get('referer')).toBe(`https://video.weibo.com/show?fid=${FID}`);
     const body = new URLSearchParams(String(comp.init.body));
     expect(JSON.parse(body.get('data') ?? '{}')).toEqual({
       Component_Play_Playinfo: { oid: FID },
@@ -201,7 +195,7 @@ describe('weibo fetch 成功链路', () => {
   });
 
   test('票据复用：同实例第二次 fetch 不再取票', async () => {
-    const { weiboAdapter } = await freshWeibo();
+    resetGuestTicketForTests();
     const upstream = okChain();
     await weiboAdapter.fetch(input(FID), new URL(`https://video.weibo.com/show?fid=${FID}`), makeCtx());
     await weiboAdapter.fetch(input(FID), new URL(`https://video.weibo.com/show?fid=${FID}`), makeCtx());
@@ -214,7 +208,7 @@ describe('weibo fetch 成功链路', () => {
 
 describe('weibo 访客票据', () => {
   test('genvisitor2 响应无 tid → UPSTREAM_CHANGED', async () => {
-    const { weiboAdapter } = await freshWeibo();
+    resetGuestTicketForTests();
     stubWeibo((call) => (call.kind === 'gen' ? new Response(GEN_JSONP_NO_TID, { status: 200 }) : ok({})));
     await expectAppError(
       weiboAdapter.fetch(input(FID), new URL(`https://video.weibo.com/show?fid=${FID}`), makeCtx()),
@@ -223,7 +217,7 @@ describe('weibo 访客票据', () => {
   });
 
   test('incarnate 未返回 SUB/SUBP → UPSTREAM_ERROR', async () => {
-    const { weiboAdapter } = await freshWeibo();
+    resetGuestTicketForTests();
     stubWeibo((call) =>
       call.kind === 'gen'
         ? new Response(GEN_JSONP_NO_SUB, { status: 200 })
@@ -247,7 +241,7 @@ describe('weibo 访客票据', () => {
 
 describe('weibo component 降级与错误映射', () => {
   test('component 302：清票据重取，重试一次后成功', async () => {
-    const { weiboAdapter } = await freshWeibo();
+    resetGuestTicketForTests();
     const upstream = stubWeibo((call) => {
       switch (call.kind) {
         case 'gen':
@@ -410,17 +404,15 @@ describe('weibo show 错误映射', () => {
 });
 
 describe('weibo 网络层失败与 t.cn 展开', () => {
-  test('fetch 网络失败（TypeError）原样上抛，不包 AppError', async () => {
+  test('fetch 网络失败（TypeError）归一成 UPSTREAM_ERROR，编排层能重试', async () => {
     stubWeibo(() => {
       throw new TypeError('fetch failed');
     });
-    try {
-      await weiboAdapter.fetch(input('K5cI2eXlP'), statusUrl('K5cI2eXlP'), makeCtx());
-      expect.unreachable();
-    } catch (e) {
-      expect(e).toBeInstanceOf(TypeError);
-      expect(e).not.toBeInstanceOf(AppError);
-    }
+    const err = await expectAppError(
+      weiboAdapter.fetch(input('K5cI2eXlP'), statusUrl('K5cI2eXlP'), makeCtx()),
+      'UPSTREAM_ERROR',
+    );
+    expect(err.detail?.cause).toContain('fetch failed');
   });
 
   test('请求被中止（AbortError）原样上抛', async () => {

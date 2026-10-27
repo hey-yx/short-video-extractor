@@ -11,11 +11,20 @@
  *  - YouTube 直链绑出口 IP：解析与 /media 中转必须拿到同一个代理值（resolveProxy 同源）。
  */
 
+import { AppError } from '@/core/errors';
+
 export type ProxyFetchInit = RequestInit & {
   /** 代理串（http://host:port）；空/undefined = 直连 */
   proxy?: string;
 };
 
+/**
+ * 所有出站请求的统一入口：可选代理 + 网络异常归一。
+ *
+ * 归一的意义：DNS/连接重置/ECONNREFUSED/超时这类裸错误不是 AppError，编排层
+ * parse.service 的瞬态重试只认 AppError 错误码，裸错误会一路冒成 INTERNAL 500，
+ * 既拿不到重试也让调用方看不懂。这里统一包成 UPSTREAM_ERROR（可重试）。
+ */
 export async function proxiedFetch(url: string | URL, init: ProxyFetchInit = {}): Promise<Response> {
   const { proxy, ...rest } = init;
   const headers = new Headers(rest.headers);
@@ -25,5 +34,13 @@ export async function proxiedFetch(url: string | URL, init: ProxyFetchInit = {})
   if (proxy) {
     (options as RequestInit & { proxy: string }).proxy = proxy;
   }
-  return fetch(url, options);
+  try {
+    return await fetch(url, options);
+  } catch (e) {
+    // 取消（AbortSignal）不归一：上层按取消语义处理，不是上游故障
+    if (e instanceof Error && e.name === 'AbortError') throw e;
+    throw new AppError('UPSTREAM_ERROR', '上游请求网络失败（可重试）', {
+      cause: e instanceof Error ? e.message : String(e),
+    });
+  }
 }

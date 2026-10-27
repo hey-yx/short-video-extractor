@@ -99,8 +99,9 @@ describe('createLogger：formatters.log 深度兜底（Error 实例展开脱敏�
     expect(typeof line.err.stack).toBe('string');
     expect(line.err.detail?.url).toBe('https://cdn.x.com/v?sig=REDACTED');
     expect(line.err.detail?.url).not.toContain('def456');
-    // 现状：stack 是原样保留的（未过脱敏），这里固化记录该行为
-    expect(line.err.stack).toContain('token=abc123');
+    // stack 同样过脱敏：异常栈里夹带的 URL query 不能成为漏点
+    expect(line.err.stack).not.toContain('token=abc123');
+    expect(line.err.stack).toContain('token=REDACTED');
   });
 
   test('嵌套数组/对象字段递归打码', () => {

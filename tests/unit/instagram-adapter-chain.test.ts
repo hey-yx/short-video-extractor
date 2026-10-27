@@ -149,7 +149,7 @@ describe('instagram fetch 链路（注入假 fetch）', () => {
       'UPSTREAM_ERROR',
     );
     expect(err.message).toContain('csrftoken');
-    expect(err.detail?.cause).toContain('fetch failed');
+    expect(err.detail?.cause).toContain('网络失败');
   });
 
   test('首页超时中止（AbortError）：同样归一 UPSTREAM_ERROR', async () => {

@@ -77,7 +77,8 @@ function redactValue(value: unknown, depth: number): unknown {
   if (typeof value === 'string') return redactText(value);
   if (value instanceof Error) {
     const plain: Record<string, unknown> = { name: value.name, message: redactText(value.message) };
-    if (value.stack) plain.stack = value.stack;
+    // stack 里会带上出错时的 URL（含 query），必须走同一套脱敏，否则等于从后门漏出去
+    if (value.stack) plain.stack = redactText(value.stack);
     for (const [k, v] of Object.entries(value)) plain[k] = redactValue(v, depth - 1);
     return plain;
   }

@@ -222,4 +222,19 @@ describe('熔断粘性兼容三通道', () => {
     expect((outcome.result as unknown as { via: string }).via).toBe('http-l2');
     expect(fakeGateway!.interceptCalls).toBe(0);
   });
+
+  test('L1 连续两次 5xx（上游故障，非风控）→ 降级 L2 但不进熔断：第 3 次仍先试 L1', async () => {
+    const upstream = stubDetail((call) =>
+      call.kind === 'l1' ? new Response('server error', { status: 500 }) : okDetail(nextAwemeId()),
+    );
+    await parseUrl(`https://www.douyin.com/video/${nextAwemeId()}`, makeCtx(false, true));
+    await parseUrl(`https://www.douyin.com/video/${nextAwemeId()}`, makeCtx(false, true));
+    expect(upstream.byKind('l1')).toBe(2);
+    expect(upstream.byKind('l2')).toBe(2);
+    // 失败四分类：5xx 是上游故障不是风控，不该把 HTTP 通道粘住（否则删个视频也会连坐 60s）
+    const outcome = await parseUrl(`https://www.douyin.com/video/${nextAwemeId()}`, makeCtx(false, true));
+    expect(upstream.byKind('l1')).toBe(3);
+    expect(upstream.byKind('l2')).toBe(3);
+    expect((outcome.result as unknown as { via: string }).via).toBe('http-l2');
+  });
 });

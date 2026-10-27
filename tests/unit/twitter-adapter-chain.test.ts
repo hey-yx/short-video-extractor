@@ -163,7 +163,7 @@ describe('twitter 状态码与载荷错误映射', () => {
 });
 
 describe('twitter 网络层失败与 t.co 展开', () => {
-  test('fetch 网络失败（TypeError）原样上抛，不包 AppError', async () => {
+  test('fetch 网络失败（TypeError）归一成 AppError，瞬态重试接得住', async () => {
     stubTwitter(() => {
       throw new TypeError('fetch failed');
     });
@@ -171,8 +171,9 @@ describe('twitter 网络层失败与 t.co 展开', () => {
       await twitterAdapter.fetch(input(TWEET_ID), tweetUrl(TWEET_ID), makeCtx());
       expect.unreachable();
     } catch (e) {
-      expect(e).toBeInstanceOf(TypeError);
-      expect(e).not.toBeInstanceOf(AppError);
+      expect(e).toBeInstanceOf(AppError);
+      expect((e as AppError).code).toBe('UPSTREAM_ERROR');
+      expect((e as AppError).detail?.cause).toContain('fetch failed');
     }
   });
 

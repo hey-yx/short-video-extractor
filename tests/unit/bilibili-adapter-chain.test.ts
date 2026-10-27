@@ -35,11 +35,19 @@ function stubBili(handler: (call: UpstreamCall) => Response | Promise<Response>)
       : url.includes('/x/player/playurl')
         ? 'playurl'
         : null;
-    if (!kind) throw new TypeError(`fetch failed (unexpected url: ${url})`);
+    /** proxiedFetch 会把 headers 包成 Headers 实例，断言前归一成普通对象 */
+function headersToRecord(h: HeadersInit | undefined): Record<string, string> {
+  if (!h) return {};
+  if (h instanceof Headers) return Object.fromEntries(h.entries());
+  if (Array.isArray(h)) return Object.fromEntries(h);
+  return h as Record<string, string>;
+}
+
+if (!kind) throw new TypeError(`fetch failed (unexpected url: ${url})`);
     const call: UpstreamCall = {
       kind,
       url,
-      headers: (init?.headers ?? {}) as Record<string, string>,
+      headers: headersToRecord(init?.headers),
     };
     calls.push(call);
     return handler(call);
@@ -115,8 +123,8 @@ describe('bilibili fetch 成功链路（view + playurl）', () => {
     const upstream = stubBili((call) => (call.kind === 'view' ? ok(viewVideo) : ok(playurlDash)));
     await bilibiliAdapter.fetch(input('BV1GJ411x7h7'), videoUrl('BV1GJ411x7h7'), makeCtx());
     for (const call of upstream.calls()) {
-      expect(call.headers['User-Agent']).toBe(BILIBILI_UA);
-      expect(call.headers.Referer).toBe('https://www.bilibili.com');
+      expect(call.headers['user-agent']).toBe(BILIBILI_UA);
+      expect(call.headers['referer']).toBe('https://www.bilibili.com');
     }
   });
 
@@ -256,7 +264,7 @@ describe('bilibili 业务码与 HTTP 错误映射', () => {
 });
 
 describe('bilibili 网络层失败与 b23.tv 展开', () => {
-  test('fetch 网络失败（TypeError）原样上抛，不包 AppError', async () => {
+  test('fetch 网络失败（TypeError）归一成 UPSTREAM_ERROR，瞬态重试接得住', async () => {
     stubBili(() => {
       throw new TypeError('fetch failed');
     });
@@ -264,8 +272,9 @@ describe('bilibili 网络层失败与 b23.tv 展开', () => {
       await bilibiliAdapter.fetch(input('BV1GJ411x7h7'), videoUrl('BV1GJ411x7h7'), makeCtx());
       expect.unreachable();
     } catch (e) {
-      expect(e).toBeInstanceOf(TypeError);
-      expect(e).not.toBeInstanceOf(AppError);
+      expect(e).toBeInstanceOf(AppError);
+      expect((e as AppError).code).toBe('UPSTREAM_ERROR');
+      expect((e as AppError).detail?.cause).toContain('fetch failed');
     }
   });
 

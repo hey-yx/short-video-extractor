@@ -1,4 +1,5 @@
 import { AppError } from '@/core/errors';
+import { proxiedFetch } from '@/core/fetch-proxy';
 import { recordChannelDowngrade } from '@/infra/metrics';
 import { recordHttpRiskControl, shouldSkipHttp } from '@/infra/channel-policy';
 import type { FetchCtx, MatchResult, PlatformAdapter, RawPayload } from '@/types/platform';
@@ -149,7 +150,7 @@ export const douyinAdapter: PlatformAdapter = {
 
   async resolve(url: URL, ctx: FetchCtx): Promise<URL> {
     // v.douyin.com 短链：HEAD 不跟随，Location 里直接有 aweme_id
-    const res = await fetch(url.href, {
+    const res = await proxiedFetch(url.href, {
       method: 'HEAD',
       redirect: 'manual',
       headers: { 'User-Agent': UA },
@@ -167,6 +168,8 @@ export const douyinAdapter: PlatformAdapter = {
   async fetch(input: MatchResult, url: URL, ctx: FetchCtx): Promise<RawPayload> {
     const wantL2 = !!ctx.douyinUifid;
     let lastErr: AppError | null = null;
+    /** L1 是否命中真风控（决定要不要进熔断记账，见下方四分类说明） */
+    let l1RiskControl = false;
     // 熔断粘性：L1 连续被风控期间不再每请求先吃一次 403（半开态探针放行 L1 试探）；
     // 粘住后链路变 L2 → 浏览器——L2 仍是零浏览器的纯 HTTP 通道
     const skipL1 = shouldSkipHttp('douyin') && (wantL2 || !!ctx.browser);
@@ -181,6 +184,9 @@ export const douyinAdapter: PlatformAdapter = {
         const downgrade =
           err instanceof AppError && (err.code === 'RISK_CONTROL' || err.code === 'UPSTREAM_ERROR');
         if (!downgrade || ctx.signal.aborted || (!wantL2 && !ctx.browser)) throw err;
+        // 失败四分类：只有真风控（RISK_CONTROL）进熔断记账。接口侧 5xx/404（含作品已删）
+        // 照常降级，但不污染熔断计数，否则「删了一个视频」会让整条 HTTP 通道被粘住 60s
+        l1RiskControl = err instanceof AppError && err.code === 'RISK_CONTROL';
         lastErr = err as AppError;
       }
     }
@@ -192,9 +198,9 @@ export const douyinAdapter: PlatformAdapter = {
       if (ttwid) {
         viaL2 = true;
         if (!skipL1) {
-          // L1 失效进熔断记账：连续达阈值后粘住 L2/浏览器（半开态探针由 shouldSkipHttp 控制）
+          // L1 失效进熔断记账（仅真风控）：连续达阈值后粘住 L2/浏览器（半开态探针由 shouldSkipHttp 控制）
           recordChannelDowngrade('douyin', 'http-l1', 'http-l2');
-          recordHttpRiskControl('douyin');
+          if (l1RiskControl) recordHttpRiskControl('douyin');
         }
         try {
           return await fetchViaSigned(input, ctx, { uifid: ctx.douyinUifid!, ttwid });
@@ -214,7 +220,7 @@ export const douyinAdapter: PlatformAdapter = {
     if (viaL2) recordChannelDowngrade('douyin', 'http-l2', 'browser');
     else if (!skipL1) {
       recordChannelDowngrade('douyin', 'http', 'browser');
-      recordHttpRiskControl('douyin');
+      if (l1RiskControl) recordHttpRiskControl('douyin');
     }
     return fetchViaBrowser(input, url, ctx);
   },

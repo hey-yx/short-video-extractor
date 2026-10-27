@@ -1,4 +1,5 @@
 import { AppError } from '@/core/errors';
+import { proxiedFetch } from '@/core/fetch-proxy';
 import type { FetchCtx, MatchResult, PlatformAdapter, RawPayload } from '@/types/platform';
 import { hostMatches } from '@/platforms/hosts';
 import { parseKuaishou } from './parse';
@@ -37,7 +38,7 @@ export const kuaishouAdapter: PlatformAdapter = {
 
   async resolve(url: URL, ctx: FetchCtx): Promise<URL> {
     // HEAD 不跟随，Location 即落地页；零 cookie，UA 也不敏感（实测矩阵见 docs/research/02 §2.2）
-    const res = await fetch(url.href, {
+    const res = await proxiedFetch(url.href, {
       method: 'HEAD',
       redirect: 'manual',
       headers: { 'User-Agent': KUAISHOU_UA },
@@ -53,7 +54,7 @@ export const kuaishouAdapter: PlatformAdapter = {
 
   async fetch(input: MatchResult, _url: URL, ctx: FetchCtx): Promise<RawPayload> {
     const pageUrl = `https://v.m.chenzhongtech.com/fw/photo/${input.id}`;
-    const res = await fetch(pageUrl, {
+    const res = await proxiedFetch(pageUrl, {
       redirect: 'follow',
       headers: {
         // 桌面 UA 会被 302 到 SPA 空壳（无 INIT_STATE），必须装手机
