@@ -12,7 +12,6 @@ import { twitterAdapter } from '@/platforms/twitter/adapter';
 import { youtubeAdapter } from '@/platforms/youtube/adapter';
 import { instagramAdapter } from '@/platforms/instagram/adapter';
 import { tiktokAdapter } from '@/platforms/tiktok/adapter';
-import { browserGateway } from '@/infra/browser';
 import { redactRequestUrl, reqIdOf, reqStartedAt, requestLogger } from '@/infra/logger';
 import { parseRoutes } from '@/routes/parse.routes';
 import { mediaRoutes } from '@/routes/media.routes';

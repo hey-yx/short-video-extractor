@@ -90,7 +90,7 @@ function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
 }
 
-function authorOf(data: TikwmData, videoId: string): ParsedAuthorOf {
+function authorOf(data: TikwmData): ParsedAuthorOf {
   return {
     name: str(data.author?.nickname) || str(data.author?.unique_id),
     id: str(data.author?.id) || undefined,
@@ -193,7 +193,7 @@ export function parseTiktok(raw: RawPayload, input: { id: string }): ParseResult
     kind: assets[0]!.type === 'video' ? 'video' : 'album',
     title,
     tags: tags.length > 0 ? tags : undefined,
-    author: authorOf(data, id),
+    author: authorOf(data),
     assets,
     expiresAt: expiresAt.length > 0 ? Math.min(...expiresAt) : undefined,
     parsedAt: raw.fetchedAt,

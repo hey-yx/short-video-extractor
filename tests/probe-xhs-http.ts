@@ -25,13 +25,7 @@ const httpCtx: FetchCtx = {
   logger: { info: () => {}, warn: () => {}, error: () => {} },
 };
 
-/** 浏览器兜底通道上下文（仅末尾耗时对比用） */
-const browserCtx: FetchCtx = {
-  signal: AbortSignal.timeout(30_000),
-  channel: 'browser',
-  browser: browserGateway,
-  logger: { info: () => {}, warn: () => {}, error: () => {} },
-};
+/** 浏览器兜底通道耗时对比直接用 browserGateway.getDocumentHtml（见文件末尾 cmp 段） */
 
 interface Outcome {
   url: string;

@@ -4,7 +4,7 @@ import { createApp } from '@/bootstrap/app';
 import { parseUrl } from '@/services/parse.service';
 import { metrics } from '@/infra/metrics';
 import { resetChannelPolicyForTests } from '@/infra/channel-policy';
-import { ParseCache, parseCache } from '@/services/cache';
+import { parseCache } from '@/services/cache';
 import { AppError } from '@/core/errors';
 import type { FetchCtx } from '@/types/platform';
 import fixture from '../fixtures/douyin/aweme-video.json';
@@ -39,7 +39,7 @@ function makeCtx(withBrowser: boolean): FetchCtx {
             async getDocumentHtml() {
               return '<html></html>';
             },
-            async interceptJson(url: string) {
+            async interceptJson() {
               fakeGateway!.interceptCalls += 1;
               return { aweme_detail: { ...fixture.aweme_detail, aweme_id: nextAwemeId() } };
             },

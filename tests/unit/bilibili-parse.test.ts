@@ -39,7 +39,7 @@ function multiPayload(): RawPayload {
     channel: 'http',
     body: {
       view: { code: 0, message: 'OK', data },
-      streams: data.pages.map((p, i) => ({
+      streams: data.pages.map((p) => ({
         page: p.page,
         cid: p.cid,
         part: p.part,

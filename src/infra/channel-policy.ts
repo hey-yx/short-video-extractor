@@ -15,8 +15,6 @@ import type { Platform } from '@/types/platform';
 const BREAKER_THRESHOLD = 2;
 /** 熔断后探针回切周期（毫秒）：到点放一个请求回 HTTP 试探 */
 const PROBE_INTERVAL_MS = 60_000;
-/** HTTP 通道连续成功几次后清除熔断计数（防止半开态反复横跳） */
-const RESET_AFTER_SUCCESS = 1;
 
 interface BreakerState {
   /** 连续命中风控信号的次数（成功归零） */

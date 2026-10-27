@@ -4,7 +4,7 @@ import { xhsAdapter, setXhsClientForTests, type XhsFetchClient } from '@/platfor
 import { metrics } from '@/infra/metrics';
 import { resetChannelPolicyForTests } from '@/infra/channel-policy';
 import { AppError } from '@/core/errors';
-import type { FetchCtx, MatchResult, RawPayload } from '@/types/platform';
+import type { FetchCtx, MatchResult } from '@/types/platform';
 
 /**
  * 小红书 HTTP 主通道离线用例：通道选择与降级逻辑走注入假 client + 假 browser gateway，
