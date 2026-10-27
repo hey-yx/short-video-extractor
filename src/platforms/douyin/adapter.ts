@@ -80,7 +80,9 @@ async function fetchViaSigned(input: MatchResult, ctx: FetchCtx, identity: L2Ide
     res = await fetch(url, { headers, signal: ctx.signal });
   } catch (err) {
     if (ctx.signal.aborted) throw err;
-    throw new AppError('UPSTREAM_TIMEOUT', '抖音 L2 签名通道网络错误或超时', { err: String(err).slice(0, 120) });
+    throw new AppError('UPSTREAM_TIMEOUT', '抖音 L2 签名通道网络错误或超时', {
+      err: String(err).slice(0, 120),
+    });
   }
   if (res.status === 403) {
     const text = await res.text();

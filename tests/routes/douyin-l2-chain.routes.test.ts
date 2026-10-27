@@ -64,9 +64,10 @@ interface DetailCall {
  * detail 假上游：L2 请求带 x-secsdk-web-signature，L1 不带；
  * handler 按通道分别响应（throw 模拟网络层失败）。
  */
-function stubDetail(
-  handler: (call: DetailCall) => Response | Promise<Response>,
-): { calls: () => DetailCall[]; byKind: (kind: 'l1' | 'l2') => number } {
+function stubDetail(handler: (call: DetailCall) => Response | Promise<Response>): {
+  calls: () => DetailCall[];
+  byKind: (kind: 'l1' | 'l2') => number;
+} {
   const calls: DetailCall[] = [];
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = input instanceof Request ? input.url : String(input);
@@ -158,7 +159,9 @@ describe('L2 失效 → 浏览器兜底（L3）', () => {
   test('L1 风控 + L2 403 Sign Invalid → 浏览器兜底，两级降级打点各一', async () => {
     const detailId = nextAwemeId();
     stubDetail((call) =>
-      call.kind === 'l1' ? new Response(RISK_BODY, { status: 403 }) : new Response('Blocked by ArgusSecurityPlugin Sign Invalid', { status: 403 }),
+      call.kind === 'l1'
+        ? new Response(RISK_BODY, { status: 403 })
+        : new Response('Blocked by ArgusSecurityPlugin Sign Invalid', { status: 403 }),
     );
     const outcome = await parseUrl(`https://www.douyin.com/video/${detailId}`, makeCtx(true, true));
     expect((outcome.result as unknown as { via: string }).via).toBe('browser');
@@ -183,7 +186,9 @@ describe('L2 失效 → 浏览器兜底（L3）', () => {
 describe('L2 签名失效分类（与 L1 风控信号区分）', () => {
   test('L1 风控 + L2 403 + 无浏览器：UPSTREAM_CHANGED 原样上抛（不是 RISK_CONTROL）', async () => {
     const upstream = stubDetail((call) =>
-      call.kind === 'l1' ? new Response(RISK_BODY, { status: 403 }) : new Response('Blocked by ArgusSecurityPlugin Sign Invalid', { status: 403 }),
+      call.kind === 'l1'
+        ? new Response(RISK_BODY, { status: 403 })
+        : new Response('Blocked by ArgusSecurityPlugin Sign Invalid', { status: 403 }),
     );
     const err = await expectAppError(
       parseUrl(`https://www.douyin.com/video/${nextAwemeId()}`, makeCtx(false, true)),

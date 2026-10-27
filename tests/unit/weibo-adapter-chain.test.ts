@@ -19,7 +19,6 @@ import componentPlayinfo from '../fixtures/weibo/component-playinfo.json';
 
 const realFetch = globalThis.fetch;
 
-
 interface UpstreamCall {
   kind: 'gen' | 'incarnate' | 'component' | 'show' | 'resolve';
   url: string;

@@ -36,14 +36,14 @@ function stubBili(handler: (call: UpstreamCall) => Response | Promise<Response>)
         ? 'playurl'
         : null;
     /** proxiedFetch 会把 headers 包成 Headers 实例，断言前归一成普通对象 */
-function headersToRecord(h: HeadersInit | undefined): Record<string, string> {
-  if (!h) return {};
-  if (h instanceof Headers) return Object.fromEntries(h.entries());
-  if (Array.isArray(h)) return Object.fromEntries(h);
-  return h as Record<string, string>;
-}
+    function headersToRecord(h: HeadersInit | undefined): Record<string, string> {
+      if (!h) return {};
+      if (h instanceof Headers) return Object.fromEntries(h.entries());
+      if (Array.isArray(h)) return Object.fromEntries(h);
+      return h as Record<string, string>;
+    }
 
-if (!kind) throw new TypeError(`fetch failed (unexpected url: ${url})`);
+    if (!kind) throw new TypeError(`fetch failed (unexpected url: ${url})`);
     const call: UpstreamCall = {
       kind,
       url,

@@ -111,9 +111,13 @@ export async function resolveTtwid(
               reject(signal.reason ?? new DOMException('aborted', 'AbortError'));
               return;
             }
-            signal.addEventListener('abort', () => reject(signal.reason ?? new DOMException('aborted', 'AbortError')), {
-              once: true,
-            });
+            signal.addEventListener(
+              'abort',
+              () => reject(signal.reason ?? new DOMException('aborted', 'AbortError')),
+              {
+                once: true,
+              },
+            );
           })
         : new Promise<never>(() => {}),
     ]);
