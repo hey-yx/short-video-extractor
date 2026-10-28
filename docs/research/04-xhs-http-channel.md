@@ -141,8 +141,8 @@ const res = await fetch(url.href, {
 | 302 → `/login?redirectPath=…` | 头/UA 被拒（或日后指纹收紧） | 重试 1 次（换连接）仍如此 → 切 `ctx.browser` 兜底，`channel_downgrade_total` |
 | 302 → `/404/sec_…?error_code=300031` | token 失效 / 与 noteId 不配对 | 不重试；短链重新展开拿新 token 一次；仍失败返回 NOT_FOUND 类错误 |
 | 302 → `/website-login/error?…error_code=300012` | **IP 风控**，与指纹/头无关 | 归 RISK_CONTROL（与 t_7e949351 分类对齐）；换出口无效时降级无意义，直接报错 |
-| 200 但无 `__INITIAL_STATE__` 或 `noteDetailMap[id].note` 空 | 页面结构变化 / 拿到壳页 | 200 但无 `__INITIAL_STATE__` → 归 UPSTREAM_CHANGED（parse 阶段抛出，不触发浏览器兜底）；`noteDetailMap[id].note` 为空 → 归 CONTENT_NOT_FOUND |
-| 连接层错误（DNS/超时/RESET） | 网络抖动 | 当前 xhs HTTP 通道网络错误未归一为 AppError，不进编排层重试（抖音通道已归一为 UPSTREAM_TIMEOUT，xhs 待补） |
+| 200 但无 `__INITIAL_STATE__` 或 `noteDetailMap[id].note` 空 | 页面结构变化 / 拿到壳页 | 归 UPSTREAM_CHANGED 并切浏览器兜底验证（2026-10-28 补触发路径：fetch 阶段载荷预判，仅在有浏览器时拦；无浏览器时仍由 parse 阶段归 UPSTREAM_CHANGED / CONTENT_NOT_FOUND，纯 HTTP 部署语义不变）。只有浏览器分得清壳页与已删除 |
+| 连接层错误（DNS/超时/RESET） | 网络抖动 | 归一为 UPSTREAM_TIMEOUT，进编排层重试（2026-10-28 补齐 xhs 侧，与抖音通道一致） |
 
 降级判定建议：**登录墙连续 2 次 → 浏览器兜底；300031/300012 直接报错、不降级**；兜底成功后本周期内该平台固定走浏览器（避免反复横跳）。
 
@@ -158,7 +158,7 @@ const res = await fetch(url.href, {
 | 文件 | 影响 |
 |---|---|
 | `src/platforms/xhs/adapter.ts` | **主要改动点**：`fetch()` 从 `ctx.browser.getDocumentHtml` 改为 HTTP 通道（§4.1 代码形态）；`via` 标 `'http'`；`needsResolve` 分支可补 `resolve()`（短链裸 fetch 可展开）；`capabilities.http: false` 需改 `true` |
-| `src/platforms/xhs/parse.ts` | **不动**（`__INITIAL_STATE__` 路径不变，HTTP 与浏览器拿到的 body 同构） |
+| `src/platforms/xhs/parse.ts` | `__INITIAL_STATE__` 解析路径不变（HTTP 与浏览器拿到的 body 同构）；【勘误 2026-10-28】新增纯函数 `noteDataVerdict`（fetch 阶段载荷预判复用同一套分类前提） |
 | `src/infra/browser.ts` | 保留作兜底（保守方案）；激进方案才动 |
 | `Dockerfile` | 保守方案不动；激进方案删 chromium 层 + `PUPPETEER_*` 环境（体积见 ③） |
 | `src/services/media-proxy.ts` 的 `UPSTREAM_HEADERS` | **不需要新 referer 矩阵**：媒体直链下载是独立请求，xhscdn/xiaohongshu 现行规则就是「不带 Referer」（research/03 §4.1 实测：小红书 CDN 带本站 Referer 反而 403），与 note 页走哪个通道无关；三件套头结论只作用于 note HTML 获取，不必传导到 /media |

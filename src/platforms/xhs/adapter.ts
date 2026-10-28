@@ -2,7 +2,7 @@ import { AppError } from '@/core/errors';
 import { recordChannelDowngrade } from '@/infra/metrics';
 import { recordHttpRiskControl, shouldSkipHttp } from '@/infra/channel-policy';
 import type { FetchCtx, MatchResult, PlatformAdapter, RawPayload } from '@/types/platform';
-import { parseNote } from './parse';
+import { noteDataVerdict, parseNote } from './parse';
 
 /** noteId：24 位十六进制（/explore/<id> 与 /discovery/item/<id>） */
 const NOTE_ID_RE = /\/(?:explore|discovery\/item)\/([0-9a-f]{24})/;
@@ -56,11 +56,18 @@ async function fetchViaHttp(input: MatchResult, url: URL, ctx: FetchCtx): Promis
   const target = noteUrl(input, url);
   let loginwall = 0;
   for (;;) {
-    const res = await client(target, {
-      redirect: 'manual',
-      headers: BROWSER_HEADERS,
-      signal: ctx.signal,
-    });
+    let res: Response;
+    try {
+      res = await client(target, {
+        redirect: 'manual',
+        headers: BROWSER_HEADERS,
+        signal: ctx.signal,
+      });
+    } catch (err) {
+      // 网络层失败归一成 UPSTREAM_TIMEOUT（parse.service 据此重试）；请求被取消则原样上抛
+      if (ctx.signal.aborted) throw err;
+      throw new AppError('UPSTREAM_TIMEOUT', '小红书接口网络错误或超时', { err: String(err).slice(0, 120) });
+    }
     if (res.status < 200 || res.status >= 300) {
       await res.body?.cancel();
       const loc = res.headers.get('location') ?? '';
@@ -88,6 +95,21 @@ async function fetchViaHttp(input: MatchResult, url: URL, ctx: FetchCtx): Promis
       continue;
     }
     const html = await res.text();
+    // 200 载荷预判（调研 §4.2 降级契约）：壳页/风控页在这里就能定性，等 parse 阶段再抛就错过降级分支了。
+    // 风控页 RISK_CONTROL 直接上抛（降级无意义，fetch 阶段抛才进熔断记账+止血窗口）；
+    // 壳页/笔记数据空抛 UPSTREAM_CHANGED 交浏览器验证（只有浏览器分得清壳页与已删除），仅在有浏览器时拦。
+    // 无浏览器时不过早定性：原样交 parseNote 分类，纯 HTTP 部署的错误码与文案保持不变
+    const verdict = noteDataVerdict(html, input.id);
+    if (verdict === 'risk') {
+      throw new AppError('RISK_CONTROL', '小红书风控拦截（出口 IP 被平台限制或未登录，换网络后重试）', {
+        noteId: input.id || undefined,
+      });
+    }
+    if (ctx.browser && (verdict === 'shell' || verdict === 'empty')) {
+      throw new AppError('UPSTREAM_CHANGED', '小红书返回壳页/笔记数据为空，交浏览器验证', {
+        noteId: input.id || undefined,
+      });
+    }
     return {
       via: 'browser-intercept',
       fetchedAt: Math.floor(Date.now() / 1000),
@@ -143,11 +165,20 @@ export const xhsAdapter: PlatformAdapter = {
   },
 
   async resolve(url: URL, ctx: FetchCtx): Promise<URL> {
-    const res = await client(url.href, {
-      redirect: 'manual',
-      headers: BROWSER_HEADERS,
-      signal: ctx.signal,
-    });
+    let res: Response;
+    try {
+      res = await client(url.href, {
+        redirect: 'manual',
+        headers: BROWSER_HEADERS,
+        signal: ctx.signal,
+      });
+    } catch (err) {
+      // 同 fetchViaHttp：网络层失败归一 UPSTREAM_TIMEOUT，取消原样上抛
+      if (ctx.signal.aborted) throw err;
+      throw new AppError('UPSTREAM_TIMEOUT', '小红书短链展开网络错误或超时', {
+        err: String(err).slice(0, 120),
+      });
+    }
     await res.body?.cancel();
     const loc = res.headers.get('location');
     if (!loc) {

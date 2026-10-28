@@ -107,3 +107,34 @@ describe('clientIp 取客户端 IP', () => {
     expect(clientIp(new Headers(), req)).toBe('unknown');
   });
 });
+
+describe('clientIp 转发头可信代理校验（2026-10-28 修复）', () => {
+  const req = new Request('http://localhost/parse');
+  const peerOf = (address: string) => ({ requestIP: () => ({ address, family: 'IPv4', port: 1234 }) });
+
+  test('公网直连伪造 X-Real-IP：忽略转发头，按连接地址计数（防换桶绕过限流）', () => {
+    const h = new Headers({ 'x-real-ip': '9.9.9.9', 'x-forwarded-for': '8.8.8.8' });
+    expect(clientIp(h, req, peerOf('203.0.113.7'))).toBe('203.0.113.7');
+    expect(clientIp(h, req, peerOf('2001:db8::1'))).toBe('2001:db8::1');
+  });
+
+  test('同机反代（127.0.0.1）注入 X-Real-IP：采信', () => {
+    const h = new Headers({ 'x-real-ip': '9.9.9.9' });
+    expect(clientIp(h, req, peerOf('127.0.0.1'))).toBe('9.9.9.9');
+    expect(clientIp(h, req, peerOf('::ffff:127.0.0.1'))).toBe('9.9.9.9');
+    expect(clientIp(h, req, peerOf('::1'))).toBe('9.9.9.9');
+  });
+
+  test('内网反代（docker 网桥 / LAN）注入转发头：采信', () => {
+    const real = new Headers({ 'x-real-ip': '9.9.9.9' });
+    expect(clientIp(real, req, peerOf('172.18.0.5'))).toBe('9.9.9.9');
+    expect(clientIp(real, req, peerOf('10.11.11.11'))).toBe('9.9.9.9');
+    expect(clientIp(real, req, peerOf('192.168.1.2'))).toBe('9.9.9.9');
+    const xff = new Headers({ 'x-forwarded-for': '8.8.8.8 , 7.7.7.7' });
+    expect(clientIp(xff, req, peerOf('172.31.255.254'))).toBe('8.8.8.8');
+  });
+
+  test('公网对端无转发头：按连接地址计数（与旧行为一致）', () => {
+    expect(clientIp(new Headers(), req, peerOf('203.0.113.7'))).toBe('203.0.113.7');
+  });
+});

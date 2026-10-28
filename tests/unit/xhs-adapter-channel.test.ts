@@ -254,3 +254,102 @@ describe('xhs match 短链（resolve 接入后）', () => {
     expect(m?.id).toBe('');
   });
 });
+
+describe('xhs 网络错误归一（2026-10-28 修复）', () => {
+  test('fetch 网络错误归一 UPSTREAM_TIMEOUT：进编排层可重试，不裸抛 TypeError', async () => {
+    stubHttp(() => {
+      throw new TypeError('network down');
+    });
+    try {
+      await xhsAdapter.fetch(
+        input('6aa0343c00000000270173b7'),
+        new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+        makeCtx(false),
+      );
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect((e as AppError).code).toBe('UPSTREAM_TIMEOUT');
+      expect((e as AppError).message).toBe('小红书接口网络错误或超时');
+    }
+  });
+
+  test('短链 resolve 网络错误同样归一 UPSTREAM_TIMEOUT', async () => {
+    setXhsClientForTests((() => {
+      throw new TypeError('network down');
+    }) as unknown as XhsFetchClient);
+    const resolve = xhsAdapter.resolve;
+    if (!resolve) throw new Error('Xhs must support short-link resolution');
+    try {
+      await resolve(new URL('https://xhslink.com/code'), makeCtx(false));
+      expect.unreachable();
+    } catch (e) {
+      expect((e as AppError).code).toBe('UPSTREAM_TIMEOUT');
+      expect((e as AppError).message).toBe('小红书短链展开网络错误或超时');
+    }
+  });
+});
+
+describe('xhs 200 载荷预判触发降级（2026-10-28 修复）', () => {
+  test('200 壳页（无 __INITIAL_STATE__）+ 有浏览器：fetch 阶段预判，降级浏览器兜底验证', async () => {
+    const upstream = stubHttp(() => new Response('<html>document</html>', { status: 200 }));
+    const ctx = makeCtx(true);
+    const raw = await xhsAdapter.fetch(
+      input('6aa0343c00000000270173b7'),
+      new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+      ctx,
+    );
+    expect(upstream.calls()).toBe(1);
+    expect(ctx.docCalls()).toBe(1);
+    expect(raw.channel).toBe('browser');
+    expect(metrics.render()).toContain('channel_downgrade_total{platform="xhs"');
+  });
+
+  test('200 壳页 + 无浏览器：不预判拦截，原样交 parseNote 分类（纯 HTTP 部署语义不变）', async () => {
+    const upstream = stubHttp(() => new Response('<html>document</html>', { status: 200 }));
+    const ctx = makeCtx(false);
+    const raw = await xhsAdapter.fetch(
+      input('6aa0343c00000000270173b7'),
+      new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+      ctx,
+    );
+    expect(upstream.calls()).toBe(1);
+    expect(ctx.docCalls()).toBe(0);
+    expect(raw.channel).toBe('http');
+    expect(raw.body).toBe('<html>document</html>');
+  });
+
+  test('200 笔记数据空（壳页 state）+ 有浏览器：降级验证，分得清壳页与已删除', async () => {
+    const emptyState =
+      '<script>window.__INITIAL_STATE__ = {"note":{"noteDetailMap":{},"currentNoteId":"6aa0343c00000000270173b7"}}</script>';
+    const upstream = stubHttp(() => new Response(emptyState, { status: 200 }));
+    const ctx = makeCtx(true);
+    const raw = await xhsAdapter.fetch(
+      input('6aa0343c00000000270173b7'),
+      new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+      ctx,
+    );
+    expect(upstream.calls()).toBe(1);
+    expect(ctx.docCalls()).toBe(1);
+    expect(raw.channel).toBe('browser');
+  });
+
+  test('200 风控页（isRiskPage 命中）：RISK_CONTROL 直接上抛，降级无意义不打浏览器', async () => {
+    const riskHtml = '<html><a href="/website-login/error?error_code=300012">IP at risk</a></html>';
+    const upstream = stubHttp(() => new Response(riskHtml, { status: 200 }));
+    const ctx = makeCtx(true);
+    try {
+      await xhsAdapter.fetch(
+        input('6aa0343c00000000270173b7'),
+        new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+        ctx,
+      );
+      expect.unreachable();
+    } catch (e) {
+      expect((e as AppError).code).toBe('RISK_CONTROL');
+    }
+    expect(upstream.calls()).toBe(1);
+    expect(ctx.docCalls()).toBe(0);
+    expect(metrics.render()).not.toContain('channel_downgrade_total{platform="xhs"');
+  });
+});

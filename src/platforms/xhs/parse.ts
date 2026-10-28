@@ -212,6 +212,29 @@ function tagsOf(note: NoteDetail): string[] {
   return (note.tagList ?? []).map((t) => t.name).filter((n): n is string => !!n);
 }
 
+/**
+ * fetch 阶段载荷预判（纯函数，与 parseNote 同一套分类前提）：
+ * 'data' = 目标笔记有真数据；'risk' = 风控/登录墙页（降级无意义，parseNote 归 RISK_CONTROL）；
+ * 'shell' = 无 state 或 state 解析失败（壳页/结构变更）；'empty' = state 在但目标笔记数据空
+ * （可能是壳页 state 也可能是已删除，只有浏览器能分辨）。
+ */
+export function noteDataVerdict(html: string, id: string): 'data' | 'risk' | 'shell' | 'empty' {
+  let state: NoteState;
+  try {
+    state = extractInitialState(html);
+  } catch (err) {
+    // 壳页没有 state，坏 state 同样不是想要的页面——都归壳页类，交浏览器验证
+    if (err !== NO_INITIAL_STATE && !(err instanceof AppError)) throw err;
+    return isRiskPage(html) ? 'risk' : 'shell';
+  }
+  const detailMap = state.note?.noteDetailMap ?? {};
+  // 与 parseNote 同款查找：noteId 优先取 match 结果，短链场景由 state.currentNoteId 兜底
+  const noteId = id || state.note?.currentNoteId || '';
+  const entry = noteId !== '' ? detailMap[noteId] : undefined;
+  if (entry?.note) return 'data';
+  return isRiskPage(html) ? 'risk' : 'empty';
+}
+
 export function parseNote(raw: RawPayload, input: MatchResult): ParseResult {
   if (raw.via !== 'browser-intercept') {
     throw new AppError('UPSTREAM_CHANGED', `小红书解析收到未知载荷类型: ${raw.via}`);

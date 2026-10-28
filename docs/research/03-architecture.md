@@ -1083,7 +1083,7 @@ export const limiter = new Elysia({ name: 'rate-limit' }).use(rateLimit({
 }));
 ```
 
-> 勘误：上述 elysia-rate-limit 代码为提案，未采纳。实际实现：自研令牌桶 30 次/分/IP（`src/services/limiter.ts`），`clientIp` 取 `X-Real-IP` / `X-Forwarded-For` 第一段，无可信代理校验。
+> 勘误：上述 elysia-rate-limit 代码为提案，未采纳。实际实现：自研令牌桶 30 次/分/IP（`src/services/limiter.ts`），`clientIp` 取 `X-Real-IP` / `X-Forwarded-For` 第一段。【勘误 2026-10-28】已补可信代理校验：转发头只在直连对端是可信代理（同机回环、内网地址）时采信，公网直连伪造 `X-Real-IP` 按连接地址计数（坑 2 的修法）。
 
 **多实例必失效**：默认 context 是进程内 `AllocQuickLRU(5000)`。pm2 `instances: 2+`、k8s 多副本、滚动发布新旧并存 → 实际额度 = N × max。要么下沉 Redis（实现 `elysia-rate-limit` 的 `Context` 五方法 `init/increment/decrement/reset/kill`，滑动窗口用 Lua：`ZREMRANGEBYSCORE` + `ZADD` + `ZCARD` + `PEXPIRE` 原子完成），要么用 `rate-limiter-flexible` 的 `RateLimiterRedis`（自带 `insuranceLimiter`，Redis 挂时回落内存）。
 
