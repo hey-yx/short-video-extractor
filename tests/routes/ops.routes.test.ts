@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { createApp } from '@/bootstrap/app';
-import { listAdapters } from '@/platforms/registry';
+import { listAdapters, resetAdaptersForTests } from '@/platforms/registry';
 
 const app = createApp();
 
@@ -24,6 +24,19 @@ describe('ops 路由（/health /ready /platforms /metrics）', () => {
     expect(body.status).toBe('ready');
     expect(body.platforms).toBe(listAdapters().length);
     expect(body.platforms).toBeGreaterThanOrEqual(4);
+  });
+
+  test('/ready 503：注册表为空时如实报 degraded（就绪探针要能反映故障）', async () => {
+    resetAdaptersForTests();
+    try {
+      const res = await get('/ready');
+      expect(res.status).toBe(503);
+      const body = (await res.json()) as { status: string; platforms: number };
+      expect(body.status).toBe('degraded');
+      expect(body.platforms).toBe(0);
+    } finally {
+      createApp(); // 幂等重注册，恢复全局注册表
+    }
   });
 
   test('/platforms：统一信封 + 全平台 + 字段齐全', async () => {

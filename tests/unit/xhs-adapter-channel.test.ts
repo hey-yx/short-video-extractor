@@ -334,6 +334,22 @@ describe('xhs 200 载荷预判触发降级（2026-10-28 修复）', () => {
     expect(raw.channel).toBe('browser');
   });
 
+  test('HTTP 失败且没有浏览器兜底：登录墙原因如实上抛，不降级不吞', async () => {
+    stubHttp(() => loginwallRes());
+    const ctx = makeCtx(false);
+    try {
+      await xhsAdapter.fetch(
+        input('6aa0343c00000000270173b7'),
+        new URL('https://www.xiaohongshu.com/explore/6aa0343c00000000270173b7'),
+        ctx,
+      );
+      expect.unreachable();
+    } catch (e) {
+      expect((e as AppError).code).toBe('UPSTREAM_ERROR');
+      expect((e as AppError).message).toBe('小红书登录墙（HTTP 通道请求头被拒）');
+    }
+  });
+
   test('200 风控页（isRiskPage 命中）：RISK_CONTROL 直接上抛，降级无意义不打浏览器', async () => {
     const riskHtml = '<html><a href="/website-login/error?error_code=300012">IP at risk</a></html>';
     const upstream = stubHttp(() => new Response(riskHtml, { status: 200 }));

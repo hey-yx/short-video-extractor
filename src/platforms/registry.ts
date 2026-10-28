@@ -14,6 +14,11 @@ export function listAdapters(): readonly PlatformAdapter[] {
   return adapters;
 }
 
+/** 测试用：清空注册表（用完请再调 createApp() 恢复注册） */
+export function resetAdaptersForTests(): void {
+  adapters.length = 0;
+}
+
 /** 按域名找适配器 */
 export function matchAdapter(url: URL): PlatformAdapter | null {
   return adapters.find((a) => findPlatform(url) === a.platform) ?? null;
