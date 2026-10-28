@@ -66,7 +66,8 @@ src/
 ├── routes/
 │   ├── parse.routes.ts       # POST|GET /parse (rate limit, cache, metrics)
 │   ├── media.routes.ts       # GET|HEAD /media (optional streaming relay)
-│   └── ops.routes.ts         # /health /ready /platforms /metrics
+│   ├── ops.routes.ts         # /health /ready /platforms /metrics
+│   └── status.routes.ts      # /status status page (embedded at build time)
 ├── services/
 │   ├── parse.service.ts      # orchestration: match → cache → dispatch → fetch → parse
 │   ├── cache.ts              # LRU + expiresAt semantics + negative cache + singleflight
@@ -86,10 +87,14 @@ Tech stack: Bun + Elysia. The only runtime dependencies are elysia, @elysiajs/co
 
 ## Stability
 
-- **Douyin dual channel**: pure HTTP by default (the L1 signature-free detail API). Once it returns 403 `ArgusSecurityPlugin` (L1 risk-controlled), the service automatically downgrades to the browser: it opens the video page and intercepts the `/aweme/v1/web/aweme/detail/` XHR that the page itself issues from the response stream; the `via` field honestly reports `browser`. Downgrade counts land in `channel_downgrade_total`.
+- **Douyin three-tier downgrade chain (L1 → L2 → L3)**: pure HTTP L1 by default (the signature-free detail API). When L1 is risk-controlled (403 `ArgusSecurityPlugin`), the service first tries L2, a pure HTTP signed channel (standard fingerprint params plus a `uifid` / `timestamp` / `x-secsdk-web-signature` signature and a `ttwid` cookie; the identity is minted automatically by the identity pool, or pinned via `DOUYIN_UIFID`; recipe and measurements in `docs/research/01` §12). Only when L2 also fails (403 / 200 with an empty body) does it fall back to L3, the browser: open the video page and intercept the detail XHR the page itself issues. The `via` field honestly reports `http` / `http-l2` / `browser`, and downgrade counts land in `channel_downgrade_total` (from/to labeled stage by stage as `http-l1`→`http-l2`→`browser`). The L1 risk-control signal (`RISK_CONTROL`) and L2 signature expiry (`UPSTREAM_CHANGED`) are kept apart in both error codes and metrics, so "the door got shut" and "the signature needs a fresh uifid" stay distinguishable.
+- **Sticky circuit breaker**: after 2 consecutive risk-control hits on the HTTP channel, that platform sticks to the browser for 60s instead of eating a 403 plus a cold browser start on every request (saves 1-3s and does not feed the risk profile); when the 60s window ends, one probe request goes back to HTTP, and a success returns the platform to pure HTTP. State is exposed as the `channel_breaker_open{platform}` gauge.
+- **uifid identity pool**: when `DOUYIN_UIFID` is unset, visitor identities are minted automatically and reused from a pool (each uifid is one "visitor"): a suspected-dead identity cools down and gets one retry, then retires and is replaced; minting is globally throttled (60s minimum interval, exponential backoff up to 1h) so that "a burst of new visitors" does not itself become a risk signal. Counts land in `uifid_mint_total` and `uifid_retired_total`.
+- **Risk-control containment window**: when no browser fallback is available (or `BROWSER_FALLBACK=off`), a final risk-control hit puts that platform into a 45s containment window: every request returns 503 immediately instead of hammering upstream (retrying risk control means more risk control); cache hits and negative cache are unaffected. With a fallback available the downgrade is absorbed inside the adapter and no window opens; switching back on voids the window immediately and restores the chain.
+- **Pure-HTTP deployment switch**: `BROWSER_FALLBACK=off` injects no browser capability and reports risk control as an honest 503; suits deployments that would rather not run Chrome (saves 400-600 MB resident memory, puppeteer can be removed).
 - **Transient retries**: `UPSTREAM_TIMEOUT` / `UPSTREAM_ERROR` (network-layer and upstream 5xx) are retried once at the orchestration layer with exponential backoff (500ms→1s), bounded by the 15s request ceiling. `RISK_CONTROL`, content errors and input errors are never retried (retrying risk control means more risk control). Counts land in `parse_retry_total`.
 - **Browser concurrency gate**: all browser channels share one semaphore, at most 2 concurrent pages, the rest queue, and queueing aborts immediately when the request is cancelled (AbortSignal), so concurrency cannot exhaust memory (roughly 30-110 MB per Chrome page).
-- **Honest risk-control classification**: Xiaohongshu error pages such as `error_code=300012` (IP at risk) map to `RISK_CONTROL` (503, human-readable message) instead of posing as an upstream redesign.
+- **Honest risk-control classification**: Xiaohongshu error pages such as `error_code=300012` (IP at risk) map to `RISK_CONTROL` (503, human-readable message) instead of posing as an upstream redesign. When a note page returns 200 but only a shell page / empty note data, the service does not jump to "redesign": with a browser available it hands the page to the browser (only the browser can tell a shell page from a deleted note), without one it classifies by the pure HTTP parse; network-layer failures normalize to `UPSTREAM_TIMEOUT` and share the same transient retry as every other platform.
 
 ## Platform Status
 
@@ -97,7 +102,7 @@ All 9 platforms produce the same unified `ParseResult` envelope. Channels and ca
 
 | Platform | Channel | Content | Quality tiers | Direct link IP-bound |
 |---|---|---|---|---|
-| Douyin | HTTP primary (signature-free detail API + play direct links); auto-downgrades to the browser (intercepting the detail XHR) when L1 is risk-controlled | Video, photo albums, live photos | Four tiers 540p/720p/1080p/original (plus a 720p watermarked tier) | No (play links download with an empty Referer) |
+| Douyin | Three-tier downgrade chain: HTTP L1 (signature-free detail API, primary) → L2 pure HTTP signed channel (identity minted automatically when a browser is available, zero config; `DOUYIN_UIFID` pins one) → browser intercepting the detail XHR (last resort); play direct links | Video, photo albums, live photos | Four tiers 540p/720p/1080p/original (plus a 720p watermarked tier) | No (play links download with an empty Referer) |
 | Xiaohongshu (RedNote) | Pure HTTP primary (admitted by the three-header combo, see below) + automatic browser fallback on risk control / login walls | Note videos, album images | Video serves the master stream (h264 preferred); images at original size | No |
 | Kuaishou | Pure HTTP (short-link 302 for the photoId + mobile share page INIT_STATE, zero cookies) | Video, albums | All resolutions the server returns (sorted by height, top tier as the main URL) | No |
 | Bilibili | Pure HTTP (view + playurl try_look=1) | Video (each part becomes an asset), DASH audio/video split | 360P-4K mapped from DASH ids (120=4K, 116=1080P60, 80=1080P…) | No |
@@ -130,11 +135,11 @@ The main endpoint. `Content-Type: application/json`, body `{"url": "<share link>
 | `title` / `description` / `tags` / `author` | Metadata |
 | `assets[]` | Resource list, see below |
 | `expiresAt` | Earliest expiry among all direct links (Unix seconds), the basis for caching and re-fetching |
-| `via` | Parsing channel: `http` or `browser` (fetch semantics, uniform across platforms) |
+| `via` | Parsing channel: `http` / `http-l2` (the Douyin signed channel) / `browser` (fetch semantics, uniform across platforms) |
 
 `assets[]` (MediaAsset): `type` (video/image/audio/cover), `url` (**direct link**: request it without a Referer header; YouTube is the exception: googlevideo links are bound to the resolving egress IP and must be downloaded through the `/media` server relay), `variants[]` (other qualities of the same asset; Douyin returns all four tiers), `width` / `height` / `durationMs` / `size`, `backups[]` (backup CDNs), `liveClipUrl` (the 5s video of a live photo). Bilibili and YouTube video assets additionally carry `audioUrl` (the DASH audio track, fetch it separately and mux it with the video).
 
-Error codes and HTTP status: `INVALID_URL`(400), `UNSUPPORTED_PLATFORM`(422), `CONTENT_NOT_FOUND`(404), `CONTENT_RESTRICTED`(403), `RISK_CONTROL`(503), `UPSTREAM_ERROR` / `UPSTREAM_CHANGED`(502), `UPSTREAM_TIMEOUT`(504), `RATE_LIMITED`(429), `MEDIA_*` (see below), `INTERNAL`(500).
+Error codes and HTTP status: `INVALID_URL`(400), `UNSUPPORTED_PLATFORM` / `UNSUPPORTED_CONTENT`(422), `CONTENT_NOT_FOUND`(404), `CONTENT_RESTRICTED`(403), `AUTH_REQUIRED`(424), `RISK_CONTROL`(503), `UPSTREAM_ERROR` / `UPSTREAM_CHANGED`(502), `UPSTREAM_TIMEOUT`(504), `RATE_LIMITED`(429), `MEDIA_*` / `CONFIG_MISSING`(501), `INTERNAL`(500). The full table lives in [`docs/调用案例.md`](docs/调用案例.md) §7 (Chinese).
 
 ### GET /media?u=&exp=&sig= (optional, off by default)
 
@@ -170,8 +175,11 @@ Prometheus text format (hand-rolled renderer, no prom-client):
 | `parse_duration_ms` | histogram | Parse latency distribution (milliseconds, by platform) |
 | `cache_hit_total` | counter | Cache hit count |
 | `upstream_error_total{platform,reason}` | counter | Upstream failure / risk-control count |
-| `channel_downgrade_total{platform,from,to}` | counter | Automatic channel downgrades (Douyin / Xiaohongshu http→browser) |
+| `channel_downgrade_total{platform,from,to}` | counter | Automatic channel downgrades (Douyin `http-l1`→`http-l2`→`browser`; Xiaohongshu `http`→`browser`) |
 | `parse_retry_total{platform}` | counter | Transient-error (timeout / 5xx) retry count |
+| `channel_breaker_open{platform}` | gauge | Sticky circuit-breaker state (1 = that platform's HTTP channel is open, traffic pinned to the browser) |
+| `uifid_mint_total{result}` | counter | Douyin uifid mints (`ok` / `fail`; automatic pool minting) |
+| `uifid_retired_total{reason}` | counter | Douyin uifid retirements (`suspect` = used up, `evicted` = pool overflow) |
 
 ## Observability
 
@@ -201,6 +209,10 @@ bun run typecheck
 |---|---|---|
 | `PORT` | 7777 | Listen port |
 | `LOG_LEVEL` | info | fatal/error/warn/info/debug/trace |
+| `BROWSER_FALLBACK` | on | Master switch for the browser fallback; `off` = pure HTTP everywhere, risk control reported as an honest 503 (no resident Chrome memory) |
+| `DOUYIN_UIFID` | unset | The `uifid` visitor identity for Douyin's L2 signed channel. Unset → the identity pool mints and reuses one automatically (throttled minting, replaces used-up identities), so L2 works with zero config; set → that identity is pinned, and a dead one must be re-minted per `docs/research/01` §12 |
+| `DOUYIN_TTWID` | unset | The `ttwid` for Douyin L2 (optional; most reliable when minted together with `DOUYIN_UIFID`); defaults to registering one with ttwid.bytedance.com |
+| `IG_GRAPHQL_DOC_ID` | unset | `doc_id` for Instagram's anonymous GraphQL channel; unset → IG links return `CONFIG_MISSING`(501). Instagram rotates this value on releases, so track instaloader / gallery-dl |
 | `PROXY_SECRET` | unset | Signing secret for the /media relay; unset → /media returns 501 |
 | `PUPPETEER_EXECUTABLE_PATH` | - | Pinned to `/usr/bin/chromium` inside the container (set in the Dockerfile) |
 | `PROXY_<PLATFORM>` | unset | Per-platform egress proxy (e.g. `PROXY_YOUTUBE`); highest priority |

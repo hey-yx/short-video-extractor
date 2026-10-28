@@ -66,7 +66,8 @@ src/
 ├── routes/
 │   ├── parse.routes.ts       # POST|GET /parse（限流、缓存、指标打点）
 │   ├── media.routes.ts       # GET|HEAD /media（可选流式中转）
-│   └── ops.routes.ts         # /health /ready /platforms /metrics
+│   ├── ops.routes.ts         # /health /ready /platforms /metrics
+│   └── status.routes.ts      # /status 检测站页面（构建期内嵌进二进制）
 ├── services/
 │   ├── parse.service.ts      # 编排：match → 缓存 → dispatch → fetch → parse
 │   ├── cache.ts              # LRU + expiresAt 语义 + 负缓存 + singleflight
@@ -86,14 +87,14 @@ src/
 
 ## 稳定性
 
-- **抖音三级降级链（L1 → L2 → L3）**：默认纯 HTTP L1（零签名 detail 接口）；L1 被风控（403 `ArgusSecurityPlugin`）时先降级 L2 纯 HTTP 签名通道（标准指纹参数 + `uifid`/`timestamp`/`x-secsdk-web-signature` 签名 + `ttwid` cookie，需配 `DOUYIN_UIFID`，配方与实测见 `docs/research/01` §12），L2 也失效（403 / 200 空 body）才进 L3 浏览器兜底：打开作品页截页面自己发出的 detail XHR JSON。`via` 字段如实标注 `http` / `http-l2` / `browser`，降级计数见 `channel_downgrade_total`（from/to 按 `http-l1`→`http-l2`→`browser` 逐级标注）。L1 风控信号（`RISK_CONTROL`）与 L2 签名失效（`UPSTREAM_CHANGED`）在错误码与打点上分开，便于区分「口子被堵」和「签名过期要重铸 uifid」。
+- **抖音三级降级链（L1 → L2 → L3）**：默认纯 HTTP L1（零签名 detail 接口）；L1 被风控（403 `ArgusSecurityPlugin`）时先降级 L2 纯 HTTP 签名通道（标准指纹参数 + `uifid`/`timestamp`/`x-secsdk-web-signature` 签名 + `ttwid` cookie，身份由身份池自动铸造，也可用 `DOUYIN_UIFID` 固定；配方与实测见 `docs/research/01` §12），L2 也失效（403 / 200 空 body）才进 L3 浏览器兜底：打开作品页截页面自己发出的 detail XHR JSON。`via` 字段如实标注 `http` / `http-l2` / `browser`，降级计数见 `channel_downgrade_total`（from/to 按 `http-l1`→`http-l2`→`browser` 逐级标注）。L1 风控信号（`RISK_CONTROL`）与 L2 签名失效（`UPSTREAM_CHANGED`）在错误码与打点上分开，便于区分「口子被堵」和「签名过期要重铸 uifid」。
 - **熔断粘性**：HTTP 通道连续 2 次命中风控后，该平台 60s 内固定走浏览器，不再每个请求先吃一次 403 再冷启动浏览器（省 1-3s 延迟，也不加重风控画像）；60s 探针窗口到点放一个请求回 HTTP 试探，试探成功即回到纯 HTTP。状态见 `channel_breaker_open{platform}` gauge。
 - **uifid 身份池**：`DOUYIN_UIFID` 不配时自动铸造并池化复用访客身份（每个 uifid 就是一个「访客」）：签名失效怀疑身份用废先冷却重试一次、再废退休换新；铸造全局节流（最小间隔 60s、失败指数退避到 1h 上限），避免「一秒冒出多个新访客」本身成为风控信号。计数见 `uifid_mint_total`、`uifid_retired_total`。
 - **风控止血**：无浏览器兜底可用（或 `BROWSER_FALLBACK=off`）时，最终风控会让该平台进入 45s 止血窗口：窗口内所有请求直接 503，不再全额撞上游（重试风控=加重风控）；缓存命中与负缓存不受窗口影响。有兜底时降级在 adapter 内部消化，不进窗口；开关切回 on 后窗口立即失效，恢复降级链。
 - **纯 HTTP 部署开关**：`BROWSER_FALLBACK=off` 时不注入浏览器能力，风控如实 503；适合不想跑 Chrome 的部署（省 400-600 MB 常驻内存，puppeteer 依赖可移除）。
 - **瞬态重试**：`UPSTREAM_TIMEOUT` / `UPSTREAM_ERROR`（网络层与上游 5xx）在编排层重试 1 次，指数退避（500ms→1s），总耗时受请求 15s 上限约束；`RISK_CONTROL`、内容类与参数类错误一律不重试（重试风控=加重风控）。计数见 `parse_retry_total`。
 - **浏览器并发闸**：所有浏览器通道共享一个信号量，最多 2 个并发 page，超出的排队，排队期间随请求取消（AbortSignal）立即退出，防止并发打满内存（Chrome 每页约 30-110 MB）。
-- **风控如实分类**：小红书 `error_code=300012`（IP at risk）等错误页归 `RISK_CONTROL`（503，带可读文案），不冒充改版。
+- **风控如实分类**：小红书 `error_code=300012`（IP at risk）等错误页归 `RISK_CONTROL`（503，带可读文案），不冒充改版。笔记页 200 但只拿到壳页/笔记数据为空时不硬判改版：有浏览器就交浏览器验证（壳页与已删除只有浏览器分得清），无浏览器时按纯 HTTP 解析如实分类；网络层失败归一成 `UPSTREAM_TIMEOUT`，与其他平台共用同一套瞬态重试。
 
 ## 平台状态
 
@@ -101,7 +102,7 @@ src/
 
 | 平台 | 通道 | 支持内容 | 清晰度档位 | 直链绑 IP |
 |---|---|---|---|---|
-| 抖音 | 三级降级链：L1 零签名 detail 接口（主）→ L2 纯 HTTP 签名通道（配 `DOUYIN_UIFID` 后启用）→ 浏览器截 detail XHR（兜底）；play 直链 | 视频、图集、实况照片 | 540p/720p/1080p/原片四档（另附 720p 水印档） | 否（play 直链空 Referer 可下） |
+| 抖音 | 三级降级链：L1 零签名 detail 接口（主）→ L2 纯 HTTP 签名通道（有浏览器就自动铸身份，零配置启用；`DOUYIN_UIFID` 可固定身份）→ 浏览器截 detail XHR（兜底）；play 直链 | 视频、图集、实况照片 | 540p/720p/1080p/原片四档（另附 720p 水印档） | 否（play 直链空 Referer 可下） |
 | 小红书 | 纯 HTTP 主通道（请求头三件套放行，见下）+ 风控/登录墙自动降级浏览器兜底 | 笔记视频、图集图片 | 视频出 master 流（h264 优先）；图片原图 | 否 |
 | 快手 | 纯 HTTP（短链 302 取 photoId + 移动端分享页 INIT_STATE，零 cookie） | 视频、图集 | 服务端返回的全部分辨率（按高度排序，最高档为主 URL） | 否 |
 | B 站 | 纯 HTTP（view + playurl try_look=1） | 视频（多 P 逐个出 asset）、DASH 音视频分离 | 360P-4K 按 DASH id 映射（120=4K、116=1080P60、80=1080P…） | 否 |
@@ -174,9 +175,11 @@ Prometheus 文本格式（自写渲染，未引 prom-client）：
 | `parse_duration_ms` | histogram | 解析耗时分布（毫秒，按 platform） |
 | `cache_hit_total` | counter | 缓存命中次数 |
 | `upstream_error_total{platform,reason}` | counter | 上游失败/风控次数 |
-| `channel_downgrade_total{platform,from,to}` | counter | 解析通道自动降级次数（抖音/小红书 http→browser） |
+| `channel_downgrade_total{platform,from,to}` | counter | 解析通道自动降级次数（抖音 `http-l1`→`http-l2`→`browser`；小红书 `http`→`browser`） |
 | `parse_retry_total{platform}` | counter | 瞬态错误（超时/5xx）重试次数 |
 | `channel_breaker_open{platform}` | gauge | 通道熔断粘性状态（1 = 该平台 HTTP 通道熔断中，固定走浏览器） |
+| `uifid_mint_total{result}` | counter | 抖音 uifid 铸造次数（`ok` / `fail`；身份池自动铸造） |
+| `uifid_retired_total{reason}` | counter | 抖音 uifid 退休次数（`suspect` 用废 / `evicted` 池满淘汰） |
 
 ## 可观测性
 
@@ -209,6 +212,7 @@ bun run typecheck
 | `BROWSER_FALLBACK` | on | 浏览器兜底总开关；设 `off` 时全平台纯 HTTP，风控如实 503（免 Chrome 常驻内存） |
 | `DOUYIN_UIFID` | 未配置 | 抖音 L2 签名通道的 `uifid` 访客身份。不配时自动走身份池：有浏览器能力就自动铸造并复用（铸造有节流，用废自动换），零配置启用 L2；显式配置则固定用该身份，失效时按 `docs/research/01` §12 重铸 |
 | `DOUYIN_TTWID` | 未配置 | 抖音 L2 的 `ttwid`（可选；与 `DOUYIN_UIFID` 同一次铸造带出最稳）；缺省自动向 ttwid.bytedance.com 注册一个 |
+| `IG_GRAPHQL_DOC_ID` | 未配置 | Instagram 匿名 GraphQL 的 `doc_id`；不配时 IG 链接返回 `CONFIG_MISSING`(501)。平台发版会轮换这个值，跟踪 instaloader / gallery-dl 的更新 |
 | `PROXY_SECRET` | 未配置 | /media 中转签名密钥；不配则 /media 返回 501 |
 | `PUPPETEER_EXECUTABLE_PATH` | - | 容器内固定 `/usr/bin/chromium`（Dockerfile 已设） |
 | `PROXY_<PLATFORM>` | 未配置 | 按平台出站代理（如 `PROXY_YOUTUBE`），优先级最高 |

@@ -7,6 +7,10 @@
  *  - parse_duration_ms (histogram)     解析耗时分布
  *  - cache_hit_total                   缓存命中（P4 接入，先暴露 0）
  *  - upstream_error_total{platform,reason}  上游失败/风控
+ *  - channel_downgrade_total{platform,from,to}  通道降级
+ *  - parse_retry_total{platform}       瞬态错误重试
+ *  - channel_breaker_open{platform}    熔断粘性 gauge
+ *  - uifid_mint_total{result} / uifid_retired_total{reason}  抖音 uifid 身份池
  */
 
 type Labels = Readonly<Record<string, string>>;
@@ -96,6 +100,15 @@ export const metrics = {
     lines.push('# TYPE parse_retry_total counter');
     emitCounter(lines, counters, 'parse_retry_total');
 
+    // uifid 身份池：带标签（result / reason），只在真发生过时输出，不伪造无标签 0 序列
+    lines.push('# HELP uifid_mint_total uifid 铸造次数（result=ok|fail；身份池自动铸造访客身份）');
+    lines.push('# TYPE uifid_mint_total counter');
+    emitSeenCounter(lines, counters, 'uifid_mint_total');
+
+    lines.push('# HELP uifid_retired_total uifid 退休次数（reason=suspect|evicted）');
+    lines.push('# TYPE uifid_retired_total counter');
+    emitSeenCounter(lines, counters, 'uifid_retired_total');
+
     lines.push('# HELP channel_breaker_open 通道熔断粘性状态（1=该平台 HTTP 通道熔断中，固定走浏览器）');
     lines.push('# TYPE channel_breaker_open gauge');
     for (const [key, v] of sortedEntries(gauges)) {
@@ -129,6 +142,13 @@ function emitCounter(lines: string[], source: Map<string, number>, prefix: strin
     }
   }
   if (!found) lines.push(`${prefix} 0`);
+}
+
+/** 只输出已出现的序列：带标签的计数器不补无标签 0 基线（否则同一指标混出两种 label 集合） */
+function emitSeenCounter(lines: string[], source: Map<string, number>, prefix: string): void {
+  for (const [key, v] of sortedEntries(source)) {
+    if (key === prefix || key.startsWith(`${prefix}{`)) lines.push(`${key} ${v}`);
+  }
 }
 
 function sortedEntries<T>(m: Map<string, T>): Array<[string, T]> {

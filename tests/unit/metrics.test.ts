@@ -10,6 +10,30 @@ function bucketValues(platform: string): number[] {
     .map((l) => Number(l.split(' ').at(-1)));
 }
 
+describe('infra/metrics uifid 身份池指标', () => {
+  beforeEach(() => metrics.reset());
+
+  test('铸造/退休计数进 /metrics 文本（带 result / reason 标签）', () => {
+    metrics.inc('uifid_mint_total', { result: 'ok' });
+    metrics.inc('uifid_mint_total', { result: 'fail' });
+    metrics.inc('uifid_retired_total', { reason: 'suspect' });
+
+    const text = metrics.render();
+    expect(text).toContain('# TYPE uifid_mint_total counter');
+    expect(text).toContain('uifid_mint_total{result="ok"} 1');
+    expect(text).toContain('uifid_mint_total{result="fail"} 1');
+    expect(text).toContain('# TYPE uifid_retired_total counter');
+    expect(text).toContain('uifid_retired_total{reason="suspect"} 1');
+  });
+
+  test('从未铸造过：不补无标签 0 序列（label 集合保持一致）', () => {
+    const text = metrics.render();
+    expect(text).toContain('# HELP uifid_mint_total');
+    expect(text).not.toMatch(/^uifid_mint_total /m);
+    expect(text).not.toMatch(/^uifid_retired_total /m);
+  });
+});
+
 describe('infra/metrics histogram（Prometheus 累计语义）', () => {
   beforeEach(() => metrics.reset());
 

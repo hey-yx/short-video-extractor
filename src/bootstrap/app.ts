@@ -73,7 +73,7 @@ export function createApp() {
     })
     .get('/', () => ({
       name: 'short-video-extractor',
-      version: '2.0.0',
+      version: '2.1.0',
       platforms: listAdapters().map((a) => a.platform),
     }))
     .use(parseRoutes)
