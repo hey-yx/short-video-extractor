@@ -233,11 +233,34 @@ docker run -d --name short-video-extractor -p 7777:7777 \
 curl http://127.0.0.1:7777/health
 ```
 
-Or just compose (`7777:7777`, `restart: unless-stopped`, `mem_limit 800m`, `env_file: .env`, log rotation 10m×3):
+Or just compose, which starts two services: `app` (the parser) and `gatus` (the monitoring dashboard, see below). `app` gets `restart: unless-stopped`, `mem_limit 800m`, `env_file: .env` and log rotation 10m×3; `gatus` waits until `app` reports healthy:
 
 ```bash
 docker compose up -d
 ```
+
+Host ports default to 7777 (app) and 8080 (gatus). Change them if they are taken:
+
+```bash
+APP_PORT=7778 GATUS_PORT=8081 docker compose up -d
+```
+
+### Monitoring (Gatus)
+
+The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apache-2.0) against the parser. All configuration lives in `gatus/config.yaml` and hot-reloads on change, so there is no need to restart the container. Four checks ship enabled:
+
+| Endpoint | Probes | Interval | Conditions |
+|---|---|---|---|
+| `health` | `/health` | 30s | 200, `status == ok`, response < 300ms |
+| `ready` | `/ready` | 60s | 200, `status == ready`, `platforms > 0` |
+| `platforms` | `/platforms` | 300s | 200, non-empty platform list |
+| `metrics` | `/metrics` | 300s | 200, body contains `parse_total` |
+
+The dashboard is at `http://<server>:8080`. History is stored in the `gatus-data` volume (sqlite) and survives container restarts; drop the `storage` block if you would rather keep it in memory.
+
+A fifth check, `parse-real-link`, probes real parsing and ships as `enabled: false`: replace the link in `body` with a real share link before turning it on, and keep `interval` at an hour or more. Hitting Douyin or Xiaohongshu at high frequency trips their risk control and can get your egress IP banned.
+
+Alerting is off by default. To enable it, turn on `alerting.custom` in the config and point the `custom` provider at a WeCom, DingTalk or Feishu bot webhook, passing the URL through an environment variable rather than writing it into the file.
 
 ### Upgrading
 

@@ -1,11 +1,17 @@
+# 用法:
+#   docker compose up -d --build      # 起服务 + 监控
+#   docker compose logs -f gatus      # 看监控日志
+# 端口默认 app 7777、gatus 8080,想改就 export APP_PORT=7778 GATUS_PORT=8081。
+# 本地已有别的进程占着 7777 时,用 APP_PORT 换一个宿主端口,容器内始终是 7777。
+
 services:
   app:
     build:
       context: .
-    image: short-video-extractor:v2
+    image: short-video-extractor:v2.1
     container_name: short-video-extractor
     ports:
-      - "7777:7777"
+      - "${APP_PORT:-7777}:7777"
     restart: unless-stopped
     mem_limit: 800m
     env_file:
@@ -15,3 +21,35 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    networks:
+      - sve
+
+  gatus:
+    image: twinproduction/gatus:stable
+    container_name: sve-gatus
+    ports:
+      - "${GATUS_PORT:-8080}:8080"
+    environment:
+      # 容器内走服务名访问 app,不经过宿主机端口
+      - SVE_BASE_URL=http://app:7777
+    volumes:
+      - ./gatus/config.yaml:/config/config.yaml:ro
+      - gatus-data:/data
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - sve
+
+volumes:
+  gatus-data:
+
+networks:
+  sve:

@@ -1,0 +1,88 @@
+# Gatus 配置：监控 short-video-extractor 服务本身
+#
+# 用法:docker compose 里通过 SVE_BASE_URL 传被监控服务地址(容器内走服务名 http://app:7777)。
+# 单独跑 gatus 想探宿主机时,把 SVE_BASE_URL 设成 http://host.docker.internal:7777
+# (Linux 上需在 compose 里加 extra_hosts: "host.docker.internal:host-gateway")。
+#
+# 改动这个文件 Gatus 会自动热加载,不用重启容器。
+
+# 历史数据落 sqlite,容器重启不丢;不想要历史就删掉这段(内存模式,重启即清)
+storage:
+  type: sqlite
+  path: /data/data.db
+
+ui:
+  title: 短视频解析 · 服务状态
+  header: 各接口实时可用性
+
+endpoints:
+  # 进程活着没:最轻的一条,30 秒一次
+  - name: health
+    group: sve
+    url: "${SVE_BASE_URL}/health"
+    interval: 30s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].status == ok"
+      - "[RESPONSE_TIME] < 300"
+
+  # 就绪:平台注册表要真的加载出来,platforms 为 0 说明启动没走完
+  - name: ready
+    group: sve
+    url: "${SVE_BASE_URL}/ready"
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].status == ready"
+      - "[BODY].platforms > 0"
+
+  # 平台清单:能列出平台,且签名器可用性不被整体拖垮
+  - name: platforms
+    group: sve
+    url: "${SVE_BASE_URL}/platforms"
+    interval: 300s
+    conditions:
+      - "[STATUS] == 200"
+      - "len([BODY].data) > 0"
+
+  # 指标端点:Prometheus 文本里必须有解析计数,说明 /metrics 真的在吐数据
+  - name: metrics
+    group: sve
+    url: "${SVE_BASE_URL}/metrics"
+    interval: 300s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*parse_total*)"
+
+  # 真实解析探活:默认关闭。
+  # 打开前先把 url 换成一条真实分享链接,interval 保持 1 小时以上,
+  # 高频打抖音/小红书会被风控,出口 IP 也可能被拉黑。
+  - name: parse-real-link
+    group: sve-parse
+    enabled: false
+    url: "${SVE_BASE_URL}/parse"
+    method: POST
+    headers:
+      Content-Type: application/json
+    body: |
+      {"url":"https://v.douyin.com/REPLACE_WITH_REAL_LINK/"}
+    interval: 3600s
+    conditions:
+      - "[STATUS] == 200"
+      - "len([BODY].data.assets) > 0"
+
+# 告警默认不开。要开的话在 compose 里给 gatus 传 webhook 地址,然后取消下面注释。
+# 国内可直接用 custom 类型接企业微信/钉钉/飞书机器人:
+#
+# alerting:
+#   custom:
+#     url: "${ALERT_WEBHOOK}"
+#     method: POST
+#     content-type: application/json
+#     body: |
+#       {"msgtype":"text","text":{"content":"[gatus] ${alert.description}  endpoint=${endpoint} success=${success}"}}
+#     default-alert:
+#       enabled: true
+#       failure-threshold: 3
+#       success-threshold: 2
+#       description: 服务异常
