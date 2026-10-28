@@ -44,8 +44,8 @@
 |---|---|---|
 | `ANDROID_VR`（`1.62.27`，`androidSdkVersion: 32`） | `dQw4w9WgXcQ` | **OK，26 条 adaptiveFormats 全明文 url（0 条 signatureCipher），最高 2160p**【实测】 |
 | `ANDROID_VR` | `9bZkp7q19f0` / `kJQP7kiw5Fk` / `JGwWNGJdvx8` / `pjWY5NkjsrY`（Shorts） | **LOGIN_REQUIRED「Sign in to confirm you're not a bot」**，重试 4 次 + 带 visitorData 均拦【实测】 |
-| `IOS`（`20.32.4`，`deviceModel: iPhone16,2`，`osVersion: 18.5.22F76`） | `9bZkp7q19f0` | **OK，18 条 adaptiveFormats 全明文 url，最高 1080p**（137 avc1 + 139/140 mp4a 音轨）【实测】 |
-| `IOS` | `pjWY5NkjsrY`（Shorts） | **OK，22 条全明文 url**【实测】 |
+| `IOS`（`20.32.4`，`deviceModel: iPhone16,2`，`osVersion: 18.5.22F76`） | `9bZkp7q19f0` | **OK，纯视频 18 条 adaptiveFormats 全明文 url，最高 1080p**（合计 23 条含音轨：137 avc1 + 139/140 mp4a 音轨）【实测】 |
+| `IOS` | `pjWY5NkjsrY`（Shorts） | **OK，纯视频 18 条全明文 url**（合计 28 条含音轨，最高 1920p）【实测】 |
 | `WEB` | `dQw4w9WgXcQ` | UNPLAYABLE / "Video unavailable"【实测】（02 号结论一致） |
 | `MWEB` | `9bZkp7q19f0` | UNPLAYABLE / "The page needs to be reloaded."【实测】 |
 | `WEB_EMBEDDED_PLAYER` | `9bZkp7q19f0` | ERROR / "This video is unavailable"【实测】 |
@@ -71,7 +71,7 @@
 1. **解析请求与中转下载必须走同一个代理出口**——googlevideo 校验的是「下载方 IP == URL 里 ip=」。`src/services/media-proxy.ts` 的 `fetchUpstream()` 拉流时必须用与解析 adapter 相同的 proxy（见 §5.2 env 设计）。
 2. 直链**不下发给客户端**（客户端下载 IP 与解析 IP 不一致必然 403）。现有 `/media` 签名中转正好是这个角色。
 3. `allowedHosts()` 白名单需加 `*.googlevideo.com`。
-4. 现有 `expiresAt`（Unix 秒）字段直接可用：取 `expire` 参数或 `parsedAt + expiresInSeconds`，缓存 TTL 取其一半。
+4. 现有 `expiresAt`（Unix 秒）字段直接可用：取 `expire` 参数或 `parsedAt + expiresInSeconds`，缓存 TTL 取 min(剩余有效期, 30 分钟)（`src/services/cache.ts` ttlFor）。
 
 ### 1.4 格式拿法（DASH / mp4）
 
@@ -85,7 +85,7 @@
 | **18** | 360p | avc1 + mp4a（合并） | — | **音视频已合，免转码直出** |
 | 140 / 251 | 音频 | mp4a.40.2 / opus | — | DASH 伴音轨 |
 
-- **全部明文 `url`，0 条 `signatureCipher`**（ANDROID_VR 26 条、IOS 18/22 条）【实测】——**不需要 nsig/signature 解扰**，这是 2026-10 现状对本项目最友好的一点。
+- **全部明文 `url`，0 条 `signatureCipher`**（ANDROID_VR 26 条、IOS 纯视频 18/18 条）【实测】。**不需要 nsig/signature 解扰**，这是 2026-10 现状对本项目最友好的一点。
 - 高清走 DASH 音视频分离（video 137 + audio 140），下载端合成——项目 `MediaAsset.audioUrl` 字段已有（B 站 DASH 同款用法），架构现成。
 - itag 18（360p 合并档）ANDROID_VR 有、IOS 本次未见【实测】——低清场景可免合成。
 - Shorts 与普通视频走同一接口，URL 形态（`/shorts/<id>`）只影响 `match()` 提取 videoId。
@@ -182,7 +182,7 @@ data.xdt_api__v1__media__shortcode__web_info.items[0]
 
 | 风险 | 说明 | 应对 |
 |---|---|---|
-| `doc_id` 轮换 | IG 前端发版会换 doc_id（2026-06 废弃过一次旧值） | doc_id 配置化（env `IG_DOC_ID`，默认 `27128499623469141`），挂 instaloader/galley-dl 的更新节奏；当前值经 instaloader 主干（2026-10-24 更新）核对仍在用【源码】 |
+| `doc_id` 轮换 | IG 前端发版会换 doc_id（2026-06 废弃过一次旧值） | doc_id 配置化（env `IG_GRAPHQL_DOC_ID`，**无默认值**，未配置时 IG adapter 抛 `CONFIG_MISSING` 501；本文样本值 `27128499623469141` 仅作参考），挂 instaloader/galley-dl 的更新节奏；当前值经 instaloader 主干（2026-10-24 更新）核对仍在用【源码】 |
 | 机房 IP 风控 | 本机香港机房 IP 实测通；中国大陆云机房 IP 表现未知【未核验】 | 解析走代理出口（§5） |
 | 分辨率档位少 | 实测这条只有 640×360 三档（源片低清）；高清源应有更多档 | 取 `video_versions` 全列表，按 width/height 出 variants |
 | 账号风险 | **零**——全程无账号无 cookie，不存在封号问题 | 保持「不收用户 cookie」的产品线即可 |
@@ -247,7 +247,7 @@ GET https://www.tikwm.com/api/?url=https://www.tiktok.com/@nasa/video/7665075736
 
 | 机制 | 行为 | 验证 |
 |---|---|---|
-| 环境变量 | 全局 `fetch()` **每次调用时**读 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`（大小写皆可）：`http://` 目标用 `HTTP_PROXY`，`https://` 用 `HTTPS_PROXY`，未设 scheme 专用时 `ALL_PROXY` 兜底 | **【实测】**：自建 CONNECT 代理日志出现 `CONNECT checkip.amazonaws.com:443`，脚本内纯 `fetch()` 零代理代码 |
+| 环境变量 | ~~全局 `fetch()` **每次调用时**读 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`~~ **【勘误 2026-10-28】不可依赖**：Bun fetch 实测不读代理环境变量（`src/core/fetch-proxy.ts` 2026-10-26 与 2026-10-28 两次实测：死代理 `http://127.0.0.1:9` 环境变量下 http/https 请求均直连成功），代理必须经 per-request `{ proxy }` 显式传入 | 原「自建 CONNECT 代理日志」结论保留存疑（疑被本机 TUN/系统代理全局接管掩盖），以显式 `proxy` 为准 |
 | per-request | `fetch(url, { proxy: 'http://host:port' })` **覆盖环境变量**；`proxy: false` 强制直连 | **【实测】**：`{proxy}` 请求 200；googlevideo 流式下载经 `{proxy}` 206 |
 | NO_PROXY | `NO_PROXY`/`no_proxy` 列表绕过（逗号/空格分隔）；`respectNoProxy: false` 可强制走代理 | 【源码：Bun 文档】 |
 | socks5 | **不支持**——值为 `socks5://` 会被忽略 | 【源码：Bun 文档】 |
@@ -282,7 +282,7 @@ export function resolveProxy(platform: Platform): string | undefined {
 
 配套硬规则：
 
-1. **海外 adapter 的所有 fetch 显式传 `{ proxy: resolveProxy(platform) }`**——不依赖进程级环境变量（国内平台同进程直连会被误带入代理）。`FetchCtx` 可以加一个 `proxy?: string` 由 infra 注入，保持「平台层 fetch() 是唯一 IO」不变。
+1. **海外 adapter 的所有 fetch 显式传 `{ proxy: resolveProxy(platform) }`**，不依赖进程级环境变量（国内平台同进程直连会被误带入代理）。`FetchCtx` 可以加一个 `proxyUrl?: string`（实际字段名 `proxyUrl`，见 `src/types/platform.ts`）由 infra 注入，保持「平台层 fetch() 是唯一 IO」不变。
 2. **`/media` 中转必须用解析该资源的同一 proxy**（YouTube 硬要求，见 §1.3）。`/media` 签名载荷里**带上 platform**（或直接带解析时的 proxy 标识），`fetchUpstream()` 据此选出口——两处出口不一致是纯浪费带宽的 403。
 3. **国内四平台显式直连**：`{ proxy: false }` 或不传（部署机不设全局 `HTTPS_PROXY` 时即直连）。推荐在 `resolveProxy` 返回 `undefined` 时显式 `proxy: false`，把「直连」变成显式行为，避免运维误设全局变量把抖音流量也送进代理。
 4. 代理认证走 URL 内嵌 `user:pass@`（Bun 原生支持【源码】）；**密钥走 env/secret 注入，不进仓库、不进日志**。
@@ -332,14 +332,14 @@ puppeteer.launch({
 
 **YouTube 卡**：
 
-1. 依赖 `youtubei.js@^18`；`Innertube.create({ fetch: proxiedFetch })`，`proxiedFetch` 注入 `{ proxy: resolveProxy('youtube') }`。
+1. 依赖 `youtubei.js@^18`；`Innertube.create({ fetch: proxiedFetch })`，`proxiedFetch` 注入 `{ proxy: resolveProxy('youtube') }`。（【勘误 2026-10-28】实现最终选手写 innertube player POST，见 `src/platforms/youtube/adapter.ts`，youtubei.js 未引入。）
 2. 解析链：`getBasicInfo(id, { client: 'ANDROID_VR' })` 失败（LOGIN_REQUIRED/UNPLAYABLE）→ 换 `{ client: 'IOS' }`；两条都挂才报错。client 顺序做成配置。
 3. 输出：1080p 优先映射到 `MediaAsset.variants`（137 avc1 + 140 mp4a 音轨用 `audioUrl`）；itag 18 判定为「已合并」直接出单 URL；`expiresAt = parsedAt + 21540`（以响应 `expiresInSeconds` 为准）。
 4. **直链绝不下发**：只走 `/media` 签名中转；`allowedHosts()` 加 `*.googlevideo.com`；中转 `fetchUpstream()` 用同一 proxy。
 
 **Instagram 卡**：
 
-1. 两步流：GET `/` 收 `csrftoken` → POST `/graphql/query`（`X-IG-App-ID: 936619743392459` + `X-CSRFToken` + Cookie），`doc_id` 从 env `IG_DOC_ID` 读（默认 `27128499623469141`）。
+1. 两步流：GET `/` 收 `csrftoken` → POST `/graphql/query`（`X-IG-App-ID: 936619743392459` + `X-CSRFToken` + Cookie），`doc_id` 从 env `IG_GRAPHQL_DOC_ID` 读（无默认值，须显式配置；未配置抛 `CONFIG_MISSING`）。
 2. `parse()` 映射：`video_versions[]` → variants；`image_versions2.candidates[]` → 图/封面；`carousel_media[]` → 图集；`media_type` 判 kind。
 3. 错误判别按 `errors` + `items` 双判（无效 shortcode 也 200 + execution error）。
 4. 不做 cookie 模式；`hosts` 白名单加 `www.instagram.com`、`scontent-*.cdninstagram.com`。
@@ -353,7 +353,7 @@ puppeteer.launch({
 
 **代理基建（可并入上面三张或独立小卡）**：
 
-1. 新增 `src/infra/proxy.ts` 的 `resolveProxy()`（§5.2 原样）；`FetchCtx` 增加 `proxy?: string` 注入。
+1. 新增 `src/infra/proxy.ts` 的 `resolveProxy()`（§5.2 原样）；`FetchCtx` 增加 `proxyUrl?: string` 注入（实际字段名 `proxyUrl`）。
 2. `/media` 签名载荷带 platform；`fetchUpstream()` 按 platform 选出口。
 3. 国内平台显式 `proxy: false`。
 4. `infra/browser.ts` launch args 追加可选 `--proxy-server=${BROWSER_PROXY}`（独立变量）。

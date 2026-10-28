@@ -88,7 +88,7 @@ src/
 - **抖音三级降级链（L1 → L2 → L3）**：默认纯 HTTP L1（零签名 detail 接口）；L1 被风控（403 `ArgusSecurityPlugin`）时先降级 L2 纯 HTTP 签名通道（标准指纹参数 + `uifid`/`timestamp`/`x-secsdk-web-signature` 签名 + `ttwid` cookie，需配 `DOUYIN_UIFID`，配方与实测见 `docs/research/01` §12），L2 也失效（403 / 200 空 body）才进 L3 浏览器兜底：打开作品页截页面自己发出的 detail XHR JSON。`via` 字段如实标注 `http` / `http-l2` / `browser`，降级计数见 `channel_downgrade_total`（from/to 按 `http-l1`→`http-l2`→`browser` 逐级标注）。L1 风控信号（`RISK_CONTROL`）与 L2 签名失效（`UPSTREAM_CHANGED`）在错误码与打点上分开，便于区分「口子被堵」和「签名过期要重铸 uifid」。
 - **熔断粘性**：HTTP 通道连续 2 次命中风控后，该平台 60s 内固定走浏览器，不再每个请求先吃一次 403 再冷启动浏览器（省 1-3s 延迟，也不加重风控画像）；60s 探针窗口到点放一个请求回 HTTP 试探，试探成功即回到纯 HTTP。状态见 `channel_breaker_open{platform}` gauge。
 - **uifid 身份池**：`DOUYIN_UIFID` 不配时自动铸造并池化复用访客身份（每个 uifid 就是一个「访客」）：签名失效怀疑身份用废先冷却重试一次、再废退休换新；铸造全局节流（最小间隔 60s、失败指数退避到 1h 上限），避免「一秒冒出多个新访客」本身成为风控信号。计数见 `uifid_mint_total`、`uifid_retired_total`。
-- **风控止血**：无浏览器兜底可用（或 `BROWSER_FALLBACK=off`）时，最终风控会让该平台进入 45s 止血窗口——窗口内所有请求直接 503，不再全额撞上游（重试风控=加重风控）；缓存命中与负缓存不受窗口影响。有兜底时降级在 adapter 内部消化，不进窗口；开关切回 on 后窗口立即失效，恢复降级链。
+- **风控止血**：无浏览器兜底可用（或 `BROWSER_FALLBACK=off`）时，最终风控会让该平台进入 45s 止血窗口：窗口内所有请求直接 503，不再全额撞上游（重试风控=加重风控）；缓存命中与负缓存不受窗口影响。有兜底时降级在 adapter 内部消化，不进窗口；开关切回 on 后窗口立即失效，恢复降级链。
 - **纯 HTTP 部署开关**：`BROWSER_FALLBACK=off` 时不注入浏览器能力，风控如实 503；适合不想跑 Chrome 的部署（省 400-600 MB 常驻内存，puppeteer 依赖可移除）。
 - **瞬态重试**：`UPSTREAM_TIMEOUT` / `UPSTREAM_ERROR`（网络层与上游 5xx）在编排层重试 1 次，指数退避（500ms→1s），总耗时受请求 15s 上限约束；`RISK_CONTROL`、内容类与参数类错误一律不重试（重试风控=加重风控）。计数见 `parse_retry_total`。
 - **浏览器并发闸**：所有浏览器通道共享一个信号量，最多 2 个并发 page，超出的排队，排队期间随请求取消（AbortSignal）立即退出，防止并发打满内存（Chrome 每页约 30-110 MB）。
@@ -133,15 +133,15 @@ src/
 | `title` / `description` / `tags` / `author` | 元数据 |
 | `assets[]` | 资源列表，见下 |
 | `expiresAt` | 所有直链里最早过期的时刻（Unix 秒），缓存与重取依据 |
-| `via` | 解析通道：`http` 或 `browser`（取数语义，全平台统一） |
+| `via` | 解析通道：`http` / `http-l2`（抖音签名通道）/ `browser`（取数语义，全平台统一） |
 
 `assets[]`（MediaAsset）：`type`（video/image/audio/cover）、`url`（**直连地址**，客户端请求时不要带 Referer；YouTube 除外：googlevideo 直链绑解析出口 IP，必须经 `/media` 服务端中转下载）、`variants[]`（同资源的其他档位，抖音给全四档）、`width` / `height` / `durationMs` / `size`、`backups[]`（备用 CDN）、`liveClipUrl`（实况照片的 5s 视频）。B 站与 YouTube 视频另带 `audioUrl`（DASH 音轨，需与视频分别拉取后合成）。
 
-错误码与 HTTP 状态：`INVALID_URL`(400)、`UNSUPPORTED_PLATFORM`(422)、`CONTENT_NOT_FOUND`(404)、`CONTENT_RESTRICTED`(403)、`RISK_CONTROL`(503)、`UPSTREAM_ERROR` / `UPSTREAM_CHANGED`(502)、`UPSTREAM_TIMEOUT`(504)、`RATE_LIMITED`(429)、`MEDIA_*`（见下）、`INTERNAL`(500)。
+错误码与 HTTP 状态：`INVALID_URL`(400)、`UNSUPPORTED_PLATFORM` / `UNSUPPORTED_CONTENT`(422)、`CONTENT_NOT_FOUND`(404)、`CONTENT_RESTRICTED`(403)、`AUTH_REQUIRED`(424)、`RISK_CONTROL`(503)、`UPSTREAM_ERROR` / `UPSTREAM_CHANGED`(502)、`UPSTREAM_TIMEOUT`(504)、`RATE_LIMITED`(429)、`MEDIA_*` / `CONFIG_MISSING`(501)、`INTERNAL`(500)。完整表见 [`docs/调用案例.md`](docs/调用案例.md) §7。
 
 ### GET /media?u=&exp=&sig=（可选，默认关闭）
 
-流式中转，三种用途：强制下载文件名（Content-Disposition）、兜底会强制带 Referer 的容器（微信内置浏览器等）、链接过期后透明重取。
+流式中转，三种用途：强制下载文件名（Content-Disposition）、兜底会强制带 Referer 的容器（微信内置浏览器等）、由服务端带正确请求头代取（含手动跟 302）。签名过期不透明重取，返回 410 后重新 `/parse` 取新链接。
 
 调用 `/parse` 的客户端用不到这个接口：正常情况直链拿来就能用，无需任何配置。它只服务两类场景：YouTube 直链绑 IP 必须经服务端中转（见[平台状态](#平台状态)）；自部署的维护者想要上面三种增强能力。
 

@@ -486,7 +486,11 @@ TikTok 侧的一手证据（TS 侧同一个 npm 包也覆盖了）：
 
 ### 8.2 建议
 
-**第一阶段不做 TikTok。** 理由：
+**第一阶段不做 TikTok。**
+
+> 【勘误 2026-10-28】官方 web API 调研存档；实际落地走 tikwm 第三方接口（见 research/05 §4.2），TikTok 现已支持，不走四签名方案
+
+理由：
 
 1. 抖音侧存在免签名通道，工程量是「一个 fetch + 一个 URL 解析」；TikTok 侧是「X-Gnarly + X-Dynosaur + 真实 msToken + 海外代理」，工程量差一个数量级。
 2. TikTok 需要海外出口，而当前服务部署在国内（3 Mbps 测试机），加代理会引入新的不稳定源与成本。
@@ -499,6 +503,8 @@ TikTok 侧的一手证据（TS 侧同一个 npm 包也覆盖了）：
 ## 9. 落地改造方案（针对本仓库）
 
 ### 9.1 现状与目标
+
+本节写于 2026-10-25 重构前，所述 src/utils/ 方案已废弃；现行实现见 §12 与 src/platforms/douyin/。
 
 现状（`src/utils/puppeteer.ts` + `src/utils/api-parser.ts`）：
 

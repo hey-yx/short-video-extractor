@@ -1,6 +1,10 @@
 # 03 · 工程架构方案（插件化 / 中转代理 / 缓存 / 限流 / 可观测性 / 测试 / 部署）
 
-> 调研时间：**2026-10-24**（Bun 1.3.10、Elysia 1.4.30 为当时最新稳定版；仓库实际锁定 `elysia ^1.1.23`，`node_modules` 解析到 1.2.22）
+> ⚠️ **勘误提示**：本文是 2026-10-24 的架构调研与改造方案快照。方案骨架已落地，但草案细节与实现有多处偏差（目录布局、指标名、限流、缓存、错误码、熔断等均以下述实际代码为准）；现状以 `README.md` 与 `docs/开发者指南.md` 为准，本文不逐节追改。
+>
+> 后续演进（2026-10-27/28，不在本方案内）：uifid 身份池（src/platforms/douyin/uifid-pool.ts）与签名器 provider 注册表（src/core/signers.ts）。
+
+> 调研时间：**2026-10-24**（Bun 1.3.10、Elysia 1.4.30 为当时最新稳定版；【勘误 2026-10-28】仓库现为 `elysia ^1.2.0`，`node_modules` 解析到 1.4.30）
 > 目标：把现在「一个 switch 分平台 + controller 里塞解析 + 只有小红书内存 Map 缓存 + 直链直接下发前端」的结构，改造成可插件扩展、可横向扩容、可观测、可测试的形态。
 > 兄弟文档：平台侧的接口/风控/字段事实见 [01-douyin-tiktok-api.md](./01-douyin-tiktok-api.md) 与 [02-platforms.md](./02-platforms.md)，本文只讲**工程架构**，不重复平台逆向细节。
 > 标注约定：**【实测】**= 本次调研真实跑出来的结果；**【源码】**= 读对应仓库源码；**【未核验】**= 只有二手资料或条件不满足未复现，落地前必须自测。**本文不含任何编造的 star 数、体积、额度**。
@@ -889,10 +893,12 @@ proxy_cache_key "$uhost$media_key$slice_range";
 - 抖音：URL **不可重建**（带签名），必须存整条 URL 并严格遵守读出的 `expiresAt`。
 - 小红书：URL **可重建**（host + key），缓存里存 `key`，命中后现拼 → 「URL 过期」问题在该平台直接消失。
 
-### 5.3 TTL 计算与刷新决策（代码已跑通 16 个测试）
+### 5.3 TTL 计算与刷新决策（原型代码，未落库）
+
+> 勘误：`services/cache/expiry.ts` 为原型代码，未落库，「16 个测试」系原型记录。实际实现：TTL 直接取 `result.expiresAt`（`src/services/cache.ts` 的 `ttlFor`），无 SWR/jitter/Redis。
 
 ```ts
-// services/cache/expiry.ts
+// services/cache/expiry.ts（原型代码，未落库）
 export function urlExpiry(url: string, now = Math.floor(Date.now() / 1000)): number | undefined {
   const plausible = (t: number) => t > 1_577_836_800 && t < now + 30 * 86_400;  // 防把哈希段当时间戳
   let u: URL; try { u = new URL(url); } catch { return undefined; }
@@ -1056,13 +1062,13 @@ export async function withPage<T>(fn: (p: Page) => Promise<T>, parentSignal?: Ab
 README 原文：「If you're using Elysia v2.0.0 or higher, use `elysia-rate-limit` v5.0.0 or higher. If you're using Elysia v1.0.0, you should use version 4.6.3 or lower.」→ **在 Elysia 1.x 上装 5.x 会因 peer 不满足 + `onBeforeHandle` 签名差异挂掉**。
 
 ```ts
-// services/limiter.ts（已实测通过）
+// services/limiter.ts（提案，未采纳）
 import { Elysia } from 'elysia';
 import { rateLimit } from 'elysia-rate-limit';
 
 export const limiter = new Elysia({ name: 'rate-limit' }).use(rateLimit({
   duration: 60_000,
-  max: (_k, req) => (req.headers.get('x-api-key') ? 120 : 20),  // 匿名 20/min，带 key 120/min
+  max: (_k, req) => (req.headers.get('x-api-key') ? 120 : 20),  // 匿名 20/min，带 key 120/min（提案，未采纳）
   countFailedRequest: true,        // 失败也计数，防刷错误路径
   headers: true,                   // 输出 RateLimit-* + Retry-After
   scoping: 'scoped',               // 只作用于本实例，别污染全局
@@ -1076,6 +1082,8 @@ export const limiter = new Elysia({ name: 'rate-limit' }).use(rateLimit({
   skip: req => /\/(health|ready|metrics)$/.test(new URL(req.url).pathname),
 }));
 ```
+
+> 勘误：上述 elysia-rate-limit 代码为提案，未采纳。实际实现：自研令牌桶 30 次/分/IP（`src/services/limiter.ts`），`clientIp` 取 `X-Real-IP` / `X-Forwarded-For` 第一段，无可信代理校验。
 
 **多实例必失效**：默认 context 是进程内 `AllocQuickLRU(5000)`。pm2 `instances: 2+`、k8s 多副本、滚动发布新旧并存 → 实际额度 = N × max。要么下沉 Redis（实现 `elysia-rate-limit` 的 `Context` 五方法 `init/increment/decrement/reset/kill`，滑动窗口用 Lua：`ZREMRANGEBYSCORE` + `ZADD` + `ZCARD` + `PEXPIRE` 原子完成），要么用 `rate-limiter-flexible` 的 `RateLimiterRedis`（自带 `insuranceLimiter`，Redis 挂时回落内存）。
 
@@ -1134,7 +1142,9 @@ export const browserBulkhead = bulkhead(3, 20);   // 3 并发 + 最多排 20
 
 **依赖可用性**：`prom-client` 与 `pino` 在 Bun 下均已实测可用；`@elysiajs/opentelemetry` **版本与 Elysia 1.2.x 对不上，阶段一别装**（自写 40 行更稳）。`elysia-prometheus@1.1.1` 只有 17★，未实测。
 
-**指标清单（按优先级，前 6 个是必须的）**
+**指标清单（命名提案，未采用；按优先级，前 6 个是必须的）**
+
+> 勘误：下表命名为提案，未采用。实际指标名：`parse_total`、`parse_duration_ms`、`cache_hit_total`、`upstream_error_total`、`channel_downgrade_total`、`parse_retry_total`、`channel_breaker_open`，另有 `uifid_mint_total`、`uifid_retired_total`（由 `src/platforms/douyin/uifid-pool.ts` 经 `src/infra/metrics.ts` 记录）。
 
 | 指标 | 类型 | labels | 回答什么问题 |
 |---|---|---|---|
@@ -1158,7 +1168,7 @@ export const browserBulkhead = bulkhead(3, 20);   // 3 并发 + 最多排 20
 
 > 反模式：`/health` 里查 Redis → Redis 抖 3 秒 → 所有副本连环重启 → 雪崩。
 
-**告警（PromQL 思路）**：
+**告警（PromQL 思路，指标命名提案，未采用）**：
 
 ```promql
 sum(rate(parse_requests_total{result="ok"}[5m])) by (platform)
@@ -1175,6 +1185,8 @@ max_over_time(browser_pool_waiting[5m]) > 5
 ## 7. 错误码设计（兼容现有 12xx 体系）
 
 现有 `docs/ERROR_CODE.md` 只列了 1201–1203（**1204 只出现在代码里**，`platform-transfer.ts` 用它表示「抖音解析失败」），且**错误返回的 HTTP 状态与 JSON 契约都是混着的**（`errorHook` 一律 `set.status = 400` + `text/plain`）。建议：
+
+> 勘误：本节 12xx 数字错误码体系（含 `docs/ERROR_CODE.md` 引用，该文件现已不在仓库）为提案，未采用。实际实现为字符串错误码共 16 个（`INVALID_URL`、`RISK_CONTROL`、`CONFIG_MISSING` 等），见 `src/core/errors.ts`；信封无数字 `errorCode` 字段。
 
 ### 7.1 保留 12xx 前缀，补齐语义维度
 

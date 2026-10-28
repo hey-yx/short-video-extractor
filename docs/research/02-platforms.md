@@ -13,10 +13,10 @@
 | 小红书 | **纯 HTTP 可行**（有条件） | 详情页 HTML 里的 `__INITIAL_STATE__` 仍完整可用，无需 cookie | `xsec_token` + **浏览器级 TLS 指纹** |
 | 快手 | **纯 HTTP 可行**（最省事） | 手机分享页 `v.m.chenzhongtech.com/fw/photo/{id}` 内嵌 `INIT_STATE`，无签名无 cookie | 仅需 photoId |
 | B 站 | **纯 API 可行** | `x/web-interface/view` + `x/player/playurl` 两条接口直接出 dash/durl | 无（`try_look=1` 可拿 1080P） |
-| 微博视频 | **需 cookie（访客即可）** | 访客票据 `SUB/SUBP` + Referer 后 `statuses/show` 可取 `media_info` | 访客 cookie，无需登录 |
+| 微博视频 | **需 cookie（访客即可）**（【勘误 2026-10-28】m 站 `statuses/show` 匿名可取，仅 `weibo.com/ajax` 与 fid 直链页 `tv/api/component` 需访客 `SUB/SUBP`，见 §4） | 访客票据 `SUB/SUBP` + Referer 后 `statuses/show` 可取 `media_info` | 访客 cookie，无需登录 |
 | 微信视频号 | **基本不可行** | 无公开 Web 播放页；取流地址绑微信会话且文件本身加密 | 微信登录态或买数据 |
 | YouTube / Shorts | **纯 API 可行**（走 innertube 客户端伪装） | `ANDROID_VR` client 免 PO Token、免 cookie 直接给 formats | 出口 IP 与下载 IP 必须一致 |
-| Instagram Reels | **需 cookie，匿名基本不可行** | 网页侧全登录墙，Graph API 只能读自有专业号 | 登录 cookie（寿命短） |
+| Instagram Reels | **需 cookie，匿名基本不可行**（【勘误 2026-10-28】已翻案：匿名 GraphQL doc_id 通道可用，见 05 §2.3） | 网页侧全登录墙，Graph API 只能读自有专业号 | 登录 cookie（寿命短） |
 | X / Twitter | **纯 API 可行（单条粒度）** | `cdn.syndication.twimg.com/tweet-result` 免 token | 只能按 id 单条取 |
 
 ---
@@ -150,7 +150,7 @@ body: {"source_note_id":"<id>","image_formats":["jpg","webp","avif"],
 
 ### 1.8 坑（按踩坑概率排序）
 
-1. **`window.__INITIAL_STATE__` 会在 hydration 后被删掉**——在真实浏览器里 `page.goto()` 完成后再 `page.evaluate` 读它，拿到的是 `undefined` 【实测】。必须在 `response` 事件里截原始 HTML，或用 CDP 在 document 阶段抢快照。**这也是现行 Puppeteer 方案读不到 state、只能靠拦截 `.xhscdn.com` 请求的根因。**
+1. **`window.__INITIAL_STATE__` 会在 hydration 后被删掉**。在真实浏览器里 `page.goto()` 完成后再 `page.evaluate` 读它，拿到的是 `undefined` 【实测】。必须在 `response` 事件里截原始 HTML，或用 CDP 在 document 阶段抢快照。**这也是旧 Puppeteer 方案读不到 state、只能靠拦截 `.xhscdn.com` 请求的根因。**（已过时：现行实现是纯 HTTP 直抓 `__INITIAL_STATE__`，浏览器兜底用 HTML 快照，不再拦截 xhscdn 请求。）
 2. **Bun/Node 原生 fetch 做不了 TLS 伪装**。同样 header，`curl` 302 登录、`curl_cffi(impersonate=chrome)` 200 —— 差别只在 TLS/HTTP2 指纹。Bun 的 `fetch`/`undici` 无法伪造 JA3/JA4，所以小红书要么上 `curl_cffi` / `curl-impersonate` 边车进程，要么保留浏览器。**这是本次调研对架构影响最大的一条。**
 3. 机房 IP → `error_code=300012 IP at risk`，与签名无关，换 header 无用。
 4. JSON 里混 `undefined`（非法 JSON），解析前 `replace("undefined","null")`（yt-dlp 用 `js_to_json` 做同样的事）。
@@ -162,7 +162,7 @@ body: {"source_note_id":"<id>","image_formats":["jpg","webp","avif"],
 
 ### 2.1 评级
 
-**纯 HTTP 可行，且是本次调研里最省事的平台**：无签名、无 cookie、无 Referer、连 UA 都不挑。
+**纯 HTTP 可行，且是本次调研里最省事的平台**：无签名、无 cookie、无 Referer；UA 有讲究：桌面浏览器 UA 会被 302 到 SPA 空壳，无 UA、curl 默认 UA 与移动 UA 可出完整 HTML（实现固定移动 UA，见 `src/platforms/kuaishou/adapter.ts` 注释，2026-10-25 实测）。
 
 ### 2.2 实测链路
 
@@ -237,15 +237,15 @@ GET https://api.bilibili.com/x/web-interface/view?bvid=BV1GJ411x7h7
 
 ② 取流
 GET https://api.bilibili.com/x/player/playurl?bvid=<bv>&cid=<cid>&qn=80&fnval=4048&fnver=0&fourk=1&try_look=1
-  → data.dash.video[].{baseUrl, id, codecs, bandwidth, width, height}
-  → data.dash.audio[].{baseUrl, id}      # 30216≈64k / 30232≈132k / 30280≈192k
+  → data.dash.video[].{base_url, id, codecs, bandwidth, width, height}   # 键名 base_url（snake）为主，baseUrl 双写兼容（src/platforms/bilibili/parse.ts）
+  → data.dash.audio[].{base_url, id}      # 30216≈64k / 30232≈132k / 30280≈192k
   → 或 fnval=0&platform=html5 → data.durl[0].url（单文件 MP4，format "mp4720"）
 ```
 
 | 请求 | dash 实际给的清晰度 id |
 |---|---|
 | `fnval=4048&qn=80`（无 cookie） | 仅 `[32,32,32,16,16,16]`（480P/360P）【实测】 |
-| 同上 **`&try_look=1`** | `[80,80,80,64,64,64,32,16]` → **含 1080P/720P，且该 masterUrl 实测 206 可下** 【实测】 |
+| 同上 **`&try_look=1`** | `[80,80,80,64,64,64,32,32,32,16,16,16]`（12 条，同档位多种编码，条数随抓取波动，以 `tests/fixtures/bilibili/playurl-dash.json` 为准）→ **含 1080P/720P，且该 masterUrl 实测 206 可下** 【实测】 |
 | `fnval=0&platform=html5` | 返回 `durl` 单文件（`format: mp4720`）【实测】 |
 
 - `data.quality=64` 与 `accept_description` 只是「可选档位声明」，**真实清晰度只看 `dash.video[].id`**。
@@ -299,6 +299,8 @@ GET https://api.bilibili.com/x/player/playurl?bvid=<bv>&cid=<cid>&qn=80&fnval=40
 | 仅 UA、无 Referer / 无 cookie | **403** 【实测】 |
 | 访客 cookie + `Referer` + `X-Requested-With` | **200，`ok:1`** 【实测】 |
 | `weibo.com/ajax/statuses/show` 同条件 | 200，17.5 KB（无 `ok` 包裹，字段更全）【实测】 |
+
+【勘误 2026-10-28】上表的 403 结论限定 `weibo.com/ajax` 通道。实测（2026-10-26，见 `src/platforms/weibo/adapter.ts` 注释）：`m.weibo.cn/statuses/show` 匿名可取（仅 UA + `Referer` + `X-Requested-With`，无 cookie）；`weibo.com/ajax/statuses/show` 与 fid 直链页的 `tv/api/component`（fid 换 mid）才需要访客 `SUB/SUBP`。
 
 ### 4.3 字段路径（实测返回）
 
@@ -410,7 +412,7 @@ POST https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCil
 
 ### 7.3 坑
 
-已登录 cookie 寿命短（数天~数周）、复用易触发 checkpoint 验证；同一 IP 高频抓取会直接锁号。→ 只能做「用户自带 cookie」模式，别做公共池。
+已登录 cookie 寿命短（数天~数周）、复用易触发 checkpoint 验证；同一 IP 高频抓取会直接锁号。→ 只能做「用户自带 cookie」模式，别做公共池。（【勘误 2026-10-28】已翻案：匿名 GraphQL doc_id 通道可用，见 05 §2.3，需配置 `IG_GRAPHQL_DOC_ID`。）
 
 ---
 
@@ -431,7 +433,7 @@ GET https://cdn.syndication.twimg.com/tweet-result?id=<tweet_id>&token=0
 ```
 
 - `token` **服务端不校验**（填 `0` 即可；另有 `((id/1e15)*Math.PI).toString(36)` 的公式派，同样有效）。
-- 视频直链在 `mediaDetails[].type == "video"` 时取 `video_info.variants[].{url, bitrate, content_type}` —— **【未核验】**（本次 4 个视频推文 id 均已删除，只验证了图文与整体可用性）。
+- 视频直链在 `mediaDetails[].type == "video"` 时取 `video_info.variants[].{url, bitrate, content_type}`（原标**【未核验】**，调研时 4 个视频推文 id 均已删除；后由 `tests/fixtures/twitter/tweet-video.json` 实证：多档 mp4 + HLS 备选）。
 
 ### 8.3 坑
 
@@ -511,7 +513,7 @@ star 数为 2026-10-24 抓取，其中标 ◆ 的是本次用 GitHub API 直接�
 | 微博 | 访客票据 + `statuses/show` | 纯 `fetch`（cookie jar） |
 | YouTube | `ANDROID_VR` innertube → 服务端流式中转 | 纯 `fetch` + 代理 |
 | X | syndication | 纯 `fetch` |
-| IG | 只做「用户自带 cookie」 | 纯 `fetch` |
+| IG | 只做「用户自带 cookie」（【勘误 2026-10-28】已翻案：匿名 GraphQL doc_id 通道，见 05 §2.3） | 纯 `fetch` |
 | 视频号 | 不做 | — |
 
 **extractor 接口最小集**（综合各家）：

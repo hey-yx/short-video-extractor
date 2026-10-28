@@ -71,7 +71,7 @@ async function fetchViaHttp(input: MatchResult, ctx: FetchCtx): Promise<RawPaylo
   return { via: 'api', fetchedAt: Math.floor(Date.now() / 1000), body: json, channel: 'http' };
 }
 
-/** 纯 HTTP 签名通道（L2）：标准参数集 + a_bogus + ttwid + uifid + x-secsdk-web-signature（§4.4 配方）。
+/** 纯 HTTP 签名通道（L2）：标准参数集 + ttwid + uifid + x-secsdk-web-signature（§12.3 配方，不带 a_bogus）。
  * 失效信号与 L1 不同：403 / 200 空 body 都归 UPSTREAM_CHANGED（签名过期 = bdms 升级或 uifid 过期），
  * 与 L1 的 RISK_CONTROL 在错误码与降级打点上区分。 */
 async function fetchViaSigned(input: MatchResult, ctx: FetchCtx, identity: L2Identity): Promise<RawPayload> {

@@ -13,8 +13,8 @@
 | 问题 | 答案 |
 |---|---|
 | ① 推荐通道 | **Bun 原生 `fetch` + 三件套头 + `xsec_token` 原样**。零依赖、零原生二进制、arm64/linux 天然可用。若要留指纹保险（防小红书重新收紧），加装 **impit**（进程内、预编译二进制、linux-musl 有包可进 alpine） |
-| ② 失败模式 | 302→`/login`（头/UA 被拒）、302→300031（token 失效或不配对）、302→300012（IP 风控，与指纹无关）、200 无 `__INITIAL_STATE__`（结构变化）。任一风控信号连续 2 次 → `ctx.browser` 兜底 |
-| ③ Docker 瘦身 | 指纹库本身几乎不占体积；真正的问题是「浏览器兜底还要不要」。全去掉 → 镜像约 **260MB 量级**（495−233，**【推断】**未构建实测）；保守方案是 HTTP 主通道 + 浏览器兜底双通道并存，镜像不动 |
+| ② 失败模式 | 302→`/login`（头/UA 被拒）、302→300031（token 失效或不配对）、302→300012（IP 风控，与指纹无关）、200 无 `__INITIAL_STATE__`（结构变化）。登录墙连续 2 次 → 浏览器兜底；300031/300012 直接报错、不降级 |
+| ③ Docker 瘦身 | 指纹库本身几乎不占体积；真正的问题是「浏览器兜底还要不要」。全去掉 → 镜像约 **260MB 量级**：chromium 运行时约 200MB+ 量级（估算，未构建实测）；构建实测数据见 `docs/image-build-notes.md`。保守方案是 HTTP 主通道 + 浏览器兜底双通道并存，镜像不动 |
 | ④ 影响面 | `xhs/adapter.ts`（fetch 改 HTTP）、`xhs/parse.ts` 不动、`infra/browser.ts` 保留作兜底、Dockerfile 仅在决定删兜底时动、`/media` 的 `UPSTREAM_HEADERS` **不需要**新 referer 矩阵（xhscdn 不带 Referer 的规则已实测，与通道无关） |
 
 ---
@@ -141,17 +141,17 @@ const res = await fetch(url.href, {
 | 302 → `/login?redirectPath=…` | 头/UA 被拒（或日后指纹收紧） | 重试 1 次（换连接）仍如此 → 切 `ctx.browser` 兜底，`channel_downgrade_total` |
 | 302 → `/404/sec_…?error_code=300031` | token 失效 / 与 noteId 不配对 | 不重试；短链重新展开拿新 token 一次；仍失败返回 NOT_FOUND 类错误 |
 | 302 → `/website-login/error?…error_code=300012` | **IP 风控**，与指纹/头无关 | 归 RISK_CONTROL（与 t_7e949351 分类对齐）；换出口无效时降级无意义，直接报错 |
-| 200 但无 `__INITIAL_STATE__` 或 `noteDetailMap[id].note` 空 | 页面结构变化 / 拿到壳页 | 归 UPSTREAM_CHANGED，切浏览器兜底验证 |
-| 连接层错误（DNS/超时/RESET） | 网络抖动 | 现有重试策略 |
+| 200 但无 `__INITIAL_STATE__` 或 `noteDetailMap[id].note` 空 | 页面结构变化 / 拿到壳页 | 200 但无 `__INITIAL_STATE__` → 归 UPSTREAM_CHANGED（parse 阶段抛出，不触发浏览器兜底）；`noteDetailMap[id].note` 为空 → 归 CONTENT_NOT_FOUND |
+| 连接层错误（DNS/超时/RESET） | 网络抖动 | 当前 xhs HTTP 通道网络错误未归一为 AppError，不进编排层重试（抖音通道已归一为 UPSTREAM_TIMEOUT，xhs 待补） |
 
-降级判定建议：**HTTP 通道连续 2 次命中前三类信号 → 浏览器兜底**；兜底成功后本周期内该平台固定走浏览器（避免反复横跳）。
+降级判定建议：**登录墙连续 2 次 → 浏览器兜底；300031/300012 直接报错、不降级**；兜底成功后本周期内该平台固定走浏览器（避免反复横跳）。
 
 ### ③ Docker 镜像瘦身
 
-前提厘清：chromium 的 233MB 是为「浏览器兜底/主路径」服务的，不是为指纹库。两条路：
+前提厘清：chromium 运行时约 200MB+ 量级（估算，未构建实测）；构建实测数据见 `docs/image-build-notes.md`。chromium 是为「浏览器兜底/主路径」服务的，不是为指纹库。两条路：
 
 - **保守（推荐先走）**：HTTP 主通道 + 浏览器兜底并存——`xhs/adapter.ts` fetch() 先走 §4.1 代码，风控信号出现时 `ctx.browser` 兜底（沿用 t_7e949351 降级模式）。**镜像不动（495MB）**，puppeteer/chromium/infra/browser.ts 全保留。
-- **激进**：确认兜底不需要后，删 puppeteer 依赖 + chromium 包 + `infra/browser.ts` 主路径，镜像 ≈ **260MB 量级**（495−233，按 README 体积构成推算 **【推断】**，未构建实测）。建议实测构建体积后再定（child 卡 t_c7f4adad 只做保守路线，激进路线留给主会话决策）。
+- **激进**：确认兜底不需要后，删 puppeteer 依赖 + chromium 包 + `infra/browser.ts` 主路径，镜像 ≈ **260MB 量级**（按 README 体积构成推算）：chromium 运行时约 200MB+ 量级（估算，未构建实测）；构建实测数据见 `docs/image-build-notes.md`。建议实测构建体积后再定（child 卡 t_c7f4adad 只做保守路线，激进路线留给主会话决策）。
 
 ### ④ 影响面清单
 
