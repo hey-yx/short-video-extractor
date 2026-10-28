@@ -9,7 +9,7 @@
 *Short-video parsing API: paste a share link, get watermark-free video / photo-album direct links.*
 
 [![CI](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml)
-[![Coverage](https://img.shields.io/coveralls/github/hey-yx/short-video-extractor?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/short-video-extractor)
+[![Coverage](https://img.shields.io/coveralls/github/hey-yx/short-video-extractor/main?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/short-video-extractor)
 [![Bun](https://img.shields.io/badge/Bun-1.2%2B-000000?style=flat-square&logo=bun&logoColor=white)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-1f6feb?style=flat-square)](LICENSE)
@@ -183,8 +183,9 @@ Prometheus text format (hand-rolled renderer, no prom-client):
 
 ```bash
 bun install
+bun x --no-install puppeteer browsers install chrome  # install test Chrome before the first run
 bun dev          # dev (--watch), default port 7777
-bun test         # unit tests (fully offline, fixture-based)
+bun test         # offline regression tests, including real Chromium tests
 bun run test:status  # one command for the full state: prettier / tsc / tests / coverage / CI
 bun run typecheck
 ```
@@ -236,7 +237,7 @@ The service ships its own status page: open `http://<server>:7777/status` in a b
 
 ## CI
 
-The repo uses GitHub Actions for continuous integration: on every push to main and every PR, GitHub spins up a clean environment and runs `bun run typecheck` plus the full test suite; the CI badge at the top of this README shows the result (green = passing). The test run also measures coverage and posts it to Coveralls, so the Coverage badge at the top updates with every run, and clicking it shows per-file details. The workflow lives at `.github/workflows/test.yml`, with `PUPPETEER_SKIP_DOWNLOAD: "true"` so CI never downloads a browser.
+The repo uses GitHub Actions for continuous integration: on every push to main and every PR, GitHub runs `bun run typecheck` and the full test suite in a clean environment. The CI badge is green when they pass. Tests use real Chromium to read documents, capture XHR responses and wait for cookies, without contacting real platforms. Line coverage is uploaded to Coveralls; the Coverage badge shows the latest successful upload for main, with per-file details one click away. The workflow lives at `.github/workflows/test.yml`: `PUPPETEER_SKIP_DOWNLOAD: "true"` skips the download during dependency installation, then a separate step installs Chrome for the tests.
 
 ## Design Documents
 

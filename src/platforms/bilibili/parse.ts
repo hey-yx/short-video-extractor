@@ -108,7 +108,7 @@ export function parseBilibili(raw: RawPayload): ParseResult {
 
   const viewData = (payload.view.data ?? {}) as BiliViewData;
   const pages = viewData.pages ?? [];
-  const isMulti = (viewData.videos ?? pages.length ?? 1) > 1;
+  const isMulti = (viewData.videos ?? pages.length) > 1;
 
   // 每个分 P 一个 asset；DASH 音视频分离，audio 直链注在 asset.audioUrl
   const assets: MediaAsset[] = payload.streams.map((stream, idx) => {

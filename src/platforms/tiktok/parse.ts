@@ -177,7 +177,7 @@ export function parseTiktok(raw: RawPayload, input: { id: string }): ParseResult
   // 图集响应里 play 与 music 同值（无视频流），只有 images[] 是真资源
   const isAlbum = hasImages && (!play || play === str(data.music));
 
-  const assets = isAlbum || (hasImages && !play) ? albumAssets(data) : [videoAsset(data, raw.fetchedAt)];
+  const assets = isAlbum ? albumAssets(data) : [videoAsset(data, raw.fetchedAt)];
   if (assets.length === 0) {
     throw new AppError('UPSTREAM_CHANGED', 'tikwm 响应没有可下载资源（既无 play 也无 images）', {
       videoId: id,

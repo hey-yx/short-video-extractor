@@ -92,8 +92,7 @@ function absUrl(u: string): string {
 
 /** show.urls 英文键 → 档名（mp4_720p_mp4 → 720p；mp4_hd_mp4 → hd） */
 function showRatio(key: string): string {
-  const k = key.replace(/^mp4_/, '').replace(/_mp4$/, '');
-  return k === 'hd' ? 'hd' : k === 'ld' ? 'ld' : k;
+  return key.replace(/^mp4_/, '').replace(/_mp4$/, '');
 }
 
 /** component.urls 中文键 → 档名（高清 1080P → 1080P） */

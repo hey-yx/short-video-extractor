@@ -9,7 +9,7 @@
 *短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。*
 
 [![CI](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml)
-[![Coverage](https://img.shields.io/coveralls/github/hey-yx/short-video-extractor?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/short-video-extractor)
+[![Coverage](https://img.shields.io/coveralls/github/hey-yx/short-video-extractor/main?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/short-video-extractor)
 [![Bun](https://img.shields.io/badge/Bun-1.2%2B-000000?style=flat-square&logo=bun&logoColor=white)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-1f6feb?style=flat-square)](LICENSE)
@@ -188,8 +188,9 @@ Prometheus 文本格式（自写渲染，未引 prom-client）：
 
 ```bash
 bun install
+bun x --no-install puppeteer browsers install chrome  # 首次测试前安装测试用 Chrome
 bun dev          # 开发（--watch），默认端口 7777
-bun test         # 单测（全离线 fixture 回归）
+bun test         # 离线回归，含真实 Chromium 浏览器测试
 bun run test:status  # 一条命令看全状态：格式 / 类型 / 单测 / 覆盖率 / CI
 bun run typecheck
 ```
@@ -244,7 +245,7 @@ docker compose up -d
 
 ## CI
 
-仓库用 GitHub Actions 做持续集成：push 到 main 或提交 PR 时，GitHub 自动拉起干净环境运行 `bun run typecheck` 和全部单测，README 顶部的 CI 徽章显示结果（绿色 = 通过）。单测顺带统计测试覆盖率并发到 Coveralls，README 顶部的 Coverage 徽章跟着每次运行更新，点进去可看逐文件明细。配置在 `.github/workflows/test.yml`，其中 `PUPPETEER_SKIP_DOWNLOAD: "true"` 避免 CI 拉浏览器。
+仓库用 GitHub Actions 做持续集成：push 到 main 或提交 PR 时，GitHub 自动拉起干净环境运行 `bun run typecheck` 和全部测试，README 顶部的 CI 徽章显示结果（绿色 = 通过）。测试包含真实 Chromium 的文档读取、XHR 截取和 cookie 等待，不访问真实平台。测试同时统计行覆盖率并上传到 Coveralls，Coverage 徽章显示 main 分支最近一次成功上传的结果，点进去可看逐文件明细。配置在 `.github/workflows/test.yml`：依赖安装时设置 `PUPPETEER_SKIP_DOWNLOAD: "true"`，随后单独安装测试用 Chrome。
 
 ## 设计文档
 

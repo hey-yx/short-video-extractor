@@ -112,13 +112,14 @@ async function withPage<T>(
   signal?: AbortSignal,
 ): Promise<T> {
   const release = await pageSemaphore.acquire(signal);
-  const page = await (await getBrowser()).newPage();
+  let page: Page | undefined;
   try {
+    page = await (await getBrowser()).newPage();
     await page.setUserAgent(UA);
     await page.setExtraHTTPHeaders({ 'accept-language': 'zh-CN,zh;q=0.9' });
     return await fn(page, signal ?? abortErrorSignal());
   } finally {
-    await page.close().catch(() => {});
+    await page?.close().catch(() => {});
     release();
   }
 }

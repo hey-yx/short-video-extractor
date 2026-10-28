@@ -41,32 +41,27 @@ export const douyinAbogusSigner: SignerProvider = {
   },
 
   async mintTtwid(signal?: AbortSignal): Promise<string | null> {
+    signal?.throwIfAborted();
     if (mintedTtwid) return mintedTtwid;
+    let onAbort: (() => void) | undefined;
     try {
       const value = await Promise.race([
         getTtwid(),
         signal
           ? new Promise<never>((_, reject) => {
-              if (signal.aborted) {
-                reject(signal.reason ?? new DOMException('aborted', 'AbortError'));
-                return;
-              }
-              signal.addEventListener(
-                'abort',
-                () => reject(signal.reason ?? new DOMException('aborted', 'AbortError')),
-                { once: true },
-              );
+              onAbort = () => reject(signal.reason);
+              signal.addEventListener('abort', onAbort, { once: true });
             })
           : new Promise<never>(() => {}),
       ]);
-      if (value) {
-        mintedTtwid = value;
-        return value;
-      }
-      return null;
+      mintedTtwid = value;
+      return value;
     } catch (err) {
       if (signal?.aborted) throw err;
       return null;
+    } finally {
+      // race 分出胜负就摘监听，长寿命 signal 上不残留
+      if (signal && onAbort) signal.removeEventListener('abort', onAbort);
     }
   },
 };
