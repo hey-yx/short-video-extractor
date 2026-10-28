@@ -3,6 +3,8 @@ import { cors } from '@elysiajs/cors';
 import { AppError } from '@/core/errors';
 import { fail } from '@/core/envelope';
 import { register, listAdapters } from '@/platforms/registry';
+import { registerSigner } from '@/core/signers';
+import { douyinAbogusSigner } from '@/platforms/douyin/abogus-signer';
 import { douyinAdapter } from '@/platforms/douyin/adapter';
 import { kuaishouAdapter } from '@/platforms/kuaishou/adapter';
 import { bilibiliAdapter } from '@/platforms/bilibili/adapter';
@@ -21,6 +23,8 @@ import { statusRoutes } from '@/routes/status.routes';
 export function createApp() {
   // 注册平台（加平台 = 加目录 + 这里一行）
   register(douyinAdapter);
+  // 注册默认签名器（算法过期时换 provider 热替换，见 core/signers）
+  registerSigner(douyinAbogusSigner);
   register(kuaishouAdapter);
   register(bilibiliAdapter);
   register(xhsAdapter);

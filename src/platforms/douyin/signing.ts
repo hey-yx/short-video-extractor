@@ -1,16 +1,22 @@
-import { getTtwid, signWebUrl } from 'abogus';
+import type { SignerProvider } from '@/core/signers';
+import { pickSigner } from '@/core/signers';
+
+import { douyinAbogusSigner } from './abogus-signer';
 
 /**
  * 抖音 L2 签名通道的请求构造（纯函数 + 一个 ttwid 现铸入口）。
  *
  * 配方与实测结论（2026-10-27，证据见 docs/research/01 §12）：
- *  - 标准指纹参数集 + `signWebUrl` 追加 `uifid`/`timestamp`/`x-secsdk-web-signature`
+ *  - 标准指纹参数集 + 签名器追加 `uifid`/`timestamp`/`x-secsdk-web-signature`
  *    （md5(uifid_timestamp_盐_query)，与真机 SDK 签名逐字节一致）；
  *  - Cookie：`ttwid` + `UIFID_TEMP`（uifid 服务端下发，浏览器一次性铸造）；
  *  - 不带 `a_bogus`：真机 A/B 实测（同身份同时刻）带 a_bogus 被风控引擎 200 + 空 body
- *    静默拒绝（响应带 x-vc-bdturing-parameters），去掉即 200 全量——「四件套」里的
+ *    静默拒绝（响应带 x-vc-bdturing-parameters），去掉即 200 全量。「四件套」里的
  *    a_bogus 现阶段是毒参数，真正的门是 uifid + x-secsdk-web-signature（research §3.1）；
  *  - query 里也不要放 `msToken`/`webid`/`verifyFp`：不被 a_bogus 覆盖时同样静默拒绝。
+ *
+ * 算法实现不在这里：签名由 core/signers 注册表里的 SignerProvider 提供（默认 abogus），
+ * 算法过期（bdms 升级）时注册一个新 provider 即可热替换，本文件与 adapter 不用动。
  */
 
 const UA =
@@ -60,9 +66,14 @@ export interface L2Request {
   headers: Record<string, string>;
 }
 
+/** 当前生效的签名器：注册表里有可用的优先，否则回落内置默认实现（零注册也能跑） */
+function activeSigner(): SignerProvider {
+  return pickSigner('douyin') ?? douyinAbogusSigner;
+}
+
 /**
- * 组装 detail 接口的 L2 签名请求：业务参数 → websign 追加 uifid/timestamp/签名。
- * timestamp 可注入（单测固定签名）；缺省当前秒。
+ * 组装 detail 接口的 L2 签名请求：业务参数 → 签名器追加 uifid/timestamp/签名。
+ * timestamp 可注入（单测固定签名）；缺省由签名器取当前秒。
  */
 export function buildL2DetailRequest(
   awemeId: string,
@@ -70,30 +81,26 @@ export function buildL2DetailRequest(
   opts: { timestamp?: number } = {},
 ): L2Request {
   const searchParams = new URLSearchParams({ ...BASE_PARAMS, aweme_id: awemeId });
-  const url = signWebUrl(`${DETAIL_URL}?${searchParams.toString()}`, {
+  const signed = activeSigner().signRequest({
+    url: `${DETAIL_URL}?${searchParams.toString()}`,
     uifid: identity.uifid,
     timestamp: opts.timestamp,
   });
-  const q = new URL(url).searchParams;
   return {
-    url,
+    url: signed.url,
     headers: {
       'User-Agent': UA,
       Referer: `${PAGE_ORIGIN}/`,
       Cookie: `ttwid=${identity.ttwid}; UIFID_TEMP=${identity.uifid}`,
-      uifid: identity.uifid,
-      'x-secsdk-web-signature': q.get('x-secsdk-web-signature') ?? '',
-      'x-secsdk-web-expire': q.get('timestamp') ?? '',
       Accept: 'application/json, text/plain, */*',
+      // 签名头由签名器给出（放 URL 还是放 header 看算法），后展开允许实现覆盖公共头
+      ...signed.headers,
     },
   };
 }
 
-/** ttwid 现铸结果进程内缓存（ttwid 有效期一年，无需每请求注册） */
-let mintedTtwid: string | null = null;
-
 /**
- * 取 L2 用 ttwid：env 注入的优先；缺省经 abogus getTtwid() 现铸一次后缓存。
+ * 取 L2 用 ttwid：env 注入的优先；缺省由签名器现铸（一次后缓存，ttwid 有效期一年）。
  * 铸造失败（网络/被拒）返回 null —— 调用方跳过 L2 直落下一级，不硬磕。
  */
 export async function resolveTtwid(
@@ -101,33 +108,11 @@ export async function resolveTtwid(
   signal?: AbortSignal,
 ): Promise<string | null> {
   if (injected) return injected;
-  if (mintedTtwid) return mintedTtwid;
-  try {
-    const value = await Promise.race([
-      getTtwid(),
-      signal
-        ? new Promise<never>((_, reject) => {
-            if (signal.aborted) {
-              reject(signal.reason ?? new DOMException('aborted', 'AbortError'));
-              return;
-            }
-            signal.addEventListener(
-              'abort',
-              () => reject(signal.reason ?? new DOMException('aborted', 'AbortError')),
-              {
-                once: true,
-              },
-            );
-          })
-        : new Promise<never>(() => {}),
-    ]);
-    if (value) {
-      mintedTtwid = value;
-      return value;
-    }
-    return null;
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    return null;
-  }
+  return (await activeSigner().mintTtwid?.(signal)) ?? null;
+}
+
+/** 签名算法过期时的排查看点：当前签名器的实现名与版本 */
+export function activeSignerInfo(): { name: string; version: string } {
+  const s = activeSigner();
+  return { name: s.name, version: s.version };
 }

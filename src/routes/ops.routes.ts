@@ -1,5 +1,6 @@
 import { Elysia } from 'elysia';
 import { listAdapters } from '@/platforms/registry';
+import { listSigners } from '@/core/signers';
 import { ok } from '@/core/envelope';
 import { metrics, recordChannelBreaker } from '@/infra/metrics';
 import { breakerSnapshot } from '@/infra/channel-policy';
@@ -46,6 +47,12 @@ export const opsRoutes = new Elysia()
         description: a.description,
         hosts: a.hosts,
         capabilities: a.capabilities,
+        // 签名器自述：签名失效（403 Sign Invalid）时先看这里的 name/version/available
+        signers: listSigners(a.platform).map((s) => ({
+          name: s.name,
+          version: s.version,
+          available: s.isAvailable(),
+        })),
       })),
     ),
   )
