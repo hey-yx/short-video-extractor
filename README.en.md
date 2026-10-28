@@ -9,6 +9,7 @@
 *Short-video parsing API: paste a share link, get watermark-free video / photo-album direct links.*
 
 [![CI](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/coveralls/github/hey-yx/short-video-extractor?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/short-video-extractor)
 [![Bun](https://img.shields.io/badge/Bun-1.2%2B-000000?style=flat-square&logo=bun&logoColor=white)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-1f6feb?style=flat-square)](LICENSE)
@@ -235,7 +236,7 @@ The service ships its own status page: open `http://<server>:7777/status` in a b
 
 ## CI
 
-The repo uses GitHub Actions for continuous integration: on every push to main and every PR, GitHub spins up a clean environment and runs `bun run typecheck` plus the full test suite; the CI badge at the top of this README shows the result (green = passing). The workflow lives at `.github/workflows/test.yml`, with `PUPPETEER_SKIP_DOWNLOAD: "true"` so CI never downloads a browser.
+The repo uses GitHub Actions for continuous integration: on every push to main and every PR, GitHub spins up a clean environment and runs `bun run typecheck` plus the full test suite; the CI badge at the top of this README shows the result (green = passing). The test run also measures coverage and posts it to Coveralls, so the Coverage badge at the top updates with every run, and clicking it shows per-file details. The workflow lives at `.github/workflows/test.yml`, with `PUPPETEER_SKIP_DOWNLOAD: "true"` so CI never downloads a browser.
 
 ## Design Documents
 

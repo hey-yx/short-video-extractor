@@ -9,6 +9,7 @@
 *短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。*
 
 [![CI](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/coveralls/github/hey-yx/short-video-extractor?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/short-video-extractor)
 [![Bun](https://img.shields.io/badge/Bun-1.2%2B-000000?style=flat-square&logo=bun&logoColor=white)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-1f6feb?style=flat-square)](LICENSE)
@@ -243,7 +244,7 @@ docker compose up -d
 
 ## CI
 
-仓库用 GitHub Actions 做持续集成：push 到 main 或提交 PR 时，GitHub 自动拉起干净环境运行 `bun run typecheck` 和全部单测，README 顶部的 CI 徽章显示结果（绿色 = 通过）。配置在 `.github/workflows/test.yml`，其中 `PUPPETEER_SKIP_DOWNLOAD: "true"` 避免 CI 拉浏览器。
+仓库用 GitHub Actions 做持续集成：push 到 main 或提交 PR 时，GitHub 自动拉起干净环境运行 `bun run typecheck` 和全部单测，README 顶部的 CI 徽章显示结果（绿色 = 通过）。单测顺带统计测试覆盖率并发到 Coveralls，README 顶部的 Coverage 徽章跟着每次运行更新，点进去可看逐文件明细。配置在 `.github/workflows/test.yml`，其中 `PUPPETEER_SKIP_DOWNLOAD: "true"` 避免 CI 拉浏览器。
 
 ## 设计文档
 
