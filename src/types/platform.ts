@@ -117,6 +117,15 @@ export interface FetchCtx {
       timeoutMs: number,
       signal?: AbortSignal,
     ): Promise<unknown>;
+    /**
+     * 开页等 cookie 就位后回收（uifid 自动铸造用：douyin 的 JS 挑战约 8s 后种下 UIFID_TEMP）。
+     * waitFor.name 出现即返回全部 cookie；超时也返回当下的（拿不到就拿不到，调用方降级）。
+     */
+    collectCookies?(
+      url: string,
+      waitFor: { name: string; timeoutMs: number },
+      signal?: AbortSignal,
+    ): Promise<Record<string, string>>;
   };
   /**
    * 海外平台出站代理（http://host:port）。

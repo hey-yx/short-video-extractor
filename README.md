@@ -87,6 +87,7 @@ src/
 
 - **抖音三级降级链（L1 → L2 → L3）**：默认纯 HTTP L1（零签名 detail 接口）；L1 被风控（403 `ArgusSecurityPlugin`）时先降级 L2 纯 HTTP 签名通道（标准指纹参数 + `uifid`/`timestamp`/`x-secsdk-web-signature` 签名 + `ttwid` cookie，需配 `DOUYIN_UIFID`，配方与实测见 `docs/research/01` §12），L2 也失效（403 / 200 空 body）才进 L3 浏览器兜底：打开作品页截页面自己发出的 detail XHR JSON。`via` 字段如实标注 `http` / `http-l2` / `browser`，降级计数见 `channel_downgrade_total`（from/to 按 `http-l1`→`http-l2`→`browser` 逐级标注）。L1 风控信号（`RISK_CONTROL`）与 L2 签名失效（`UPSTREAM_CHANGED`）在错误码与打点上分开，便于区分「口子被堵」和「签名过期要重铸 uifid」。
 - **熔断粘性**：HTTP 通道连续 2 次命中风控后，该平台 60s 内固定走浏览器，不再每个请求先吃一次 403 再冷启动浏览器（省 1-3s 延迟，也不加重风控画像）；60s 探针窗口到点放一个请求回 HTTP 试探，试探成功即回到纯 HTTP。状态见 `channel_breaker_open{platform}` gauge。
+- **uifid 身份池**：`DOUYIN_UIFID` 不配时自动铸造并池化复用访客身份（每个 uifid 就是一个「访客」）：签名失效怀疑身份用废先冷却重试一次、再废退休换新；铸造全局节流（最小间隔 60s、失败指数退避到 1h 上限），避免「一秒冒出多个新访客」本身成为风控信号。计数见 `uifid_mint_total`、`uifid_retired_total`。
 - **风控止血**：无浏览器兜底可用（或 `BROWSER_FALLBACK=off`）时，最终风控会让该平台进入 45s 止血窗口——窗口内所有请求直接 503，不再全额撞上游（重试风控=加重风控）；缓存命中与负缓存不受窗口影响。有兜底时降级在 adapter 内部消化，不进窗口；开关切回 on 后窗口立即失效，恢复降级链。
 - **纯 HTTP 部署开关**：`BROWSER_FALLBACK=off` 时不注入浏览器能力，风控如实 503；适合不想跑 Chrome 的部署（省 400-600 MB 常驻内存，puppeteer 依赖可移除）。
 - **瞬态重试**：`UPSTREAM_TIMEOUT` / `UPSTREAM_ERROR`（网络层与上游 5xx）在编排层重试 1 次，指数退避（500ms→1s），总耗时受请求 15s 上限约束；`RISK_CONTROL`、内容类与参数类错误一律不重试（重试风控=加重风控）。计数见 `parse_retry_total`。
@@ -204,7 +205,7 @@ bun run typecheck
 | `PORT` | 7777 | 监听端口 |
 | `LOG_LEVEL` | info | fatal/error/warn/info/debug/trace |
 | `BROWSER_FALLBACK` | on | 浏览器兜底总开关；设 `off` 时全平台纯 HTTP，风控如实 503（免 Chrome 常驻内存） |
-| `DOUYIN_UIFID` | 未配置 | 抖音 L2 签名通道的 `uifid` 访客身份（一次性用浏览器铸造后长期复用，铸造步骤见 `docs/research/01` §12）；不配则抖音跳过 L2 直落浏览器兜底 |
+| `DOUYIN_UIFID` | 未配置 | 抖音 L2 签名通道的 `uifid` 访客身份。不配时自动走身份池：有浏览器能力就自动铸造并复用（铸造有节流，用废自动换），零配置启用 L2；显式配置则固定用该身份，失效时按 `docs/research/01` §12 重铸 |
 | `DOUYIN_TTWID` | 未配置 | 抖音 L2 的 `ttwid`（可选；与 `DOUYIN_UIFID` 同一次铸造带出最稳）；缺省自动向 ttwid.bytedance.com 注册一个 |
 | `PROXY_SECRET` | 未配置 | /media 中转签名密钥；不配则 /media 返回 501 |
 | `PUPPETEER_EXECUTABLE_PATH` | - | 容器内固定 `/usr/bin/chromium`（Dockerfile 已设） |

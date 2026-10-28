@@ -195,7 +195,31 @@ async function interceptJson(
   }, signal);
 }
 
-export const browserGateway = { getDocumentHtml, interceptJson };
+/**
+ * 开页等目标 cookie 就位后回收全部 cookie（uifid 自动铸造用）。
+ * douyin.com 的 __ac_nonce JS 挑战约 8s 跑完后种下 UIFID_TEMP，所以是轮询等待而非一次读取；
+ * 超时返回当下拿到的 cookie（可能缺目标），拿不到由调用方降级。
+ */
+async function collectCookies(
+  url: string,
+  waitFor: { name: string; timeoutMs: number },
+  signal?: AbortSignal,
+): Promise<Record<string, string>> {
+  return withPage(async (page, sig) => {
+    await page
+      .goto(url, { waitUntil: 'domcontentloaded', timeout: waitFor.timeoutMs, signal: sig })
+      .catch(() => null);
+    const deadline = Date.now() + waitFor.timeoutMs;
+    for (;;) {
+      const cookies = await page.cookies();
+      const map = Object.fromEntries(cookies.map((c) => [c.name, c.value]));
+      if (map[waitFor.name] || Date.now() >= deadline) return map;
+      await sleepWithSignal(250, sig);
+    }
+  }, signal);
+}
+
+export const browserGateway = { getDocumentHtml, interceptJson, collectCookies };
 
 export async function closeBrowser(): Promise<void> {
   if (!browserPromise) return;

@@ -1,5 +1,6 @@
 import { AppError } from '@/core/errors';
 import { proxiedFetch } from '@/core/fetch-proxy';
+import { uifidPool, type UifidMinter } from './uifid-pool';
 import { recordChannelDowngrade } from '@/infra/metrics';
 import { recordHttpRiskControl, shouldSkipHttp } from '@/infra/channel-policy';
 import type { FetchCtx, MatchResult, PlatformAdapter, RawPayload } from '@/types/platform';
@@ -131,6 +132,35 @@ async function fetchViaBrowser(input: MatchResult, url: URL, ctx: FetchCtx): Pro
   return { via: 'api', fetchedAt: Math.floor(Date.now() / 1000), body, channel: 'browser' };
 }
 
+/** douyin.com 页面路径：uifid 铸造就开精选页（同 research §12.2 复铸手册的入口） */
+const CAST_URL = 'https://www.douyin.com/jingxuan';
+/** JS 挑战种下 UIFID_TEMP 的实测窗口约 8s（research §12.2），超时就当没铸出来 */
+const CAST_TIMEOUT_MS = 8_000;
+
+/**
+ * L2 身份解析（惰性，只在真要打 L2 时才花钱）：
+ *  1. env 固定身份（DOUYIN_UIFID）优先，运维显式指定，换不换由运维定；
+ *  2. 缺省走 uifid 池：复用池里活着的访客，没有就用浏览器铸一个新的（铸造有节流，拿不到不硬磕）。
+ */
+async function resolveL2Identity(ctx: FetchCtx): Promise<(L2Identity & { pooled: boolean }) | null> {
+  if (ctx.douyinUifid) {
+    const ttwid = await resolveTtwid(ctx.douyinTtwid, ctx.signal);
+    return ttwid ? { uifid: ctx.douyinUifid, ttwid, pooled: false } : null;
+  }
+  const collect = ctx.browser?.collectCookies;
+  if (!collect) return null;
+  const minter: UifidMinter = async (signal) => {
+    const cookies = await collect(CAST_URL, { name: 'UIFID_TEMP', timeoutMs: CAST_TIMEOUT_MS }, signal);
+    const uifid = cookies['UIFID_TEMP'];
+    return uifid ? { uifid, ttwid: cookies['ttwid'] ?? null } : null;
+  };
+  const minted = await uifidPool.acquire(minter, ctx.signal);
+  if (!minted) return null;
+  // ttwid 同场带出最稳，拿不到再让签名器现铸一个（同身份体系，略逊但可用）
+  const ttwid = minted.ttwid ?? (await resolveTtwid(undefined, ctx.signal));
+  return ttwid ? { uifid: minted.uifid, ttwid, pooled: true } : null;
+}
+
 export const douyinAdapter: PlatformAdapter = {
   platform: 'douyin',
   description: '抖音：零签名 detail 通道 + 签名 L2 通道 + play 直链（L1 风控时逐级降级，浏览器兜底）',
@@ -168,7 +198,8 @@ export const douyinAdapter: PlatformAdapter = {
   },
 
   async fetch(input: MatchResult, url: URL, ctx: FetchCtx): Promise<RawPayload> {
-    const wantL2 = !!ctx.douyinUifid;
+    // L2 可用性：env 固定身份，或有浏览器能自动铸造 uifid（池子管理）
+    const wantL2 = !!ctx.douyinUifid || !!ctx.browser?.collectCookies;
     let lastErr: AppError | null = null;
     /** L1 是否命中真风控（决定要不要进熔断记账，见下方四分类说明） */
     let l1RiskControl = false;
@@ -193,11 +224,11 @@ export const douyinAdapter: PlatformAdapter = {
       }
     }
 
-    // L2：签名通道（纯 HTTP，零浏览器）。ttwid 现铸失败视为通道不可用，直接落 L3
+    // L2：签名通道（纯 HTTP，零浏览器）。身份/ttwid 拿不到视为通道不可用，直接落 L3
     let viaL2 = false;
     if (wantL2) {
-      const ttwid = await resolveTtwid(ctx.douyinTtwid, ctx.signal);
-      if (ttwid) {
+      const identity = await resolveL2Identity(ctx);
+      if (identity) {
         viaL2 = true;
         if (!skipL1) {
           // L1 失效进熔断记账（仅真风控）：连续达阈值后粘住 L2/浏览器（半开态探针由 shouldSkipHttp 控制）
@@ -205,13 +236,20 @@ export const douyinAdapter: PlatformAdapter = {
           if (l1RiskControl) recordHttpRiskControl('douyin');
         }
         try {
-          return await fetchViaSigned(input, ctx, { uifid: ctx.douyinUifid!, ttwid });
+          const raw = await fetchViaSigned(input, ctx, identity);
+          if (identity.pooled) uifidPool.reportSuccess(identity.uifid);
+          return raw;
         } catch (err) {
           if (ctx.signal.aborted) throw err;
           lastErr = err as AppError;
+          // 签名失效/静默拒绝 = 怀疑池子里的身份用废（env 固定身份只记日志，换不换由运维定）
+          if (identity.pooled && err instanceof AppError && err.code === 'UPSTREAM_CHANGED') {
+            uifidPool.reportSuspect(identity.uifid);
+          }
           ctx.logger.warn('douyin L2 failed, downgrade to browser channel', {
             id: input.id,
             code: lastErr.code,
+            identity: identity.pooled ? 'pool' : 'env',
           });
         }
       }

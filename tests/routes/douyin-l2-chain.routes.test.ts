@@ -17,6 +17,8 @@ import fixture from '../fixtures/douyin/aweme-video.json';
  *  - 熔断粘性兼容三通道：粘住后跳 L1 直走 L2。
  */
 
+import { uifidPool } from '@/platforms/douyin/uifid-pool';
+
 createApp();
 
 const RISK_BODY = 'Blocked by ArgusSecurityPlugin Uifid Not Found';
@@ -29,6 +31,8 @@ const TTWID = '1%7Cttwid-fixture%7C1793100000%7Cdeadbeef';
 
 interface FakeGateway {
   interceptCalls: number;
+  /** uifid 自动铸造次数（collectCookies 命中） */
+  mintCalls: number;
 }
 
 let fakeGateway: FakeGateway | null = null;
@@ -47,6 +51,10 @@ function makeCtx(withBrowser: boolean, withL2 = false): FetchCtx {
             async interceptJson() {
               fakeGateway!.interceptCalls += 1;
               return { aweme_detail: { ...fixture.aweme_detail, aweme_id: nextAwemeId() } };
+            },
+            async collectCookies() {
+              fakeGateway!.mintCalls += 1;
+              return { UIFID_TEMP: UIFID, ttwid: TTWID };
             },
           }
         : undefined,
@@ -102,7 +110,8 @@ beforeEach(() => {
   metrics.reset();
   resetChannelPolicyForTests();
   parseCache.resetForTests();
-  fakeGateway = { interceptCalls: 0 };
+  fakeGateway = { interceptCalls: 0, mintCalls: 0 };
+  uifidPool.resetForTests();
 });
 
 afterAll(() => {
@@ -241,5 +250,55 @@ describe('熔断粘性兼容三通道', () => {
     expect(upstream.byKind('l1')).toBe(3);
     expect(upstream.byKind('l2')).toBe(3);
     expect((outcome.result as unknown as { via: string }).via).toBe('http-l2');
+  });
+});
+
+describe('uifid 自动铸造（无 env 身份，浏览器铸池）', () => {
+  test('L1 风控 → 浏览器铸 uifid → L2 成功：身份来自池子，零 env 配置', async () => {
+    const upstream = stubDetail((call) =>
+      call.kind === 'l1' ? new Response(RISK_BODY, { status: 403 }) : okDetail(nextAwemeId()),
+    );
+    const outcome = await parseUrl(`https://www.douyin.com/video/${nextAwemeId()}`, makeCtx(true));
+    expect((outcome.result as unknown as { via: string }).via).toBe('http-l2');
+    expect(fakeGateway!.mintCalls).toBe(1);
+    expect(fakeGateway!.interceptCalls).toBe(0);
+    // L2 请求的 cookie 里带的是铸造出的身份
+    const l2 = upstream.calls().find((c) => c.kind === 'l2')!;
+    expect(l2.url).toContain(`uifid=${UIFID}`);
+  });
+
+  test('第二次解析复用池子里的身份，不重复铸造', async () => {
+    stubDetail((call) =>
+      call.kind === 'l1' ? new Response(RISK_BODY, { status: 403 }) : okDetail(nextAwemeId()),
+    );
+    await parseUrl(`https://www.douyin.com/video/${nextAwemeId()}`, makeCtx(true));
+    await parseUrl(`https://www.douyin.com/video/${nextAwemeId()}`, makeCtx(true));
+    expect(fakeGateway!.mintCalls).toBe(1);
+  });
+
+  test('L2 403 Uifid Not Found → 标记嫌疑冷却，落浏览器兜底', async () => {
+    stubDetail((call) =>
+      call.kind === 'l1'
+        ? new Response(RISK_BODY, { status: 403 })
+        : new Response('Uifid Not Found', { status: 403 }),
+    );
+    const outcome = await parseUrl(`https://www.douyin.com/video/${nextAwemeId()}`, makeCtx(true));
+    expect((outcome.result as unknown as { via: string }).via).toBe('browser');
+    expect(fakeGateway!.interceptCalls).toBe(1);
+    expect(uifidPool.snapshot()[0]).toMatchObject({ status: 'cooling', failures: 1 });
+  });
+
+  test('铸造拿不到 UIFID_TEMP → L2 跳过，直接浏览器兜底', async () => {
+    stubDetail((call) =>
+      call.kind === 'l1' ? new Response(RISK_BODY, { status: 403 }) : okDetail(nextAwemeId()),
+    );
+    const ctx = makeCtx(true);
+    // 模拟 JS 挑战没跑完：cookie 里没有 UIFID_TEMP
+    (ctx.browser as unknown as { collectCookies: () => Promise<Record<string, string>> }).collectCookies =
+      async () => ({ ttwid: TTWID });
+    const outcome = await parseUrl(`https://www.douyin.com/video/${nextAwemeId()}`, ctx);
+    expect((outcome.result as unknown as { via: string }).via).toBe('browser');
+    expect(fakeGateway!.interceptCalls).toBe(1);
+    expect(uifidPool.snapshot()).toHaveLength(0);
   });
 });
