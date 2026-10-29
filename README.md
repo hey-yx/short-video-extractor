@@ -252,13 +252,15 @@ compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0�
 | 端点 | 探什么 | 频率 | 判定 |
 |---|---|---|---|
 | `health` | `/health` | 30s | 200、`status == ok`、响应 < 300ms |
-| `ready` | `/ready` | 60s | 200、`status == ready`、`platforms > 0` |
-| `platforms` | `/platforms` | 300s | 200、平台清单非空 |
-| `metrics` | `/metrics` | 300s | 200、文本里含 `parse_total` |
+| `ready` | `/ready` | 60s | 200、`status == ready`、`platforms >= 9` |
+| `platforms` | `/platforms` | 300s | 200、平台数 >= 9 |
+| `signer-douyin` | `/platforms` | 300s | `data[0]` 是 douyin、签名器 `available`、版本非空 |
+| `metrics` | `/metrics` | 300s | 200、含 `parse_total`、`upstream_error_total`、`channel_breaker_open`、`channel_downgrade_total` |
+| `status-page` | `/status` | 300s | 200、页面含「服务状态」 |
 
-仪表盘在 `http://<服务器>:8080`，历史数据落在 `gatus-data` 卷（sqlite），容器重启不丢；不想要历史就删掉配置里的 `storage` 段。
+`ready` 和 `platforms` 里的 9 是当前适配器数量，加平台要同步上调，不然断言会一直红。
 
-第五条 `parse-real-link` 是真实解析探活，默认 `enabled: false`：把 `body` 里的链接换成一条真实分享链接再打开，`interval` 保持一小时以上。高频打抖音或小红书会被风控，出口 IP 可能被拉黑。
+另外三条默认关闭，按需打开：`parse-real-link`（真实链接解析，防风控需一小时以上一次）、`media-proxy-disabled`（验 `/media` 未配密钥时正确返回 501）、`container-app`（读 docker.sock 看容器状态，要放开注释并挂 socket）。配置里还留了证书到期（`[CERTIFICATE_EXPIRATION] > 72h`）的注释模板，部署到 HTTPS 域名后启用。
 
 告警默认不开。要开就在配置里启用 `alerting.custom`，用 `custom` 类型接企业微信、钉钉或飞书机器人，webhook 地址通过环境变量传，不写进文件。
 

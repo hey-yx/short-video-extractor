@@ -1,24 +1,25 @@
-# Gatus 配置：监控 short-video-extractor 服务本身
+# Gatus 配置：监控 short-video-extractor
 #
-# 用法:docker compose 里通过 SVE_BASE_URL 传被监控服务地址(容器内走服务名 http://app:7777)。
-# 单独跑 gatus 想探宿主机时,把 SVE_BASE_URL 设成 http://host.docker.internal:7777
-# (Linux 上需在 compose 里加 extra_hosts: "host.docker.internal:host-gateway")。
+# 挂载方式见 docker-compose.yml：整个 gatus/ 目录挂到容器的 /config，
+# 这样编辑器保存（换 inode）也能被热加载，改完不用重启容器。
 #
-# 改动这个文件 Gatus 会自动热加载,不用重启容器。
+# 被监控服务地址由 compose 的 SVE_BASE_URL 传入，容器内走服务名 http://app:7777。
+# 单独跑 gatus 探宿主机时设成 http://host.docker.internal:7777
+# （Linux 需加 extra_hosts: "host.docker.internal:host-gateway"）。
 
-# 历史数据落 sqlite,容器重启不丢;不想要历史就删掉这段(内存模式,重启即清)
+# 历史数据落 sqlite，容器重启不丢；删掉这段就是内存模式
 storage:
   type: sqlite
   path: /data/data.db
 
 ui:
   title: 短视频解析 · 服务状态
-  header: 各接口实时可用性
+  header: 各接口与依赖实时可用性
 
 endpoints:
-  # 进程活着没:最轻的一条,30 秒一次
+  # ── 1. 存活：进程活着就 200，不碰外部依赖。30 秒一次，最快发现进程死 ──
   - name: health
-    group: sve
+    group: core
     url: "${SVE_BASE_URL}/health"
     interval: 30s
     conditions:
@@ -26,39 +27,63 @@ endpoints:
       - "[BODY].status == ok"
       - "[RESPONSE_TIME] < 300"
 
-  # 就绪:平台注册表要真的加载出来,platforms 为 0 说明启动没走完
+  # ── 2. 就绪：平台注册表必须加载完。9 是当前适配器数量，加平台要同步上调 ──
   - name: ready
-    group: sve
+    group: core
     url: "${SVE_BASE_URL}/ready"
     interval: 60s
     conditions:
       - "[STATUS] == 200"
       - "[BODY].status == ready"
-      - "[BODY].platforms > 0"
+      - "[BODY].platforms >= 9"
 
-  # 平台清单:能列出平台,且签名器可用性不被整体拖垮
+  # ── 3. 平台清单：平台数不能缩水 ──
   - name: platforms
-    group: sve
+    group: platform
     url: "${SVE_BASE_URL}/platforms"
     interval: 300s
     conditions:
       - "[STATUS] == 200"
-      - "len([BODY].data) > 0"
+      - "len([BODY].data) >= 9"
 
-  # 指标端点:Prometheus 文本里必须有解析计数,说明 /metrics 真的在吐数据
+  # ── 4. 抖音签名器：data[0] 固定是 douyin（registry 注册顺序）──
+  # available=false 意味着签名通道失效，抖音会全线退到浏览器或 503，单列一条便于定位。
+  - name: signer-douyin
+    group: platform
+    url: "${SVE_BASE_URL}/platforms"
+    interval: 300s
+    conditions:
+      - "[BODY].data[0].platform == douyin"
+      - "[BODY].data[0].signers[0].available == true"
+      - "len([BODY].data[0].signers[0].version) > 0"
+
+  # ── 5. 指标端点：解析计数、上游失败、熔断、降级四组指标都得在 ──
   - name: metrics
-    group: sve
+    group: core
     url: "${SVE_BASE_URL}/metrics"
     interval: 300s
     conditions:
       - "[STATUS] == 200"
       - "[BODY] == pat(*parse_total*)"
+      - "[BODY] == pat(*upstream_error_total*)"
+      - "[BODY] == pat(*channel_breaker_open*)"
+      - "[BODY] == pat(*channel_downgrade_total*)"
 
-  # 真实解析探活:默认关闭。
-  # 打开前先把 url 换成一条真实分享链接,interval 保持 1 小时以上,
-  # 高频打抖音/小红书会被风控,出口 IP 也可能被拉黑。
+  # ── 6. 内嵌状态页：模板被打坏或路由丢失时能发现 ──
+  - name: status-page
+    group: core
+    url: "${SVE_BASE_URL}/status"
+    interval: 300s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*服务状态*)"
+
+  # ── 7. 真实解析：默认关闭 ──
+  # 打开前把 body 里的链接换成真实分享链接，interval 保持 1 小时以上。
+  # 高频打抖音/小红书会触发风控，出口 IP 可能被拉黑。
+  # 断言看 assets 非空，即真的拿到直链，不是只回了个 200。
   - name: parse-real-link
-    group: sve-parse
+    group: parse
     enabled: false
     url: "${SVE_BASE_URL}/parse"
     method: POST
@@ -69,10 +94,45 @@ endpoints:
     interval: 3600s
     conditions:
       - "[STATUS] == 200"
+      - "[BODY].success == true"
       - "len([BODY].data.assets) > 0"
+      - "[BODY].data.assets[0].url == pat(http*)"
 
-# 告警默认不开。要开的话在 compose 里给 gatus 传 webhook 地址,然后取消下面注释。
-# 国内可直接用 custom 类型接企业微信/钉钉/飞书机器人:
+  # ── 8. 中转签名 /media：默认关闭 ──
+  # 只有配了 PROXY_SECRET 才启用。没配时正确行为是 501 + MEDIA_PROXY_DISABLED，
+  # 所以期望值写 501；真接了 PROXY_SECRET 要改成带签名的 URL 并断言 200。
+  - name: media-proxy-disabled
+    group: optional
+    enabled: false
+    url: "${SVE_BASE_URL}/media?u=https://example.com/a.mp4"
+    interval: 900s
+    conditions:
+      - "[STATUS] == 501"
+      - "[BODY].error.code == MEDIA_PROXY_DISABLED"
+
+  # ── 9. 容器自身：需要挂 docker.sock，默认关闭 ──
+  # docker 类型直接读容器状态，比 HTTP 探活更早发现 OOM、反复重启。
+  # 打开方式：compose 里给 gatus 挂 /var/run/docker.sock:ro，再放开注释。
+  # 注意：挂了 socket 等于给 gatus 容器宿主机 docker 权限，自己权衡。
+  # - name: container-app
+  #   group: 容器
+  #   url: "docker://short-video-extractor"
+  #   interval: 60s
+  #   conditions:
+  #     - "[CONTAINER_RUNNING] == true"
+
+# ── 10. 部署到域名后加这条：证书剩余有效期低于 72 小时报警 ──
+# 本地没有 HTTPS 域名，先注释。换 https 域名后取消注释。
+#  - name: tls-cert
+#    group: 外部可达
+#    url: "https://your-domain.example/health"
+#    interval: 3600s
+#    conditions:
+#      - "[STATUS] == 200"
+#      - "[CERTIFICATE_EXPIRATION] > 72h"
+
+# 告警默认不开。要开：webhook 地址通过环境变量传给 gatus，再放开下面这段。
+# custom 类型可直接接企业微信、钉钉、飞书机器人。
 #
 # alerting:
 #   custom:
@@ -80,7 +140,7 @@ endpoints:
 #     method: POST
 #     content-type: application/json
 #     body: |
-#       {"msgtype":"text","text":{"content":"[gatus] ${alert.description}  endpoint=${endpoint} success=${success}"}}
+#       {"msgtype":"text","text":{"content":"[gatus] ${alert.description} endpoint=${endpoint} success=${success}"}}
 #     default-alert:
 #       enabled: true
 #       failure-threshold: 3

@@ -252,13 +252,15 @@ The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apac
 | Endpoint | Probes | Interval | Conditions |
 |---|---|---|---|
 | `health` | `/health` | 30s | 200, `status == ok`, response < 300ms |
-| `ready` | `/ready` | 60s | 200, `status == ready`, `platforms > 0` |
-| `platforms` | `/platforms` | 300s | 200, non-empty platform list |
-| `metrics` | `/metrics` | 300s | 200, body contains `parse_total` |
+| `ready` | `/ready` | 60s | 200, `status == ready`, `platforms >= 9` |
+| `platforms` | `/platforms` | 300s | 200, at least 9 platforms |
+| `signer-douyin` | `/platforms` | 300s | `data[0]` is douyin, signer `available`, non-empty version |
+| `metrics` | `/metrics` | 300s | 200, body contains `parse_total`, `upstream_error_total`, `channel_breaker_open`, `channel_downgrade_total` |
+| `status-page` | `/status` | 300s | 200, page contains the status page title |
 
-The dashboard is at `http://<server>:8080`. History is stored in the `gatus-data` volume (sqlite) and survives container restarts; drop the `storage` block if you would rather keep it in memory.
+The `9` in `ready` and `platforms` is the current adapter count: bump it when you add a platform, or the condition stays red.
 
-A fifth check, `parse-real-link`, probes real parsing and ships as `enabled: false`: replace the link in `body` with a real share link before turning it on, and keep `interval` at an hour or more. Hitting Douyin or Xiaohongshu at high frequency trips their risk control and can get your egress IP banned.
+Three more checks ship disabled: `parse-real-link` (real-link parsing, keep it at an hour or more to avoid risk control), `media-proxy-disabled` (asserts `/media` returns 501 when no secret is configured), and `container-app` (reads docker.sock for container state; uncomment it and mount the socket). The config also carries a commented certificate-expiry template (`[CERTIFICATE_EXPIRATION] > 72h`) for HTTPS deployments.
 
 Alerting is off by default. To enable it, turn on `alerting.custom` in the config and point the `custom` provider at a WeCom, DingTalk or Feishu bot webhook, passing the URL through an environment variable rather than writing it into the file.
 

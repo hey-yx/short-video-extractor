@@ -33,7 +33,7 @@ services:
       # 容器内走服务名访问 app,不经过宿主机端口
       - SVE_BASE_URL=http://app:7777
     volumes:
-      - ./gatus/config.yaml:/config/config.yaml:ro
+      - ./gatus:/config:ro
       - gatus-data:/data
     depends_on:
       app:
