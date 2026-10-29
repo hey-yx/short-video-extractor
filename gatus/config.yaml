@@ -69,67 +69,10 @@ endpoints:
       - '[BODY] == pat(*channel_breaker_open*)'
       - '[BODY] == pat(*channel_downgrade_total*)'
 
-  # 真实解析：抖音、快手、B 站各一条已验证的公开样例，每个平台每小时一次。
-  # /parse 的正常结果缓存最长 30 分钟；其他用户近期解析过同一作品时可能命中缓存。
-  # 不断言 cached == false，避免把正常缓存命中误报为故障。
-  # 这里验证解析成功、平台/作品匹配、资源非空；不代表每条直链都已验证可下载。
-  # 作品删除、转私密或平台风控都可能使监控失败，先看原因，不自动换样例掩盖故障。
-  - name: parse-real-link
-    group: parse
-    url: '${SVE_BASE_URL}/parse'
-    method: POST
-    headers:
-      Content-Type: application/json
-    body: |
-      {"url":"https://www.douyin.com/video/7142091187963399427"}
-    client:
-      timeout: 25s
-    interval: 3600s
-    conditions:
-      - '[STATUS] == 200'
-      - '[BODY].success == true'
-      - '[BODY].data.platform == douyin'
-      - '[BODY].data.id == 7142091187963399427'
-      - 'len([BODY].data.assets) > 0'
-      - '[BODY].data.assets[0].url == pat(https://*)'
-
-  - name: parse-kuaishou
-    group: parse
-    url: '${SVE_BASE_URL}/parse'
-    method: POST
-    headers:
-      Content-Type: application/json
-    body: |
-      {"url":"https://v.kuaishou.com/5hFdnB"}
-    client:
-      timeout: 25s
-    interval: 3600s
-    conditions:
-      - '[STATUS] == 200'
-      - '[BODY].success == true'
-      - '[BODY].data.platform == kuaishou'
-      - '[BODY].data.id == 5203346566089417256'
-      - 'len([BODY].data.assets) > 0'
-      - '[BODY].data.assets[0].url == pat(https://*)'
-
-  - name: parse-bilibili
-    group: parse
-    url: '${SVE_BASE_URL}/parse'
-    method: POST
-    headers:
-      Content-Type: application/json
-    body: |
-      {"url":"https://www.bilibili.com/video/BV1GJ411x7h7"}
-    client:
-      timeout: 25s
-    interval: 3600s
-    conditions:
-      - '[STATUS] == 200'
-      - '[BODY].success == true'
-      - '[BODY].data.platform == bilibili'
-      - '[BODY].data.id == BV1GJ411x7h7'
-      - 'len([BODY].data.assets) > 0'
-      - '[BODY].data.assets[0].url == pat(https://*)'
+  # 真实解析样例放在不提交的 samples.local.yaml。
+  # 本机通过 GATUS_CONFIG_PATH=/config 读取目录中的全部 YAML；每个样例每小时一次。
+  # /parse 正常缓存最长 30 分钟，不把正常 cached=true 误判为故障。
+  # 结果检查不等于验证媒体下载，作品删除、权限变化或风控会如实显示失败。
 
   # ── 6. 中转签名 /media：默认关闭 ──
   # 只有配了 PROXY_SECRET 才启用。没配时正确行为是 501 + MEDIA_PROXY_DISABLED，

@@ -4,7 +4,7 @@ import type { Platform } from '@/types/platform';
 export const PLATFORM_HOSTS: Record<Platform, readonly string[]> = {
   douyin: ['douyin.com', 'iesdouyin.com', 'v.douyin.com'],
   xhs: ['xiaohongshu.com', 'xhslink.com', 'xhslink.cn'],
-  kuaishou: ['kuaishou.com', 'chenzhongtech.com', 'v.kuaishou.com'],
+  kuaishou: ['kuaishou.com', 'chenzhongtech.com', 'gifshow.com', 'v.kuaishou.com'],
   bilibili: ['bilibili.com', 'b23.tv'],
   weibo: ['weibo.com', 'weibo.cn', 'weibo.com.cn', 't.cn'],
   // twitter.com 覆盖 mobile.twitter.com；x.com 覆盖 v.x.com（后缀匹配）；t.co 短链展开走通用 resolve

@@ -246,7 +246,9 @@ APP_PORT=7778 GATUS_PORT=8081 docker compose up -d
 
 ### 监控（Gatus）
 
-compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0）探活，配置全在 `gatus/config.yaml`。挂载整个 `gatus/` 目录，保存后自动重新加载，不需要重启容器，但不是保存瞬间就更新页面。默认启用五条基础检查和三条真实解析检查：
+compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0）探活。五条基础检查在 `gatus/config.yaml`；含用户分享链接的真实解析检查在不提交的 `gatus/samples.local.yaml`。本机覆盖配置设置 `GATUS_CONFIG_PATH=/config`，读取该目录中的 YAML，目标为本机 Bun 服务。保存监控配置后自动重新加载，不需要重启容器，但不是保存瞬间就更新页面。
+
+小红书的完整分享 token 只保存在本地样例文件，文件权限为 600，同时被 Git 和 Docker 构建上下文排除。不要把该文件上传到公开仓库。
 
 | 端点 | 探什么 | 频率 | 判定 |
 |---|---|---|---|
@@ -255,13 +257,16 @@ compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0�
 | `platforms` | `/platforms` | 300s | 200、平台数 >= 9 |
 | `signer-douyin` | `/platforms` | 300s | `data[0]` 是 douyin、签名器 `available`、版本非空 |
 | `metrics` | `/metrics` | 300s | 200、含 `parse_total`、`upstream_error_total`、`channel_breaker_open`、`channel_downgrade_total` |
-| `parse-real-link` | 抖音公开视频 | 1h | 200、成功、平台和作品 ID 匹配、资源非空且首条 URL 为 HTTPS |
-| `parse-kuaishou` | 快手公开分享链接 | 1h | 同上 |
-| `parse-bilibili` | B 站公开视频 | 1h | 同上 |
+| `parse-douyin-share` / `parse-douyin-modal` | 用户提供的抖音短链和精选页 | 1h | 200、成功、平台匹配、资源非空、首条 URL 为 HTTP(S) |
+| `parse-kuaishou-share` / `parse-kuaishou-desktop` | 用户提供的快手分享链接和桌面分享页 | 1h | 同上 |
+| `parse-bilibili` / `parse-xhs` | 用户提供的 B 站与小红书链接 | 1h | 同上 |
+| `parse-weibo` / `parse-twitter` / `parse-youtube` / `parse-tiktok` / `parse-instagram` | 公开样例 | 1h | 同上 |
 
 `ready` 和 `platforms` 的下限 9 对应当前适配器数量。新增平台时同步提高下限，才能发现适配器缺失。
 
-三条真实解析样例来自仓库已有验证脚本和调研记录，启用前实际请求过 `/parse`。正常解析缓存最长 30 分钟，无资源过期时间时默认 10 分钟；每小时检查通常会重新请求上游，但其他用户刚解析过同一作品时可能命中缓存，因此不把 `cached == false` 作为健康条件。监控验证的是解析结果，不等于持续验证媒体可下载。作品删除、转私密或平台风控都可能造成失败，先查原因，不自动更换样例隐藏故障。小红书及海外平台尚未启用真实解析监控。
+真实解析检查按样例计数，抖音两条、快手两条各自是同一作品的两个入口。快手 `/f/<code>`、`/short-video/<photoId>`、`/fw/photo/<photoId>` 与 `v.kuaishou.com` 短链都接受，`/f/<code>` 靠一次 302 拿 photoId，跳转落点 `m.gifshow.com` 也认。小红书笔记链接保留配对的 `xsec_token`，图片 URL 可能是 HTTP，不因缺少 HTTPS 就把成功解析判为故障。
+
+正常解析缓存最长 30 分钟，无资源过期时间时默认 10 分钟；每小时检查通常会重新请求上游，但其他用户刚解析过同一作品时可能命中缓存，因此不把 `cached == false` 作为健康条件。监控验证的是解析结果，不等于持续验证媒体可下载。作品删除、转私密或平台风控都可能造成失败，先查原因，不自动更换样例隐藏故障。YouTube 的代理可达性和作品解析是不同检查，代理接通后仍可能被平台要求登录；同一代理下实测有的作品 200、有的返回「Sign in to confirm you're not a bot」，这是作品级限制，监控样例选用已验证可解析的公开视频，不代表任意 YouTube 链接都能解析。
 
 仪表盘在 `http://<服务器>:8080`，历史保存在 `gatus-data` 卷的 SQLite 数据库中。查询 `/api/v1/endpoints/statuses` 时按 `timestamp` 取最新结果，不能把历史列表第一条当成当前状态。
 

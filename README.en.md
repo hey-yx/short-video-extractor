@@ -246,7 +246,9 @@ APP_PORT=7778 GATUS_PORT=8081 docker compose up -d
 
 ### Monitoring (Gatus)
 
-The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apache-2.0) against the parser. Configuration lives in `gatus/config.yaml`. Mount the whole `gatus/` directory for automatic reloading after a save; no container restart is needed, but the dashboard does not update instantly. Five basic checks and three real parsing checks ship enabled:
+The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apache-2.0) against the parser. Five basic checks live in `gatus/config.yaml`; checks containing user share links live in untracked `gatus/samples.local.yaml`. The local override sets `GATUS_CONFIG_PATH=/config` to load YAML files from that directory and targets the local Bun service. Monitoring configuration saves reload automatically without a container restart, but the dashboard does not update instantly.
+
+The complete Xiaohongshu share token stays in the local sample file, with mode 600 and exclusions from both Git and the Docker build context. Do not publish that file.
 
 | Endpoint | Probes | Interval | Conditions |
 |---|---|---|---|
@@ -255,13 +257,16 @@ The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apac
 | `platforms` | `/platforms` | 300s | 200, at least 9 platforms |
 | `signer-douyin` | `/platforms` | 300s | `data[0]` is douyin, signer `available`, non-empty version |
 | `metrics` | `/metrics` | 300s | 200, body contains `parse_total`, `upstream_error_total`, `channel_breaker_open`, `channel_downgrade_total` |
-| `parse-real-link` | Public Douyin video | 1h | 200, success, matching platform and ID, non-empty assets and HTTPS URL |
-| `parse-kuaishou` | Public Kuaishou share link | 1h | Same conditions |
-| `parse-bilibili` | Public Bilibili video | 1h | Same conditions |
+| `parse-douyin-share` / `parse-douyin-modal` | User-supplied Douyin short link and featured page | 1h | 200, success, matching platform, non-empty assets and HTTP(S) URL |
+| `parse-kuaishou-share` / `parse-kuaishou-desktop` | User-supplied Kuaishou share link and desktop share page | 1h | Same conditions |
+| `parse-bilibili` / `parse-xhs` | User-supplied Bilibili and Xiaohongshu links | 1h | Same conditions |
+| `parse-weibo` / `parse-twitter` / `parse-youtube` / `parse-tiktok` / `parse-instagram` | Public samples | 1h | Same conditions |
 
 The minimum count of `9` in `ready` and `platforms` matches the current adapters. Raise it when adding a platform so missing adapters remain detectable.
 
-The real parsing samples come from the repository's verification scripts and research notes and were checked through `/parse` before enabling the monitors. Successful results are cached for at most 30 minutes, or 10 minutes when no resource expiry is known. Hourly checks normally contact the upstream again, but a recent user request for the same item may populate the cache; `cached == false` is therefore not a health condition. These checks validate parsing, not ongoing media downloads. Deleted or private items and platform risk controls may cause failures; investigate before replacing the sample. Real parsing monitors for Xiaohongshu and overseas platforms are not enabled yet.
+Real parsing checks are counted by sample; the two Douyin inputs and the two Kuaishou inputs each identify the same video through different entry points. Kuaishou accepts `/f/<code>`, `/short-video/<photoId>`, `/fw/photo/<photoId>` and `v.kuaishou.com` short links; `/f/<code>` needs one 302 hop to reveal the photoId, and the `m.gifshow.com` landing host is accepted too. Xiaohongshu note links retain their paired `xsec_token`; image URLs may use HTTP, which is not treated as parsing failure.
+
+Successful results are cached for at most 30 minutes, or 10 minutes when no resource expiry is known. Hourly checks normally contact the upstream again, but a recent user request for the same item may populate the cache; `cached == false` is therefore not a health condition. These checks validate parsing, not ongoing media downloads. Deleted or private items and platform risk controls may cause failures; investigate before replacing the sample. YouTube proxy reachability is separate from successful parsing: through the same proxy, some public videos return 200 while others answer "Sign in to confirm you're not a bot", a per-video restriction, so the monitor uses a verified public video and does not claim every YouTube link parses.
 
 The dashboard is at `http://<server>:8080`. History is stored in SQLite in the `gatus-data` volume. When querying `/api/v1/endpoints/statuses`, select the newest result by `timestamp`; the first history item is not necessarily current.
 

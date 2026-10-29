@@ -175,6 +175,10 @@ body: {"source_note_id":"<id>","image_formats":["jpg","webp","avif"],
      ★ 连 shareToken 等参数都可以全部省略，只要 photoId                    【实测，纯 curl 无 UA】
 ③ 桌面页 https://www.kuaishou.com/short-video/<id>
    → 200 但只是 76 KB 的 SPA 空壳，无任何视频数据（走 GraphQL 才出）        【实测】
+   ★ <id> 本身就是 photoId：直接拼 ② 的移动分享页即可解析，不必解析桌面 SPA 【2026-10-29 实测】
+   ★ 桌面分享链接 https://www.kuaishou.com/f/<code> 的 code 不是 photoId，
+     HEAD/GET 一次 302 → /short-video/<photoId>，再一跳 → m.gifshow.com/fw/photo/<photoId>
+     （gifshow.com 是真实落点域，平台 hosts 必须收录，否则跳转后匹配不上）    【2026-10-29 实测】
 ```
 
 ### 2.3 字段路径

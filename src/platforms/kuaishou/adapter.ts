@@ -12,6 +12,10 @@ const PHOTO_PATH_RE = /\/fw\/photo\/([A-Za-z0-9_-]+)/;
 /** 兜底：部分落地页路径不含 /fw/photo/，但 query 里一定带 photoId */
 const PHOTO_ID_QS_RE = /[?&]photoId=([A-Za-z0-9_-]+)/;
 const SHORT_CODE_RE = /^\/([A-Za-z0-9]+)\/?$/;
+/** 桌面分享页 /short-video/<photoId>（2026-10-29 实测 HEAD 302 到 m.gifshow.com/fw/photo） */
+const SHORT_VIDEO_PATH_RE = /\/short-video\/([A-Za-z0-9_-]+)/;
+/** 桌面分享链接 /f/<code>：code 不是 photoId，必须跟随 302 才拿到作品 */
+const SHARE_PATH_RE = /\/f\/([A-Za-z0-9_-]+)\/?$/;
 
 export const kuaishouAdapter: PlatformAdapter = {
   platform: 'kuaishou',
@@ -20,7 +24,11 @@ export const kuaishouAdapter: PlatformAdapter = {
   capabilities: { http: true, browser: false, tlsImpersonation: false, kinds: ['video', 'album'] },
 
   match(url: URL): MatchResult | null {
-    if (!hostMatches(url.hostname, 'kuaishou.com') && !hostMatches(url.hostname, 'chenzhongtech.com'))
+    if (
+      !hostMatches(url.hostname, 'kuaishou.com') &&
+      !hostMatches(url.hostname, 'chenzhongtech.com') &&
+      !hostMatches(url.hostname, 'gifshow.com')
+    )
       return null;
     // 短链 v.kuaishou.com/<code>（只认短链 host，其他 kuaishou 域是落地页）
     if (url.hostname === 'v.kuaishou.com') {
@@ -33,6 +41,13 @@ export const kuaishouAdapter: PlatformAdapter = {
     if (path?.[1]) return { platform: 'kuaishou', id: path[1], kind: 'unknown', needsResolve: false };
     const qs = url.href.match(PHOTO_ID_QS_RE);
     if (qs?.[1]) return { platform: 'kuaishou', id: qs[1], kind: 'unknown', needsResolve: false };
+    // 桌面分享页 /short-video/<photoId>：photoId 直接可用，不必再跳一跳
+    const shortVideo = url.pathname.match(SHORT_VIDEO_PATH_RE);
+    if (shortVideo?.[1])
+      return { platform: 'kuaishou', id: shortVideo[1], kind: 'unknown', needsResolve: false };
+    // 桌面分享链接 /f/<code>：302 一跳到 /short-video/<photoId>，dispatch 会重新匹配
+    const share = url.pathname.match(SHARE_PATH_RE);
+    if (share?.[1]) return { platform: 'kuaishou', id: share[1], kind: 'unknown', needsResolve: true };
     return null;
   },
 

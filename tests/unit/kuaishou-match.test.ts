@@ -40,4 +40,30 @@ describe('kuaishou match（纯函数）', () => {
     expect(kuaishouAdapter.match(u('https://example.com/fw/photo/3xabc'))).toBeNull();
     expect(kuaishouAdapter.match(u('https://v.kuaishou.com/'))).toBeNull();
   });
+
+  test('桌面分享链接 /f/<code> → needsResolve（code 不是 photoId）', () => {
+    const m = kuaishouAdapter.match(u('https://www.kuaishou.com/f/XXXXfake1Y1jU'));
+    expect(m?.id).toBe('XXXXfake1Y1jU');
+    expect(m?.needsResolve).toBe(true);
+  });
+
+  test('桌面分享页 /short-video/<photoId> 直取 photoId', () => {
+    const m = kuaishouAdapter.match(
+      u('https://www.kuaishou.com/short-video/3xfakeid45i26?authorId=abc&streamSource=find'),
+    );
+    expect(m?.id).toBe('3xfakeid45i26');
+    expect(m?.needsResolve).toBe(false);
+  });
+
+  test('跳转落点 m.gifshow.com /fw/photo/<photoId> 也认', () => {
+    const m = kuaishouAdapter.match(u('https://m.gifshow.com/fw/photo/3xfakeid45i26?cc=share_copylink'));
+    expect(m?.id).toBe('3xfakeid45i26');
+    expect(m?.needsResolve).toBe(false);
+  });
+
+  test('/f/?photoId= 仍走 query 兜底，不因 /f/ 规则变成 needsResolve', () => {
+    const m = kuaishouAdapter.match(u('https://www.kuaishou.com/f/?photoId=3xzjbmsi3btw33k'));
+    expect(m?.id).toBe('3xzjbmsi3btw33k');
+    expect(m?.needsResolve).toBe(false);
+  });
 });
