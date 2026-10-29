@@ -250,19 +250,21 @@ The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apac
 
 The complete Xiaohongshu share token stays in the local sample file, with mode 600 and exclusions from both Git and the Docker build context. Do not publish that file.
 
-| Endpoint | Probes | Interval | Conditions |
+| Display name | Probes | Interval | Conditions |
 |---|---|---|---|
-| `health` | `/health` | 30s | 200, `status == ok`, response < 300ms |
-| `ready` | `/ready` | 60s | 200, `status == ready`, `platforms >= 9` |
-| `platforms` | `/platforms` | 300s | 200, at least 9 platforms |
-| `signer-douyin` | `/platforms` | 300s | `data[0]` is douyin, signer `available`, non-empty version |
-| `metrics` | `/metrics` | 300s | 200, body contains `parse_total`, `upstream_error_total`, `channel_breaker_open`, `channel_downgrade_total` |
-| `parse-douyin-share` / `parse-douyin-modal` | User-supplied Douyin short link and featured page | 1h | 200, success, matching platform, non-empty assets and HTTP(S) URL |
-| `parse-kuaishou-share` / `parse-kuaishou-desktop` | User-supplied Kuaishou share link and desktop share page | 1h | Same conditions |
-| `parse-bilibili` / `parse-xhs` | User-supplied Bilibili and Xiaohongshu links | 1h | Same conditions |
-| `parse-weibo` / `parse-twitter` / `parse-youtube` / `parse-tiktok` / `parse-instagram` | Public samples | 1h | Same conditions |
+| `存活检查` | `/health` | 30s | 200, `status == ok`, response < 300ms |
+| `就绪检查` | `/ready` | 60s | 200, `status == ready`, `platforms >= 9` |
+| `平台清单` | `/platforms` | 300s | 200, at least 9 platforms |
+| `抖音签名通道` | `/platforms` | 300s | `data[0]` is douyin, signer `available`, non-empty version |
+| `指标端点` | `/metrics` | 300s | 200, body contains `parse_total`, `upstream_error_total`, `channel_breaker_open`, `channel_downgrade_total` |
+| `抖音·分享短链` / `抖音·精选页` | User-supplied Douyin short link and featured page | 1h | 200, success, matching platform, non-empty assets and HTTP(S) URL |
+| `快手·分享短链` / `快手·桌面分享页` | User-supplied Kuaishou share link and desktop share page | 1h | Same conditions |
+| `B站` / `小红书` | User-supplied Bilibili and Xiaohongshu links | 1h | Same conditions |
+| `微博` / `Twitter` / `YouTube` / `TikTok` / `Instagram` | Public samples | 1h | Same conditions |
 
-The minimum count of `9` in `ready` and `platforms` matches the current adapters. Raise it when adding a platform so missing adapters remain detectable.
+The first column is the `name` from the config, which is what the dashboard shows. Gatus keys history by group plus name, so renaming an entry restarts its history from zero.
+
+The minimum count of `9` in `就绪检查` and `平台清单` matches the current adapters. Raise it when adding a platform so missing adapters remain detectable.
 
 Real parsing checks are counted by sample; the two Douyin inputs and the two Kuaishou inputs each identify the same video through different entry points. Kuaishou accepts `/f/<code>`, `/short-video/<photoId>`, `/fw/photo/<photoId>` and `v.kuaishou.com` short links; `/f/<code>` needs one 302 hop to reveal the photoId, and the `m.gifshow.com` landing host is accepted too. Xiaohongshu note links retain their paired `xsec_token`; image URLs may use HTTP, which is not treated as parsing failure.
 
@@ -270,7 +272,7 @@ Successful results are cached for at most 30 minutes, or 10 minutes when no reso
 
 The dashboard is at `http://<server>:8080`. History is stored in SQLite in the `gatus-data` volume. When querying `/api/v1/endpoints/statuses`, select the newest result by `timestamp`; the first history item is not necessarily current.
 
-`media-proxy-disabled` ships disabled. Container-state and certificate-expiry checks remain commented templates; enable them only after choosing the proxy mode, authorizing Docker socket access, or deploying HTTPS, respectively.
+`中转签名（默认关闭）` ships with `enabled: false`. `容器状态` and `证书有效期` remain commented templates; enable them only after choosing the proxy mode, authorizing Docker socket access, or deploying HTTPS, respectively.
 
 Alerting is off by default. To enable it, turn on `alerting.custom` in the config and point the `custom` provider at a WeCom, DingTalk or Feishu bot webhook, passing the URL through an environment variable rather than writing it into the file.
 

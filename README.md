@@ -250,19 +250,21 @@ compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0�
 
 小红书的完整分享 token 只保存在本地样例文件，文件权限为 600，同时被 Git 和 Docker 构建上下文排除。不要把该文件上传到公开仓库。
 
-| 端点 | 探什么 | 频率 | 判定 |
+| 显示名 | 探什么 | 频率 | 判定 |
 |---|---|---|---|
-| `health` | `/health` | 30s | 200、`status == ok`、响应 < 300ms |
-| `ready` | `/ready` | 60s | 200、`status == ready`、`platforms >= 9` |
-| `platforms` | `/platforms` | 300s | 200、平台数 >= 9 |
-| `signer-douyin` | `/platforms` | 300s | `data[0]` 是 douyin、签名器 `available`、版本非空 |
-| `metrics` | `/metrics` | 300s | 200、含 `parse_total`、`upstream_error_total`、`channel_breaker_open`、`channel_downgrade_total` |
-| `parse-douyin-share` / `parse-douyin-modal` | 用户提供的抖音短链和精选页 | 1h | 200、成功、平台匹配、资源非空、首条 URL 为 HTTP(S) |
-| `parse-kuaishou-share` / `parse-kuaishou-desktop` | 用户提供的快手分享链接和桌面分享页 | 1h | 同上 |
-| `parse-bilibili` / `parse-xhs` | 用户提供的 B 站与小红书链接 | 1h | 同上 |
-| `parse-weibo` / `parse-twitter` / `parse-youtube` / `parse-tiktok` / `parse-instagram` | 公开样例 | 1h | 同上 |
+| `存活检查` | `/health` | 30s | 200、`status == ok`、响应 < 300ms |
+| `就绪检查` | `/ready` | 60s | 200、`status == ready`、`platforms >= 9` |
+| `平台清单` | `/platforms` | 300s | 200、平台数 >= 9 |
+| `抖音签名通道` | `/platforms` | 300s | `data[0]` 是 douyin、签名器 `available`、版本非空 |
+| `指标端点` | `/metrics` | 300s | 200、含 `parse_total`、`upstream_error_total`、`channel_breaker_open`、`channel_downgrade_total` |
+| `抖音·分享短链` / `抖音·精选页` | 用户提供的抖音短链和精选页 | 1h | 200、成功、平台匹配、资源非空、首条 URL 为 HTTP(S) |
+| `快手·分享短链` / `快手·桌面分享页` | 用户提供的快手分享链接和桌面分享页 | 1h | 同上 |
+| `B站` / `小红书` | 用户提供的 B 站与小红书链接 | 1h | 同上 |
+| `微博` / `Twitter` / `YouTube` / `TikTok` / `Instagram` | 公开样例 | 1h | 同上 |
 
-`ready` 和 `platforms` 的下限 9 对应当前适配器数量。新增平台时同步提高下限，才能发现适配器缺失。
+表里是配置中的 `name`，也就是仪表盘上的显示名。Gatus 用「分组 + 名字」当历史键，改名后这一条的历史从零开始记。
+
+`就绪检查` 和 `平台清单` 的下限 9 对应当前适配器数量。新增平台时同步提高下限，才能发现适配器缺失。
 
 真实解析检查按样例计数，抖音两条、快手两条各自是同一作品的两个入口。快手 `/f/<code>`、`/short-video/<photoId>`、`/fw/photo/<photoId>` 与 `v.kuaishou.com` 短链都接受，`/f/<code>` 靠一次 302 拿 photoId，跳转落点 `m.gifshow.com` 也认。小红书笔记链接保留配对的 `xsec_token`，图片 URL 可能是 HTTP，不因缺少 HTTPS 就把成功解析判为故障。
 
@@ -270,7 +272,7 @@ compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0�
 
 仪表盘在 `http://<服务器>:8080`，历史保存在 `gatus-data` 卷的 SQLite 数据库中。查询 `/api/v1/endpoints/statuses` 时按 `timestamp` 取最新结果，不能把历史列表第一条当成当前状态。
 
-`media-proxy-disabled` 默认关闭；`container-app` 和证书到期检查仍是注释模板。分别在确定中转模式、授权挂载 Docker socket、部署 HTTPS 域名后启用。
+`中转签名（默认关闭）` 本身写死 `enabled: false`；`容器状态` 和 `证书有效期` 仍是注释模板。分别在确定中转模式、授权挂载 Docker socket、部署 HTTPS 域名后启用。
 
 告警默认不开。要开就在配置里启用 `alerting.custom`，用 `custom` 类型接企业微信、钉钉或飞书机器人，webhook 地址通过环境变量传，不写进文件。
 

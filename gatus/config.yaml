@@ -6,6 +6,9 @@
 # 被监控服务地址由 compose 的 SVE_BASE_URL 传入，容器内走服务名 http://app:7777。
 # 单独跑 gatus 探宿主机时设成 http://host.docker.internal:7777
 # （Linux 需加 extra_hosts: "host.docker.internal:host-gateway"）。
+#
+# name 是仪表盘上的显示名，可以直接用中文；group 是分组标题。
+# 注意：Gatus 用 group+name 当历史键，改名后该条的历史从零开始记。
 
 # 历史数据落 sqlite，容器重启不丢；删掉这段就是内存模式
 storage:
@@ -18,8 +21,8 @@ ui:
 
 endpoints:
   # ── 1. 存活：进程活着就 200，不碰外部依赖。30 秒一次，最快发现进程死 ──
-  - name: health
-    group: core
+  - name: 存活检查
+    group: 核心
     url: '${SVE_BASE_URL}/health'
     interval: 30s
     conditions:
@@ -28,8 +31,8 @@ endpoints:
       - '[RESPONSE_TIME] < 300'
 
   # ── 2. 就绪：平台注册表必须加载完。9 是当前适配器数量，加平台要同步上调 ──
-  - name: ready
-    group: core
+  - name: 就绪检查
+    group: 核心
     url: '${SVE_BASE_URL}/ready'
     interval: 60s
     conditions:
@@ -38,8 +41,8 @@ endpoints:
       - '[BODY].platforms >= 9'
 
   # ── 3. 平台清单：平台数不能缩水 ──
-  - name: platforms
-    group: platform
+  - name: 平台清单
+    group: 平台
     url: '${SVE_BASE_URL}/platforms'
     interval: 300s
     conditions:
@@ -48,8 +51,8 @@ endpoints:
 
   # ── 4. 抖音签名器：data[0] 固定是 douyin（registry 注册顺序）──
   # available=false 意味着签名通道失效，抖音会全线退到浏览器或 503，单列一条便于定位。
-  - name: signer-douyin
-    group: platform
+  - name: 抖音签名通道
+    group: 平台
     url: '${SVE_BASE_URL}/platforms'
     interval: 300s
     conditions:
@@ -58,8 +61,8 @@ endpoints:
       - 'len([BODY].data[0].signers[0].version) > 0'
 
   # ── 5. 指标端点：解析计数、上游失败、熔断、降级四组指标都得在 ──
-  - name: metrics
-    group: core
+  - name: 指标端点
+    group: 核心
     url: '${SVE_BASE_URL}/metrics'
     interval: 300s
     conditions:
@@ -77,8 +80,8 @@ endpoints:
   # ── 6. 中转签名 /media：默认关闭 ──
   # 只有配了 PROXY_SECRET 才启用。没配时正确行为是 501 + MEDIA_PROXY_DISABLED，
   # 所以期望值写 501；真接了 PROXY_SECRET 要改成带签名的 URL 并断言 200。
-  - name: media-proxy-disabled
-    group: optional
+  - name: 中转签名（默认关闭）
+    group: 可选
     enabled: false
     url: '${SVE_BASE_URL}/media?u=https://example.com/a.mp4'
     interval: 900s
@@ -90,7 +93,7 @@ endpoints:
   # docker 类型直接读容器状态，比 HTTP 探活更早发现 OOM、反复重启。
   # 打开方式：compose 里给 gatus 挂 /var/run/docker.sock:ro，再放开注释。
   # 注意：挂了 socket 等于给 gatus 容器宿主机 docker 权限，自己权衡。
-  # - name: container-app
+  # - name: 容器状态
   #   group: 容器
   #   url: "docker://short-video-extractor"
   #   interval: 60s
@@ -99,7 +102,7 @@ endpoints:
 
 # ── 8. 部署到域名后加这条：证书剩余有效期低于 72 小时报警 ──
 # 本地没有 HTTPS 域名，先注释。换 https 域名后取消注释。
-#  - name: tls-cert
+#  - name: 证书有效期
 #    group: 外部可达
 #    url: "https://your-domain.example/health"
 #    interval: 3600s
