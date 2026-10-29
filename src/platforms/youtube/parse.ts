@@ -34,7 +34,7 @@ interface YtPlayer {
 }
 
 /** fetch() 产出的复合载荷（fixture 可录制回放） */
-export interface YoutubePayload {
+interface YoutubePayload {
   /** 实际成功的 innertube client（ANDROID_VR / IOS），降级归因用 */
   client: string;
   player: YtPlayer;

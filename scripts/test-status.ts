@@ -138,8 +138,8 @@ async function ciStatus(): Promise<string> {
 const steps: Step[] = [];
 
 steps.push(
-  await step('prettier', ['bun', 'x', 'prettier', '--check', 'src', 'tests'], 120_000, (r) =>
-    r.code === 0 ? 'src tests 全部符合格式' : tail(merged(r)),
+  await step('prettier', ['bun', 'x', 'prettier', '--check', 'src', 'tests', 'scripts'], 120_000, (r) =>
+    r.code === 0 ? 'src tests scripts 全部符合格式' : tail(merged(r)),
   ),
 );
 steps.push(

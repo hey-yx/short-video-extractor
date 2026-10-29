@@ -1,7 +1,7 @@
 import type { ErrorCode } from './errors';
 
 /** 唯一响应工厂：所有路由的返回都经过这里，保证信封一致 */
-export interface ApiEnvelope<T> {
+interface ApiEnvelope<T> {
   success: boolean;
   data: T | null;
   error?: { code: ErrorCode; message: string; detail?: Record<string, unknown> };

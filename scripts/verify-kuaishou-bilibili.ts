@@ -19,7 +19,9 @@ async function rangeCheck(url: string, referer?: string): Promise<number> {
     return res.status;
   } catch (e) {
     // PCDN 节点偶发 ECONNRESET，探测脚本记为 -1 不中断
-    console.log(`  [warn] range ${url.slice(0, 60)}... -> ${e instanceof Error ? e.message.slice(0, 40) : 'err'}`);
+    console.log(
+      `  [warn] range ${url.slice(0, 60)}... -> ${e instanceof Error ? e.message.slice(0, 40) : 'err'}`,
+    );
     return -1;
   }
 }
@@ -27,14 +29,21 @@ async function rangeCheck(url: string, referer?: string): Promise<number> {
 async function probe(name: string, url: string, referer?: string) {
   const line: string[] = [];
   const res = await app.handle(new Request(`http://local/parse?url=${encodeURIComponent(url)}`));
-  const body = (await res.json()) as { success: boolean; data?: ParseResult; code?: string; message?: string };
+  const body = (await res.json()) as {
+    success: boolean;
+    data?: ParseResult;
+    code?: string;
+    message?: string;
+  };
   if (!body.success || !body.data) {
     line.push(`[fail] ${name}: HTTP ${res.status} ${body.code ?? ''} ${body.message ?? ''}`);
     console.log(line.join('\n'));
     return;
   }
   const r = body.data;
-  line.push(`[ok] ${name}: ${r.platform}/${r.id} ${r.kind} assets=${r.assets.length} author=${r.author.name} title=${r.title.slice(0, 40)}`);
+  line.push(
+    `[ok] ${name}: ${r.platform}/${r.id} ${r.kind} assets=${r.assets.length} author=${r.author.name} title=${r.title.slice(0, 40)}`,
+  );
   for (let i = 0; i < r.assets.length; i++) {
     const a = r.assets[i]!;
     const vStatus = await rangeCheck(a.url, referer);
@@ -51,6 +60,9 @@ await probe('bilibili 单 P', 'https://www.bilibili.com/video/BV1GJ411x7h7', 'ht
 await probe('bilibili 多 P(23P)', 'https://www.bilibili.com/video/BV1bK411W797', 'https://www.bilibili.com');
 
 const res = await app.handle(new Request('http://local/platforms'));
-const body = (await res.json()) as Array<{ platform: string }> | { success: boolean; data: Array<{ platform: string }> };
-const list = Array.isArray(body) ? body : body.data ?? [];
-console.log(`platforms: status=${res.status} count=${list.length} [${list.map((p) => p.platform).join(', ')}]`);
+const body = (await res.json()) as
+  Array<{ platform: string }> | { success: boolean; data: Array<{ platform: string }> };
+const list = Array.isArray(body) ? body : (body.data ?? []);
+console.log(
+  `platforms: status=${res.status} count=${list.length} [${list.map((p) => p.platform).join(', ')}]`,
+);

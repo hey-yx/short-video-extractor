@@ -41,7 +41,7 @@ interface BiliViewData {
 }
 
 /** fetch() 产出的复合载荷（fixture 可录制回放） */
-export interface BilibiliPayload {
+interface BilibiliPayload {
   view: { code: number; message?: string; data: unknown };
   streams: Array<{
     page: number;

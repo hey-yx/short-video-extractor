@@ -9,7 +9,7 @@
     "test:status": "bun scripts/test-status.ts",
     "typecheck": "tsc --noEmit",
     "build:binary": "bun build ./src/index.ts --compile --outfile dist/sve",
-    "format": "prettier --write src tests"
+    "format": "prettier --write src tests scripts"
   },
   "devDependencies": {
     "@types/bun": "^1.2.0",

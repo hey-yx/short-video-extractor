@@ -35,7 +35,7 @@ interface IgMedia {
 }
 
 /** fetch() 产出的复合载荷（fixture 可录制回放） */
-export interface InstagramPayload {
+interface InstagramPayload {
   /** 本条请求注入的 doc_id（轮换归因用） */
   docId: string;
   data: { xdt_api__v1__media__shortcode__web_info?: { items?: IgMedia[] } } | null;

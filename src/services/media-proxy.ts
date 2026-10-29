@@ -76,7 +76,7 @@ export function allowedHosts(): string[] {
  *  与 fetchUpstream 的代理注入共用判据——新平台 CDN 若加 IP 校验，改这一处即全链路同步。 */
 const IP_BOUND_HOSTS = ['googlevideo.com'];
 
-export function isIpBoundUrl(rawUrl: string): boolean {
+function isIpBoundUrl(rawUrl: string): boolean {
   try {
     return IP_BOUND_HOSTS.some((d) => hostMatches(new URL(rawUrl).hostname, d));
   } catch {
@@ -146,7 +146,7 @@ export function isProxyConfigured(): boolean {
   return secret().length > 0;
 }
 
-export interface MediaSignature {
+interface MediaSignature {
   url: string;
   exp: number;
   sig: string;
@@ -160,7 +160,7 @@ export function signMediaUrl(url: string, nowSec = Math.floor(Date.now() / 1000)
   return { url, exp, sig: sign(url, exp) };
 }
 
-export interface VerifiedMedia {
+interface VerifiedMedia {
   url: string;
   exp: number;
 }

@@ -61,7 +61,7 @@ export interface L2Identity {
   ttwid: string;
 }
 
-export interface L2Request {
+interface L2Request {
   url: string;
   headers: Record<string, string>;
 }
@@ -109,10 +109,4 @@ export async function resolveTtwid(
 ): Promise<string | null> {
   if (injected) return injected;
   return (await activeSigner().mintTtwid?.(signal)) ?? null;
-}
-
-/** 签名算法过期时的排查看点：当前签名器的实现名与版本 */
-export function activeSignerInfo(): { name: string; version: string } {
-  const s = activeSigner();
-  return { name: s.name, version: s.version };
 }

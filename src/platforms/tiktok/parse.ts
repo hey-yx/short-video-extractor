@@ -45,7 +45,7 @@ interface TikwmData {
 }
 
 /** fetch() 产出的载荷形态：body 即 tikwm 响应 JSON（fixture 可录制回放） */
-export interface TikwmPayload {
+interface TikwmPayload {
   code?: number;
   msg?: string;
   data?: TikwmData;

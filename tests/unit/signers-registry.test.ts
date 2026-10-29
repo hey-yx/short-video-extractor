@@ -7,7 +7,7 @@ import {
   resetSignersForTests,
   type SignerProvider,
 } from '@/core/signers';
-import { activeSignerInfo, buildL2DetailRequest, resolveTtwid } from '@/platforms/douyin/signing';
+import { buildL2DetailRequest, resolveTtwid } from '@/platforms/douyin/signing';
 import { douyinAbogusSigner } from '@/platforms/douyin/abogus-signer';
 
 /**
@@ -75,7 +75,7 @@ describe('签名器注册表（core/signers）', () => {
     registerSigner(fakeSigner('next-gen', { version: 'next-gen@2' }), { priority: 10 });
     const req = buildL2DetailRequest(AWEME_ID, { uifid: UIFID, ttwid: TTWID }, { timestamp: 1793100000 });
     expect(req.headers['x-secsdk-web-signature']).toBe('next-gen-sig');
-    expect(activeSignerInfo()).toEqual({ name: 'next-gen', version: 'next-gen@2' });
+    expect(pickSigner('douyin')).toMatchObject({ name: 'next-gen', version: 'next-gen@2' });
   });
 
   test('resolveTtwid：env 注入优先；缺省由签名器现铸；没实现 mintTtwid 则返回 null（跳过 L2）', async () => {

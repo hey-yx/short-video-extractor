@@ -16,7 +16,7 @@ export interface WeiboShowPayload {
   data?: WeiboStatus;
 }
 
-export interface WeiboComponentPayload {
+interface WeiboComponentPayload {
   code: string;
   data?: { Component_Play_Playinfo?: WeiboPlayInfo };
 }

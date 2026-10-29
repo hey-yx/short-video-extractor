@@ -6,7 +6,7 @@
 export type Platform =
   'douyin' | 'xhs' | 'kuaishou' | 'bilibili' | 'weibo' | 'twitter' | 'youtube' | 'instagram' | 'tiktok';
 
-export type AssetType = 'video' | 'image' | 'audio' | 'cover';
+type AssetType = 'video' | 'image' | 'audio' | 'cover';
 
 /** 同一资源的不同档位（抖音：540p/720p/1080p/origin） */
 export interface AssetVariant {
@@ -73,7 +73,7 @@ export interface ParseResult {
 }
 
 /** 平台声明：能解析什么 URL、走什么通道 */
-export interface Capabilities {
+interface Capabilities {
   /** 纯 HTTP 能否完成 */
   http: boolean;
   /** 需要浏览器兜底/主力 */

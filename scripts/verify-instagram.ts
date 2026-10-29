@@ -28,7 +28,12 @@ async function rangeCheck(url: string, referer?: string): Promise<number> {
 
 async function probe(name: string, url: string) {
   const res = await app.handle(new Request(`http://local/parse?url=${encodeURIComponent(url)}`));
-  const body = (await res.json()) as { success: boolean; data?: ParseResult; code?: string; message?: string };
+  const body = (await res.json()) as {
+    success: boolean;
+    data?: ParseResult;
+    code?: string;
+    message?: string;
+  };
   if (!body.success || !body.data) {
     console.log(`[fail] ${name}: HTTP ${res.status} ${body.code ?? ''} ${body.message ?? ''}`);
     return;
@@ -51,7 +56,9 @@ async function probe(name: string, url: string) {
 async function probeMissingDocId() {
   delete process.env.IG_GRAPHQL_DOC_ID;
   const res = await app.handle(
-    new Request(`http://local/parse?url=${encodeURIComponent('https://www.instagram.com/reel/C9z1OIUi8Yh/')}`),
+    new Request(
+      `http://local/parse?url=${encodeURIComponent('https://www.instagram.com/reel/C9z1OIUi8Yh/')}`,
+    ),
   );
   const body = (await res.json()) as { success: boolean; error?: { code?: string; message?: string } };
   const code = body.error?.code;

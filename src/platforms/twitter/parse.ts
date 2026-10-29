@@ -31,7 +31,7 @@ interface TweetMedia {
   };
 }
 
-export interface TweetResult {
+interface TweetResult {
   id_str?: string;
   text?: string;
   created_at?: string;
@@ -41,7 +41,7 @@ export interface TweetResult {
 }
 
 /** fetch() 产出的载荷形态：body 即 syndication JSON（fixture 可录制回放） */
-export type TwitterPayload = TweetResult;
+type TwitterPayload = TweetResult;
 
 /** pbs.twimg.com 图片的原图参数（实测 base 96KB vs ?name=orig 439KB） */
 const ORIG_SUFFIX = '?name=orig';

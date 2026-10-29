@@ -16,14 +16,21 @@ async function rangeCheck(url: string): Promise<number> {
     await res.body?.cancel();
     return res.status;
   } catch (e) {
-    console.log(`  [warn] range ${url.slice(0, 60)}... -> ${e instanceof Error ? e.message.slice(0, 40) : 'err'}`);
+    console.log(
+      `  [warn] range ${url.slice(0, 60)}... -> ${e instanceof Error ? e.message.slice(0, 40) : 'err'}`,
+    );
     return -1;
   }
 }
 
 async function probe(name: string, url: string) {
   const res = await app.handle(new Request(`http://local/parse?url=${encodeURIComponent(url)}`));
-  const body = (await res.json()) as { success: boolean; data?: ParseResult; code?: string; message?: string };
+  const body = (await res.json()) as {
+    success: boolean;
+    data?: ParseResult;
+    code?: string;
+    message?: string;
+  };
   if (!body.success || !body.data) {
     console.log(`[fail] ${name}: HTTP ${res.status} ${body.code ?? ''} ${body.message ?? ''}`);
     return;
@@ -49,4 +56,6 @@ await probe('t.co 短链（→视频推）', 'https://t.co/4NNIMDP3TO');
 
 const res = await app.handle(new Request('http://local/platforms'));
 const body = (await res.json()) as { success: boolean; data: Array<{ platform: string }> };
-console.log(`platforms: status=${res.status} count=${body.data.length} [${body.data.map((p) => p.platform).join(', ')}]`);
+console.log(
+  `platforms: status=${res.status} count=${body.data.length} [${body.data.map((p) => p.platform).join(', ')}]`,
+);

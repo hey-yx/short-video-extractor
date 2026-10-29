@@ -13,7 +13,7 @@
 
 import { AppError } from '@/core/errors';
 
-export type ProxyFetchInit = RequestInit & {
+type ProxyFetchInit = RequestInit & {
   /** 代理串（http://host:port）；空/undefined = 直连 */
   proxy?: string;
 };

@@ -6,7 +6,7 @@ import { dispatch, matchAdapter } from '@/platforms/registry';
 import { cacheKey, parseCache } from '@/services/cache';
 import type { FetchCtx } from '@/types/platform';
 
-export interface ParseOutcome {
+interface ParseOutcome {
   result: ParseResult;
   /** true = 缓存直接返回，未打上游 */
   cached: boolean;

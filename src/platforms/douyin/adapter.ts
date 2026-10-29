@@ -267,5 +267,3 @@ export const douyinAdapter: PlatformAdapter = {
 
   parse: parseAweme,
 };
-
-export { UA as DOUYIN_UA };

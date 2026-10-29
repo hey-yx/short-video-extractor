@@ -41,7 +41,7 @@ interface RiskEntry {
 
 type Entry = ValueEntry | ErrorEntry | RiskEntry;
 
-export interface CacheOutcome {
+interface CacheOutcome {
   /** true = 缓存直接返回，未打上游 */
   cached: boolean;
   result: ParseResult;
