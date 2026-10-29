@@ -66,8 +66,7 @@ src/
 ├── routes/
 │   ├── parse.routes.ts       # POST|GET /parse（限流、缓存、指标打点）
 │   ├── media.routes.ts       # GET|HEAD /media（可选流式中转）
-│   ├── ops.routes.ts         # /health /ready /platforms /metrics
-│   └── status.routes.ts      # /status 检测站页面（构建期内嵌进二进制）
+│   └── ops.routes.ts         # /health /ready /platforms /metrics
 ├── services/
 │   ├── parse.service.ts      # 编排：match → 缓存 → dispatch → fetch → parse
 │   ├── cache.ts              # LRU + expiresAt 语义 + 负缓存 + singleflight
@@ -198,7 +197,7 @@ bun run test:status  # 一条命令看全状态：格式 / 类型 / 单测 / 覆
 bun run typecheck
 ```
 
-`docs/status.html` 是零依赖检测站：状态总览、服务健康、平台状态、使用计数与解析演示一页全有。file:// 直接打开（手动填服务地址），部署后浏览器访问 `http://<服务器>:7777/status` 即看。
+本地只需要 Bun，不装 Docker 也能跑完整服务：`bun dev` 起进程，`/health`、`/ready`、`/metrics` 直接 curl。想看带历史的监控面板、想复现部署形态时再走 Docker，见[部署](#部署)。
 
 > [!TIP]
 > 浏览器兜底路径（抖音风控降级、小红书降级兜底）需要本机有 Chrome（Puppeteer 自动管理）；纯 HTTP 通道无此要求。
@@ -247,7 +246,7 @@ APP_PORT=7778 GATUS_PORT=8081 docker compose up -d
 
 ### 监控（Gatus）
 
-compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0）探活，配置全在 `gatus/config.yaml`，改完自动热加载，不用重启容器。默认四条：
+compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0）探活，配置全在 `gatus/config.yaml`。挂载整个 `gatus/` 目录，保存后自动重新加载，不需要重启容器，但不是保存瞬间就更新页面。默认启用五条基础检查和三条真实解析检查：
 
 | 端点 | 探什么 | 频率 | 判定 |
 |---|---|---|---|
@@ -256,21 +255,29 @@ compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0�
 | `platforms` | `/platforms` | 300s | 200、平台数 >= 9 |
 | `signer-douyin` | `/platforms` | 300s | `data[0]` 是 douyin、签名器 `available`、版本非空 |
 | `metrics` | `/metrics` | 300s | 200、含 `parse_total`、`upstream_error_total`、`channel_breaker_open`、`channel_downgrade_total` |
-| `status-page` | `/status` | 300s | 200、页面含「服务状态」 |
+| `parse-real-link` | 抖音公开视频 | 1h | 200、成功、平台和作品 ID 匹配、资源非空且首条 URL 为 HTTPS |
+| `parse-kuaishou` | 快手公开分享链接 | 1h | 同上 |
+| `parse-bilibili` | B 站公开视频 | 1h | 同上 |
 
-`ready` 和 `platforms` 里的 9 是当前适配器数量，加平台要同步上调，不然断言会一直红。
+`ready` 和 `platforms` 的下限 9 对应当前适配器数量。新增平台时同步提高下限，才能发现适配器缺失。
 
-另外三条默认关闭，按需打开：`parse-real-link`（真实链接解析，防风控需一小时以上一次）、`media-proxy-disabled`（验 `/media` 未配密钥时正确返回 501）、`container-app`（读 docker.sock 看容器状态，要放开注释并挂 socket）。配置里还留了证书到期（`[CERTIFICATE_EXPIRATION] > 72h`）的注释模板，部署到 HTTPS 域名后启用。
+三条真实解析样例来自仓库已有验证脚本和调研记录，启用前实际请求过 `/parse`。正常解析缓存最长 30 分钟，无资源过期时间时默认 10 分钟；每小时检查通常会重新请求上游，但其他用户刚解析过同一作品时可能命中缓存，因此不把 `cached == false` 作为健康条件。监控验证的是解析结果，不等于持续验证媒体可下载。作品删除、转私密或平台风控都可能造成失败，先查原因，不自动更换样例隐藏故障。小红书及海外平台尚未启用真实解析监控。
+
+仪表盘在 `http://<服务器>:8080`，历史保存在 `gatus-data` 卷的 SQLite 数据库中。查询 `/api/v1/endpoints/statuses` 时按 `timestamp` 取最新结果，不能把历史列表第一条当成当前状态。
+
+`media-proxy-disabled` 默认关闭；`container-app` 和证书到期检查仍是注释模板。分别在确定中转模式、授权挂载 Docker socket、部署 HTTPS 域名后启用。
 
 告警默认不开。要开就在配置里启用 `alerting.custom`，用 `custom` 类型接企业微信、钉钉或飞书机器人，webhook 地址通过环境变量传，不写进文件。
+
+### 本机代理
+
+Docker Desktop 本地开发时，可在不提交的 `docker-compose.override.yml` 中给 app 设置 `PROXY_TWITTER`、`PROXY_YOUTUBE`、`PROXY_INSTAGRAM`、`PROXY_TIKTOK`，地址使用 `http://host.docker.internal:<电脑代理端口>`。`127.0.0.1` 在容器内指向容器本身，不能代替宿主机地址。覆盖文件会被 `docker compose` 自动合并，已加入 `.gitignore`，不要带到服务器部署。
+
+只配置海外四个平台，不设置全局 `HTTPS_PROXY`。修改容器环境变量后必须重新创建 app 容器，不属于 Gatus 的 YAML 热加载；应用前确认可以短暂中断解析服务，批准后执行 `docker compose up -d --no-deps --no-build app`。电脑代理退出或电脑休眠时，这条出口会不可用。YouTube 的媒体链接绑定解析出口 IP，下载需保持同一出口；接通代理不等于已启用 `/media` 中转或补齐 Instagram 的 `IG_GRAPHQL_DOC_ID`。
 
 ### 升级
 
 重新构建镜像后 `docker compose up -d`，确认 `/health`、`/ready` 与每平台一条真实链接解析通过即完成，回滚就是换回旧镜像 tag。偶尔跑一次 `docker image prune` 清构建缓存。
-
-### 检测站
-
-服务自带状态页：浏览器打开 `http://<服务器>:7777/status`，一眼看到服务是否正常、各平台状态、解析成功/失败计数与最近的平台侧故障，每 10 秒自动刷新（可停）。同一张页 file:// 直开也能用（手动填服务地址）。页面内嵌在服务二进制里，没有额外依赖，也不引入监控组件。
 
 ## CI
 

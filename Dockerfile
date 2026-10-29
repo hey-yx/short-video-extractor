@@ -10,8 +10,6 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 COPY tsconfig.json ./
 COPY src ./src
-# 检测站页面在 status.routes.ts 里以 text import 内嵌进二进制，构建期必须在场
-COPY docs/status.html ./docs/status.html
 
 ARG TARGETARCH
 RUN case "$TARGETARCH" in \

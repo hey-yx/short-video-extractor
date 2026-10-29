@@ -66,8 +66,7 @@ src/
 ├── routes/
 │   ├── parse.routes.ts       # POST|GET /parse (rate limit, cache, metrics)
 │   ├── media.routes.ts       # GET|HEAD /media (optional streaming relay)
-│   ├── ops.routes.ts         # /health /ready /platforms /metrics
-│   └── status.routes.ts      # /status status page (embedded at build time)
+│   └── ops.routes.ts         # /health /ready /platforms /metrics
 ├── services/
 │   ├── parse.service.ts      # orchestration: match → cache → dispatch → fetch → parse
 │   ├── cache.ts              # LRU + expiresAt semantics + negative cache + singleflight
@@ -198,7 +197,7 @@ bun run test:status  # one command for the full state: prettier / tsc / tests / 
 bun run typecheck
 ```
 
-`docs/status.html` is a zero-dependency status page: overall banner, service health, per-platform status, usage counters and a live parse demo on one page. Open it straight from disk (file://, then fill in the service address); after deploying, visit `http://<server>:7777/status` in a browser.
+Bun is all you need locally. Docker is optional. `bun dev` starts the service and `/health`, `/ready`, `/metrics` respond right away. Reach for Docker when you want the dashboard with history, or the full deployment shape. See [Deployment](#deployment).
 
 > [!TIP]
 > The browser-fallback paths (Douyin risk-control downgrade, Xiaohongshu fallback) need Chrome on the machine (Puppeteer manages it automatically); the pure HTTP channels have no such requirement.
@@ -247,7 +246,7 @@ APP_PORT=7778 GATUS_PORT=8081 docker compose up -d
 
 ### Monitoring (Gatus)
 
-The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apache-2.0) against the parser. All configuration lives in `gatus/config.yaml` and hot-reloads on change, so there is no need to restart the container. Four checks ship enabled:
+The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apache-2.0) against the parser. Configuration lives in `gatus/config.yaml`. Mount the whole `gatus/` directory for automatic reloading after a save; no container restart is needed, but the dashboard does not update instantly. Five basic checks and three real parsing checks ship enabled:
 
 | Endpoint | Probes | Interval | Conditions |
 |---|---|---|---|
@@ -256,21 +255,29 @@ The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apac
 | `platforms` | `/platforms` | 300s | 200, at least 9 platforms |
 | `signer-douyin` | `/platforms` | 300s | `data[0]` is douyin, signer `available`, non-empty version |
 | `metrics` | `/metrics` | 300s | 200, body contains `parse_total`, `upstream_error_total`, `channel_breaker_open`, `channel_downgrade_total` |
-| `status-page` | `/status` | 300s | 200, page contains the status page title |
+| `parse-real-link` | Public Douyin video | 1h | 200, success, matching platform and ID, non-empty assets and HTTPS URL |
+| `parse-kuaishou` | Public Kuaishou share link | 1h | Same conditions |
+| `parse-bilibili` | Public Bilibili video | 1h | Same conditions |
 
-The `9` in `ready` and `platforms` is the current adapter count: bump it when you add a platform, or the condition stays red.
+The minimum count of `9` in `ready` and `platforms` matches the current adapters. Raise it when adding a platform so missing adapters remain detectable.
 
-Three more checks ship disabled: `parse-real-link` (real-link parsing, keep it at an hour or more to avoid risk control), `media-proxy-disabled` (asserts `/media` returns 501 when no secret is configured), and `container-app` (reads docker.sock for container state; uncomment it and mount the socket). The config also carries a commented certificate-expiry template (`[CERTIFICATE_EXPIRATION] > 72h`) for HTTPS deployments.
+The real parsing samples come from the repository's verification scripts and research notes and were checked through `/parse` before enabling the monitors. Successful results are cached for at most 30 minutes, or 10 minutes when no resource expiry is known. Hourly checks normally contact the upstream again, but a recent user request for the same item may populate the cache; `cached == false` is therefore not a health condition. These checks validate parsing, not ongoing media downloads. Deleted or private items and platform risk controls may cause failures; investigate before replacing the sample. Real parsing monitors for Xiaohongshu and overseas platforms are not enabled yet.
+
+The dashboard is at `http://<server>:8080`. History is stored in SQLite in the `gatus-data` volume. When querying `/api/v1/endpoints/statuses`, select the newest result by `timestamp`; the first history item is not necessarily current.
+
+`media-proxy-disabled` ships disabled. Container-state and certificate-expiry checks remain commented templates; enable them only after choosing the proxy mode, authorizing Docker socket access, or deploying HTTPS, respectively.
 
 Alerting is off by default. To enable it, turn on `alerting.custom` in the config and point the `custom` provider at a WeCom, DingTalk or Feishu bot webhook, passing the URL through an environment variable rather than writing it into the file.
+
+### Local host proxy
+
+For local development with Docker Desktop, set `PROXY_TWITTER`, `PROXY_YOUTUBE`, `PROXY_INSTAGRAM` and `PROXY_TIKTOK` for app in an untracked `docker-compose.override.yml`, using `http://host.docker.internal:<host-proxy-port>`. Inside a container, `127.0.0.1` refers to that container, not the host. Compose automatically merges the override file, which is excluded by `.gitignore`; do not copy it to server deployments.
+
+Configure only the four overseas platforms rather than a global `HTTPS_PROXY`. Environment changes require recreating app; Gatus YAML reloading cannot apply them. After approving the brief parsing interruption, run `docker compose up -d --no-deps --no-build app`. This egress becomes unavailable if the host proxy quits or the computer sleeps. YouTube media URLs are bound to the parsing egress IP, so downloads need the same egress. Connecting a proxy does not enable the `/media` relay or supply Instagram's `IG_GRAPHQL_DOC_ID`.
 
 ### Upgrading
 
 Rebuild the image, then `docker compose up -d`. Verify `/health`, `/ready` and one real link per platform; rollback is just running the previous image tag. Run `docker image prune` occasionally to clear build cache.
-
-### Status Page
-
-The service ships its own status page: open `http://<server>:7777/status` in a browser to see whether the service is up, per-platform status, parse success/failure counters and recent platform-side failures, auto-refreshed every 10 seconds (toggleable). The same page works from disk over file:// (enter the service address manually). The page is embedded in the service binary: no extra dependencies, no monitoring stack.
 
 ## CI
 

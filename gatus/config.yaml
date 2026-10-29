@@ -20,97 +20,130 @@ endpoints:
   # ── 1. 存活：进程活着就 200，不碰外部依赖。30 秒一次，最快发现进程死 ──
   - name: health
     group: core
-    url: "${SVE_BASE_URL}/health"
+    url: '${SVE_BASE_URL}/health'
     interval: 30s
     conditions:
-      - "[STATUS] == 200"
-      - "[BODY].status == ok"
-      - "[RESPONSE_TIME] < 300"
+      - '[STATUS] == 200'
+      - '[BODY].status == ok'
+      - '[RESPONSE_TIME] < 300'
 
   # ── 2. 就绪：平台注册表必须加载完。9 是当前适配器数量，加平台要同步上调 ──
   - name: ready
     group: core
-    url: "${SVE_BASE_URL}/ready"
+    url: '${SVE_BASE_URL}/ready'
     interval: 60s
     conditions:
-      - "[STATUS] == 200"
-      - "[BODY].status == ready"
-      - "[BODY].platforms >= 9"
+      - '[STATUS] == 200'
+      - '[BODY].status == ready'
+      - '[BODY].platforms >= 9'
 
   # ── 3. 平台清单：平台数不能缩水 ──
   - name: platforms
     group: platform
-    url: "${SVE_BASE_URL}/platforms"
+    url: '${SVE_BASE_URL}/platforms'
     interval: 300s
     conditions:
-      - "[STATUS] == 200"
-      - "len([BODY].data) >= 9"
+      - '[STATUS] == 200'
+      - 'len([BODY].data) >= 9'
 
   # ── 4. 抖音签名器：data[0] 固定是 douyin（registry 注册顺序）──
   # available=false 意味着签名通道失效，抖音会全线退到浏览器或 503，单列一条便于定位。
   - name: signer-douyin
     group: platform
-    url: "${SVE_BASE_URL}/platforms"
+    url: '${SVE_BASE_URL}/platforms'
     interval: 300s
     conditions:
-      - "[BODY].data[0].platform == douyin"
-      - "[BODY].data[0].signers[0].available == true"
-      - "len([BODY].data[0].signers[0].version) > 0"
+      - '[BODY].data[0].platform == douyin'
+      - '[BODY].data[0].signers[0].available == true'
+      - 'len([BODY].data[0].signers[0].version) > 0'
 
   # ── 5. 指标端点：解析计数、上游失败、熔断、降级四组指标都得在 ──
   - name: metrics
     group: core
-    url: "${SVE_BASE_URL}/metrics"
+    url: '${SVE_BASE_URL}/metrics'
     interval: 300s
     conditions:
-      - "[STATUS] == 200"
-      - "[BODY] == pat(*parse_total*)"
-      - "[BODY] == pat(*upstream_error_total*)"
-      - "[BODY] == pat(*channel_breaker_open*)"
-      - "[BODY] == pat(*channel_downgrade_total*)"
+      - '[STATUS] == 200'
+      - '[BODY] == pat(*parse_total*)'
+      - '[BODY] == pat(*upstream_error_total*)'
+      - '[BODY] == pat(*channel_breaker_open*)'
+      - '[BODY] == pat(*channel_downgrade_total*)'
 
-  # ── 6. 内嵌状态页：模板被打坏或路由丢失时能发现 ──
-  - name: status-page
-    group: core
-    url: "${SVE_BASE_URL}/status"
-    interval: 300s
-    conditions:
-      - "[STATUS] == 200"
-      - "[BODY] == pat(*服务状态*)"
-
-  # ── 7. 真实解析：默认关闭 ──
-  # 打开前把 body 里的链接换成真实分享链接，interval 保持 1 小时以上。
-  # 高频打抖音/小红书会触发风控，出口 IP 可能被拉黑。
-  # 断言看 assets 非空，即真的拿到直链，不是只回了个 200。
+  # 真实解析：抖音、快手、B 站各一条已验证的公开样例，每个平台每小时一次。
+  # /parse 的正常结果缓存最长 30 分钟；其他用户近期解析过同一作品时可能命中缓存。
+  # 不断言 cached == false，避免把正常缓存命中误报为故障。
+  # 这里验证解析成功、平台/作品匹配、资源非空；不代表每条直链都已验证可下载。
+  # 作品删除、转私密或平台风控都可能使监控失败，先看原因，不自动换样例掩盖故障。
   - name: parse-real-link
     group: parse
-    enabled: false
-    url: "${SVE_BASE_URL}/parse"
+    url: '${SVE_BASE_URL}/parse'
     method: POST
     headers:
       Content-Type: application/json
     body: |
-      {"url":"https://v.douyin.com/REPLACE_WITH_REAL_LINK/"}
+      {"url":"https://www.douyin.com/video/7142091187963399427"}
+    client:
+      timeout: 25s
     interval: 3600s
     conditions:
-      - "[STATUS] == 200"
-      - "[BODY].success == true"
-      - "len([BODY].data.assets) > 0"
-      - "[BODY].data.assets[0].url == pat(http*)"
+      - '[STATUS] == 200'
+      - '[BODY].success == true'
+      - '[BODY].data.platform == douyin'
+      - '[BODY].data.id == 7142091187963399427'
+      - 'len([BODY].data.assets) > 0'
+      - '[BODY].data.assets[0].url == pat(https://*)'
 
-  # ── 8. 中转签名 /media：默认关闭 ──
+  - name: parse-kuaishou
+    group: parse
+    url: '${SVE_BASE_URL}/parse'
+    method: POST
+    headers:
+      Content-Type: application/json
+    body: |
+      {"url":"https://v.kuaishou.com/5hFdnB"}
+    client:
+      timeout: 25s
+    interval: 3600s
+    conditions:
+      - '[STATUS] == 200'
+      - '[BODY].success == true'
+      - '[BODY].data.platform == kuaishou'
+      - '[BODY].data.id == 5203346566089417256'
+      - 'len([BODY].data.assets) > 0'
+      - '[BODY].data.assets[0].url == pat(https://*)'
+
+  - name: parse-bilibili
+    group: parse
+    url: '${SVE_BASE_URL}/parse'
+    method: POST
+    headers:
+      Content-Type: application/json
+    body: |
+      {"url":"https://www.bilibili.com/video/BV1GJ411x7h7"}
+    client:
+      timeout: 25s
+    interval: 3600s
+    conditions:
+      - '[STATUS] == 200'
+      - '[BODY].success == true'
+      - '[BODY].data.platform == bilibili'
+      - '[BODY].data.id == BV1GJ411x7h7'
+      - 'len([BODY].data.assets) > 0'
+      - '[BODY].data.assets[0].url == pat(https://*)'
+
+  # ── 6. 中转签名 /media：默认关闭 ──
   # 只有配了 PROXY_SECRET 才启用。没配时正确行为是 501 + MEDIA_PROXY_DISABLED，
   # 所以期望值写 501；真接了 PROXY_SECRET 要改成带签名的 URL 并断言 200。
   - name: media-proxy-disabled
     group: optional
     enabled: false
-    url: "${SVE_BASE_URL}/media?u=https://example.com/a.mp4"
+    url: '${SVE_BASE_URL}/media?u=https://example.com/a.mp4'
     interval: 900s
     conditions:
-      - "[STATUS] == 501"
-      - "[BODY].error.code == MEDIA_PROXY_DISABLED"
+      - '[STATUS] == 501'
+      - '[BODY].error.code == MEDIA_PROXY_DISABLED'
 
-  # ── 9. 容器自身：需要挂 docker.sock，默认关闭 ──
+  # ── 7. 容器自身：需要挂 docker.sock，默认关闭 ──
   # docker 类型直接读容器状态，比 HTTP 探活更早发现 OOM、反复重启。
   # 打开方式：compose 里给 gatus 挂 /var/run/docker.sock:ro，再放开注释。
   # 注意：挂了 socket 等于给 gatus 容器宿主机 docker 权限，自己权衡。
@@ -121,7 +154,7 @@ endpoints:
   #   conditions:
   #     - "[CONTAINER_RUNNING] == true"
 
-# ── 10. 部署到域名后加这条：证书剩余有效期低于 72 小时报警 ──
+# ── 8. 部署到域名后加这条：证书剩余有效期低于 72 小时报警 ──
 # 本地没有 HTTPS 域名，先注释。换 https 域名后取消注释。
 #  - name: tls-cert
 #    group: 外部可达

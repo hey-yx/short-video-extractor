@@ -2,14 +2,15 @@ node_modules
 .git
 .gitignore
 .env*
+gatus
+docker-compose*.yml
 docs
-# 检测站页面要 COPY 进构建期（status.routes.ts text import 内嵌）
-!docs/status.html
+tests
+scripts
 README.md
 LICENSE
 .vscode
-.husky
+.idea
 dist
 coverage
-test
 *.log

@@ -18,7 +18,6 @@ import { redactRequestUrl, reqIdOf, reqStartedAt, requestLogger } from '@/infra/
 import { parseRoutes } from '@/routes/parse.routes';
 import { mediaRoutes } from '@/routes/media.routes';
 import { opsRoutes } from '@/routes/ops.routes';
-import { statusRoutes } from '@/routes/status.routes';
 
 export function createApp() {
   // 注册平台（加平台 = 加目录 + 这里一行）
@@ -78,8 +77,7 @@ export function createApp() {
     }))
     .use(parseRoutes)
     .use(mediaRoutes)
-    .use(opsRoutes)
-    .use(statusRoutes);
+    .use(opsRoutes);
 
   return app;
 }
