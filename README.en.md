@@ -192,12 +192,15 @@ Prometheus text format (hand-rolled renderer, no prom-client):
 bun install
 bun x --no-install puppeteer browsers install chrome  # install test Chrome before the first run
 bun dev          # dev (--watch), default port 7777
+bun run dev:stack    # local service + Gatus in Docker, started and stopped together
 bun test         # offline regression tests, including real Chromium tests
 bun run test:status  # one command for the full state: prettier / tsc / tests / coverage / CI
 bun run typecheck
 ```
 
 Bun is all you need locally. Docker is optional. `bun dev` starts the service and `/health`, `/ready`, `/metrics` respond right away. Reach for Docker when you want the dashboard with history, or the full deployment shape. See [Deployment](#deployment).
+
+`bun run dev:stack` is for setups with local monitoring: it starts the dev process, waits for `/health`, then brings up Gatus in Docker and stops it again on exit. Locally, compose starts only Gatus by default; the `app` service is behind the `docker-app` profile in `docker-compose.override.yml` so it does not duplicate the host process. Use `docker compose --profile docker-app up -d app` to reproduce the container shape locally.
 
 > [!TIP]
 > The browser-fallback paths (Douyin risk-control downgrade, Xiaohongshu fallback) need Chrome on the machine (Puppeteer manages it automatically); the pure HTTP channels have no such requirement.

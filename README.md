@@ -192,12 +192,15 @@ Prometheus 文本格式（自写渲染，未引 prom-client）：
 bun install
 bun x --no-install puppeteer browsers install chrome  # 首次测试前安装测试用 Chrome
 bun dev          # 开发（--watch），默认端口 7777
+bun run dev:stack    # 本地服务 + Docker 里的 Gatus 一起起停，Ctrl-C 一起收
 bun test         # 离线回归，含真实 Chromium 浏览器测试
 bun run test:status  # 一条命令看全状态：格式 / 类型 / 单测 / 覆盖率 / CI
 bun run typecheck
 ```
 
 本地只需要 Bun，不装 Docker 也能跑完整服务：`bun dev` 起进程，`/health`、`/ready`、`/metrics` 直接 curl。想看带历史的监控面板、想复现部署形态时再走 Docker，见[部署](#部署)。
+
+`bun run dev:stack` 是给「配了本机监控」的人用的：它起开发进程，等 `/health` 通了再拉起 Docker 里的 Gatus，退出时把 Gatus 停掉。本机形态下 compose 默认只启动 Gatus，`app` 容器在 `docker-compose.override.yml` 里挂了 `docker-app` profile，默认不启动，免得和宿主机进程重复；要在本机复现容器部署形态用 `docker compose --profile docker-app up -d app`。
 
 > [!TIP]
 > 浏览器兜底路径（抖音风控降级、小红书降级兜底）需要本机有 Chrome（Puppeteer 自动管理）；纯 HTTP 通道无此要求。
