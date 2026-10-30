@@ -33,13 +33,13 @@
 
 ## 快速开始
 
-前置：装好 [Bun](https://bun.sh)（1.2+），启动 Docker，并用 `docker pull twinproduction/gatus:stable` 下载监控镜像。
+前置：装好 [Bun](https://bun.sh)（1.2+）。想看可用性面板再准备 Docker 和 Gatus 镜像（`docker pull twinproduction/gatus:stable`），没有也能开发。
 
 ```bash
 git clone https://github.com/hey-yx/short-video-extractor.git
 cd short-video-extractor
 bun install
-bun dev          # 启动后端和 Gatus 监控面板，默认端口 7777 / 8080
+bun dev          # 启动后端；Docker 可用时顺带起 Gatus 面板（7777 / 8080）
 curl http://127.0.0.1:7777/health   # 服务起来了会返回 {"status":"ok",...}
 ```
 
@@ -191,17 +191,17 @@ Prometheus 文本格式（自写渲染，未引 prom-client）：
 ```bash
 bun install
 bun x --no-install puppeteer browsers install chrome  # 首次测试前安装测试用 Chrome
-bun dev          # 后端 + Gatus 监控面板，Ctrl-C 一起停止
+bun dev          # 后端 + Gatus 面板，Ctrl-C 一起停；Docker 不可用只跳过面板
 bun test         # 离线回归，含真实 Chromium 浏览器测试
 bun run test:status  # 一条命令看全状态：格式 / 类型 / 单测 / 覆盖率 / CI
 bun run typecheck
 ```
 
-本地开发需要 Bun 和已运行的 Docker。`bun dev` 启动后端程序，后端就绪后启动独立的 `sve-gatus-dev` 监控容器，面板地址为 `http://localhost:8080`。首次运行前用 `docker pull twinproduction/gatus:stable` 下载监控镜像。启动时检查 Docker、容器运行状态和面板是否响应，运行中继续检查监控可用性。按 Ctrl-C、后端进程退出或监控故障时结束开发并停止监控，历史保存在 `sve-gatus-dev-data` 卷里。端口可通过 `PORT` 与 `GATUS_PORT` 指定，已存在的容器必须与当前端口一致。
+本地开发需要 Bun；Docker 与 Gatus 镜像可选。`bun dev` 先起后端，再尝试拉监控容器：Docker 没开、镜像没拉、端口被别的服务占着或容器归属不对时，只打印一句「跳过可用性监控」并照常开发，不影响解析服务。容器起来后面板在 `http://localhost:8080`，运行中面板失效也只停监控、不打断后端。按 Ctrl-C 或后端退出则一起收尾，历史留在 `sve-gatus-dev-data` 卷。端口由 `PORT` 与 `GATUS_PORT` 指定。
 
-当前仓库只有解析 API 和 Gatus 监控面板，没有独立的业务前端。`bun start` 只启动后端，不联动本地监控。Docker Compose 只负责服务端部署，不使用本机覆盖文件或开发 profile。
+当前仓库只有解析 API 和 Gatus 监控面板，没有独立的业务前端。`bun start` 只起后端，不碰容器。Docker Compose 只负责服务端部署。
 
-正常退出与 SIGINT/SIGTERM 可以收尾；强制杀掉启动器、机器断电或 Docker 不可达时无法保证自动停止，需要检查 `docker ps -a --filter name=sve-gatus-dev` 并执行 `docker stop sve-gatus-dev`。
+正常退出与 SIGINT/SIGTERM 会停掉监控；强制杀掉启动器、机器断电或 Docker 中途不可达时可能残留容器，用 `docker ps -a --filter name=sve-gatus-dev` 查、`docker stop sve-gatus-dev` 收。
 
 > [!TIP]
 > 浏览器兜底路径（抖音风控降级、小红书降级兜底）需要本机有 Chrome（Puppeteer 自动管理）；纯 HTTP 通道无此要求。
@@ -282,9 +282,9 @@ compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0�
 
 ### 本机代理
 
-Docker Desktop 本地开发时，可在不提交的 `docker-compose.override.yml` 中给 app 设置 `PROXY_TWITTER`、`PROXY_YOUTUBE`、`PROXY_INSTAGRAM`、`PROXY_TIKTOK`，地址使用 `http://host.docker.internal:<电脑代理端口>`。`127.0.0.1` 在容器内指向容器本身，不能代替宿主机地址。覆盖文件会被 `docker compose` 自动合并，已加入 `.gitignore`，不要带到服务器部署。
+本机没有 app 容器，代理走宿主进程环境变量：在启动 `bun dev` 的终端里 `export PROXY_YOUTUBE=http://127.0.0.1:<代理端口>`，其他平台同理，不设全局 `HTTPS_PROXY`。宿主机进程直连本机代理，不需要 `host.docker.internal`。
 
-只配置海外四个平台，不设置全局 `HTTPS_PROXY`。修改容器环境变量后必须重新创建 app 容器，不属于 Gatus 的 YAML 热加载；应用前确认可以短暂中断解析服务，批准后执行 `docker compose up -d --no-deps --no-build app`。电脑代理退出或电脑休眠时，这条出口会不可用。YouTube 的媒体链接绑定解析出口 IP，下载需保持同一出口；接通代理不等于已启用 `/media` 中转或补齐 Instagram 的 `IG_GRAPHQL_DOC_ID`。
+服务端 app 容器在 `docker compose` 的 app 环境里配同样的四个变量，地址用 `http://host.docker.internal:<电脑代理端口>`：`127.0.0.1` 在容器内指容器自己。修改容器环境变量要重建 app 容器，不属于 Gatus 的 YAML 热加载；应用前确认可以短暂中断解析服务，批准后执行 `docker compose up -d --no-deps --no-build app`。电脑代理退出或休眠时这条出口不可用。YouTube 的媒体链接绑定解析出口 IP，下载需保持同一出口；接通代理不等于启用 `/media` 中转或补齐 Instagram 的 `IG_GRAPHQL_DOC_ID`。
 
 ### 升级
 

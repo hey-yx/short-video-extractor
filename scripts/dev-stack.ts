@@ -77,22 +77,34 @@ export async function runDev(runtime: DevRuntime, options: DevOptions): Promise<
     if (!abort.signal.aborted) throw new Error(`${url} 在 30 秒内没有就绪`);
   }
 
-  try {
-    await docker(['info', '--format', '{{.ServerVersion}}']);
-    if (await runtime.healthy(backendUrl)) throw new Error(`端口 ${port} 已有服务，请先结束原开发进程`);
-    const existing = await docker(['ps', '-a', '--filter', `name=^/${container}$`, '--format', '{{.Names}}']);
-    if (existing) {
-      const identity = await docker([
-        'inspect',
-        '--format',
-        `{{index .Config.Labels "${ownerLabel}"}}|{{index .Config.Labels "sve.dev.ports"}}`,
-        container,
-      ]);
-      if (identity !== `${projectRoot}|${port}:${monitorPort}`) {
-        throw new Error(`${container} 不属于本次开发配置，请检查容器归属及端口，不会自动覆盖`);
+  /** 预检 + 建容器。任何一步不过都只跳过监控，不拦住后端。 */
+  async function prepareMonitor(): Promise<boolean> {
+    try {
+      await docker(['info', '--format', '{{.ServerVersion}}']);
+      if (await runtime.healthy(backendUrl)) {
+        throw new Error(`端口 ${port} 已有服务在响应，监控容器会指向它`);
       }
-      if (await running()) throw new Error(`${container} 已在运行，请先结束原开发进程`);
-    } else {
+      const existing = await docker([
+        'ps',
+        '-a',
+        '--filter',
+        `name=^/${container}$`,
+        '--format',
+        '{{.Names}}',
+      ]);
+      if (existing) {
+        const identity = await docker([
+          'inspect',
+          '--format',
+          `{{index .Config.Labels "${ownerLabel}"}}|{{index .Config.Labels "sve.dev.ports"}}`,
+          container,
+        ]);
+        if (identity !== `${projectRoot}|${port}:${monitorPort}`) {
+          throw new Error(`${container} 属于其他配置（${identity}），不接管`);
+        }
+        if (await running()) throw new Error(`${container} 已在运行，先结束原开发进程`);
+        return true;
+      }
       await docker(['image', 'inspect', image]);
       await docker([
         'create',
@@ -118,33 +130,79 @@ export async function runDev(runtime: DevRuntime, options: DevOptions): Promise<
         'sve-gatus-dev-data:/data',
         image,
       ]);
+      return true;
+    } catch (error) {
+      runtime.log(`跳过可用性监控：${error instanceof Error ? error.message : String(error)}`);
+      return false;
     }
+  }
+
+  /** 启动容器并确认真的在跑、面板可达。失败只停掉监控，不影响后端。 */
+  async function startMonitor(): Promise<boolean> {
+    try {
+      await docker(['start', container]);
+      if (abort.signal.aborted) return false;
+      if (!(await running())) throw new Error('容器启动后退出，看 docker logs sve-gatus-dev');
+      await waitHealthy(monitorUrl);
+      runtime.log(`可用性面板 http://localhost:${monitorPort}`);
+      return true;
+    } catch (error) {
+      if (!abort.signal.aborted) {
+        runtime.log(`监控启动失败，后端继续：${error instanceof Error ? error.message : String(error)}`);
+      }
+      return false;
+    }
+  }
+
+  /** 运行中巡检；监控本身坏了只报告，不终止开发进程。 */
+  async function watchMonitor(): Promise<void> {
+    let failures = 0;
+    while (!abort.signal.aborted) {
+      await runtime.sleep(2000);
+      if (abort.signal.aborted) break;
+      try {
+        if (!(await running())) throw new Error('容器已退出');
+        failures = (await runtime.healthy(monitorUrl)) ? 0 : failures + 1;
+        if (failures >= 3) throw new Error('面板连续三次未响应');
+      } catch (error) {
+        if (!abort.signal.aborted) {
+          runtime.log(`监控已停止，后端继续：${error instanceof Error ? error.message : String(error)}`);
+        }
+        return;
+      }
+    }
+  }
+
+  try {
+    // 预检与建容器都可跳过：监控是附加能力，缺 Docker 不该挡住后端。
+    const monitorPlanned = await prepareMonitor();
     if (abort.signal.aborted) return exitCode;
-    dev = runtime.spawn();
-    void dev.exited.then((code) => {
+    try {
+      dev = runtime.spawn();
+    } catch (error) {
+      runtime.log(`启动开发进程失败：${error instanceof Error ? error.message : String(error)}`);
+      return 1;
+    }
+    const spawned = dev;
+    void spawned.exited.then((code) => {
       finished = true;
       if (!abort.signal.aborted) {
         exitCode = code;
         abort.abort();
       }
     });
+    if (abort.signal.aborted) return exitCode;
     await waitHealthy(backendUrl);
     if (abort.signal.aborted) return exitCode;
-    // 启动命令完成前若收到信号，仍等命令结束后再停止，避免漏掉迟到的容器。
-    stopMonitor = true;
-    await docker(['start', container]);
-    if (abort.signal.aborted) return exitCode;
-    if (!(await running())) throw new Error('Gatus 容器启动后退出，请检查 docker logs sve-gatus-dev');
-    await waitHealthy(monitorUrl);
-    if (abort.signal.aborted) return exitCode;
-    runtime.log(`解析服务 http://localhost:${port}；可用性面板 http://localhost:${monitorPort}`);
-    let failures = 0;
-    while (!abort.signal.aborted) {
-      await runtime.sleep(2000);
-      if (abort.signal.aborted) break;
-      if (!(await running())) throw new Error('Gatus 容器已退出，本地开发同时结束');
-      failures = (await runtime.healthy(monitorUrl)) ? 0 : failures + 1;
-      if (failures >= 3) throw new Error('Gatus 连续三次未响应，本地开发同时结束');
+    if (monitorPlanned) {
+      stopMonitor = true;
+      if (await startMonitor()) await watchMonitor();
+    } else {
+      runtime.log(`后端已就绪：http://localhost:${port}（可用性监控已跳过）`);
+    }
+    if (!abort.signal.aborted) {
+      exitCode = await spawned.exited;
+      finished = true;
     }
   } catch (error) {
     if (!abort.signal.aborted) {

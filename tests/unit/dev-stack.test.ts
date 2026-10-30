@@ -22,6 +22,7 @@ interface Scenario {
   monitorFailsLater?: boolean;
   startExits?: boolean;
   stopRemainsRunning?: boolean;
+  exitOnIdle?: boolean;
 }
 
 function harness(scenario: Scenario = {}) {
@@ -37,11 +38,13 @@ function harness(scenario: Scenario = {}) {
     resolveExit = resolve;
   });
   const killed: (number | undefined)[] = [];
+  const later = (code = 0) => setTimeout(() => resolveExit(code), 0);
   const runtime: DevRuntime = {
     async exec(args) {
       commands.push(args);
       if (args[0] === scenario.signalAt) signalHandler?.(scenario.signal ?? 'SIGINT');
       if (args[0] === scenario.commandFailure || (args[0] === 'stop' && scenario.stopFails)) {
+        if (args[0] === 'start') later();
         return { code: 1, out: '', err: 'Docker boundary failed' };
       }
       let out = '';
@@ -52,8 +55,8 @@ function harness(scenario: Scenario = {}) {
           : String(running);
       }
       if (args[0] === 'start') {
-        running = true;
-        if (scenario.startExits) running = false;
+        running = !scenario.startExits;
+        if (scenario.startExits) later();
       }
       if (args[0] === 'stop') running = scenario.stopRemainsRunning ?? false;
       return { code: 0, out, err: '' };
@@ -61,6 +64,7 @@ function harness(scenario: Scenario = {}) {
     spawn() {
       launched = true;
       if (scenario.immediateExit !== undefined) resolveExit(scenario.immediateExit);
+      if (scenario.exitOnIdle) queueMicrotask(() => resolveExit(0));
       return {
         exited,
         kill(signal) {
@@ -72,14 +76,26 @@ function harness(scenario: Scenario = {}) {
     async healthy(url) {
       if (url.includes(':7777/'))
         return launched ? scenario.backendReady !== false : !!scenario.backendOccupied;
-      if (scenario.monitorFailsLater && ++monitorProbes > 1) return false;
-      return scenario.monitorReady !== false;
+      if (scenario.monitorFailsLater) {
+        monitorProbes += 1;
+        if (monitorProbes > 1) {
+          if (monitorProbes > 3) later();
+          return false;
+        }
+      }
+      if (scenario.monitorReady === false) {
+        later();
+        return false;
+      }
+      return true;
     },
     async sleep(ms) {
       clock += ms;
       if (ms === 2000) {
-        if (scenario.monitorStops) running = false;
-        else if (!scenario.monitorFailsLater && scenario.monitorReady !== false) {
+        if (scenario.monitorStops) {
+          running = false;
+          later();
+        } else if (!scenario.monitorFailsLater && scenario.monitorReady !== false) {
           if (scenario.naturalExit !== undefined) resolveExit(scenario.naturalExit);
           else signalHandler?.(scenario.signal ?? 'SIGINT');
         }
@@ -100,6 +116,15 @@ function harness(scenario: Scenario = {}) {
 }
 
 describe('开发与独立 Gatus 的生命周期', () => {
+  test('Docker 预检失败只跳过监控，后端仍启动并正常退出', async () => {
+    const h = harness({ commandFailure: 'info', exitOnIdle: true });
+    expect(await runDev(h.runtime, options)).toBe(0);
+    expect(h.wasLaunched()).toBe(true);
+    expect(h.killed).toHaveLength(0);
+    expect(h.commands.some((command) => command[0] === 'create' || command[0] === 'start')).toBe(false);
+    expect(h.messages.some((message) => message.includes('跳过可用性监控'))).toBe(true);
+  });
+
   test('无效端口在操作 Docker 前被拒绝', async () => {
     const h = harness();
     expect(await runDev(h.runtime, { ...options, port: 0 })).toBe(1);
@@ -124,9 +149,9 @@ describe('开发与独立 Gatus 的生命周期', () => {
     ['正常结束', { naturalExit: 0 }, 0],
     ['进程异常退出', { naturalExit: 3 }, 3],
     ['启动监控时收到信号', { signalAt: 'start' }, 130],
-    ['容器运行时退出', { monitorStops: true }, 1],
-    ['启动命令失败仍尝试收尾', { commandFailure: 'start' }, 1],
-    ['监控 HTTP 无响应', { monitorReady: false }, 1],
+    ['容器运行时退出只停监控', { monitorStops: true }, 0],
+    ['启动命令失败只停监控', { commandFailure: 'start' }, 0],
+    ['面板启动后无响应只停监控', { monitorReady: false }, 0],
     ['开发进程忽略终止信号，超时后强制结束', { forceKill: true }, 130],
   ] satisfies [string, Scenario, number][]) {
     test(name, async () => {
@@ -138,11 +163,11 @@ describe('开发与独立 Gatus 的生命周期', () => {
   }
 
   for (const [name, scenario, expected] of [
-    ['Docker 不可用', { commandFailure: 'info' }, 1],
-    ['后端端口已经在使用', { backendOccupied: true }, 1],
-    ['拒绝接管其他项目的监控容器', { existing: true, identity: '/other|7777:8080' }, 1],
-    ['拒绝重复启动运行中的监控', { existing: true, alreadyRunning: true }, 1],
-    ['缺少监控镜像', { commandFailure: 'image' }, 1],
+    ['Docker 不可用', { commandFailure: 'info', exitOnIdle: true }, 0],
+    ['后端端口已经有服务', { backendOccupied: true, exitOnIdle: true }, 0],
+    ['拒绝接管其他项目的监控容器', { existing: true, identity: '/other|7777:8080', exitOnIdle: true }, 0],
+    ['拒绝重复启动运行中的监控', { existing: true, alreadyRunning: true, exitOnIdle: true }, 0],
+    ['缺少监控镜像', { commandFailure: 'image', exitOnIdle: true }, 0],
     ['后端未就绪', { backendReady: false }, 1],
     ['后端立即崩溃', { immediateExit: 3 }, 3],
     ['创建时取消', { signalAt: 'create' }, 130],
@@ -173,15 +198,17 @@ describe('开发与独立 Gatus 的生命周期', () => {
     expect(h.messages.some((message) => message.includes('停止监控失败'))).toBe(true);
   });
 
-  test('容器启动后立即退出判失败', async () => {
+  test('容器启动后立即退出只停监控', async () => {
     const h = harness({ startExits: true });
-    expect(await runDev(h.runtime, options)).toBe(1);
+    expect(await runDev(h.runtime, options)).toBe(0);
+    expect(h.messages.some((message) => message.includes('监控启动失败'))).toBe(true);
+    expect(h.commands.some((command) => command[0] === 'stop')).toBe(true);
   });
 
-  test('运行中监控连续无响应三分钟后结束开发', async () => {
+  test('运行中监控无响应只停监控，后端继续', async () => {
     const h = harness({ monitorFailsLater: true });
-    expect(await runDev(h.runtime, options)).toBe(1);
-    expect(h.messages.some((message) => message.includes('连续三次未响应'))).toBe(true);
+    expect(await runDev(h.runtime, options)).toBe(0);
+    expect(h.messages.some((message) => message.includes('面板连续三次未响应'))).toBe(true);
     expect(h.commands.some((command) => command[0] === 'stop')).toBe(true);
   });
 });

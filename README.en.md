@@ -33,13 +33,13 @@ Short-video parsing API: give it a share link, get watermark-free video / photo-
 
 ## Quick Start
 
-Prerequisites: [Bun](https://bun.sh) 1.2+, a running Docker engine, and the Gatus image (`docker pull twinproduction/gatus:stable`).
+Prerequisites: [Bun](https://bun.sh) 1.2+. Docker and the Gatus image (`docker pull twinproduction/gatus:stable`) are only needed for the local dashboard.
 
 ```bash
 git clone https://github.com/hey-yx/short-video-extractor.git
 cd short-video-extractor
 bun install
-bun dev          # backend and Gatus dashboard, default ports 7777 / 8080
+bun dev          # backend, plus the Gatus dashboard when Docker is available (7777 / 8080)
 curl http://127.0.0.1:7777/health   # {"status":"ok",...} once it is up
 ```
 
@@ -191,17 +191,17 @@ Prometheus text format (hand-rolled renderer, no prom-client):
 ```bash
 bun install
 bun x --no-install puppeteer browsers install chrome  # install test Chrome before the first run
-bun dev          # backend + Gatus dashboard, Ctrl-C stops both
+bun dev          # backend + Gatus dashboard, Ctrl-C stops both; no Docker means no dashboard
 bun test         # offline regression tests, including real Chromium tests
 bun run test:status  # one command for the full state: prettier / tsc / tests / coverage / CI
 bun run typecheck
 ```
 
-Local development requires Bun and a running Docker engine. `bun dev` starts the backend, waits for it to respond, then starts the independent `sve-gatus-dev` monitoring container at `http://localhost:8080`. Download the image before the first run with `docker pull twinproduction/gatus:stable`. The launcher checks Docker, the container state and the dashboard's response, and keeps checking monitoring availability while running. Ctrl-C, backend exit or a monitoring failure ends development and stops Gatus. History stays in the `sve-gatus-dev-data` volume. Set `PORT` and `GATUS_PORT` to change ports; an existing container must match those values.
+Local development needs Bun; Docker and the Gatus image are optional. `bun dev` starts the backend, then tries to bring up the monitoring container: if Docker is down, the image is missing, the port is taken by something else, or the container belongs to another config, it prints one "skipping availability monitoring" line and keeps developing. The dashboard lives at `http://localhost:8080` when the container is up, and a dashboard failure later only stops monitoring, never the backend. Ctrl-C or backend exit stops both, with history kept in the `sve-gatus-dev-data` volume. Ports come from `PORT` and `GATUS_PORT`.
 
-This repository contains the parser API and the Gatus dashboard, not a separate product frontend. `bun start` runs only the backend, without local monitoring. Docker Compose is for server deployment only, with no local override or development profile.
+This repository contains the parser API and the Gatus dashboard, not a separate product frontend. `bun start` runs the backend only and never touches containers. Docker Compose is for server deployment only.
 
-Normal exit and SIGINT/SIGTERM allow cleanup. Force-killing the launcher, power loss or an unreachable Docker engine can leave the container running. Check `docker ps -a --filter name=sve-gatus-dev` and stop it with `docker stop sve-gatus-dev` in those cases.
+Normal exit and SIGINT/SIGTERM stop the monitor. Force-killing the launcher, power loss or Docker becoming unreachable can leave the container behind: check `docker ps -a --filter name=sve-gatus-dev` and stop it with `docker stop sve-gatus-dev`.
 
 > [!TIP]
 > The browser-fallback paths (Douyin risk-control downgrade, Xiaohongshu fallback) need Chrome on the machine (Puppeteer manages it automatically); the pure HTTP channels have no such requirement.
@@ -282,9 +282,9 @@ Alerting is off by default. To enable it, turn on `alerting.custom` in the confi
 
 ### Local host proxy
 
-For local development with Docker Desktop, set `PROXY_TWITTER`, `PROXY_YOUTUBE`, `PROXY_INSTAGRAM` and `PROXY_TIKTOK` for app in an untracked `docker-compose.override.yml`, using `http://host.docker.internal:<host-proxy-port>`. Inside a container, `127.0.0.1` refers to that container, not the host. Compose automatically merges the override file, which is excluded by `.gitignore`; do not copy it to server deployments.
+Locally there is no app container, so proxies come from the host process environment: export `PROXY_YOUTUBE=http://127.0.0.1:<proxy-port>` in the terminal running `bun dev`, same for the other platforms, and no global `HTTPS_PROXY`. The host process reaches a local proxy directly, so `host.docker.internal` is unnecessary.
 
-Configure only the four overseas platforms rather than a global `HTTPS_PROXY`. Environment changes require recreating app; Gatus YAML reloading cannot apply them. After approving the brief parsing interruption, run `docker compose up -d --no-deps --no-build app`. This egress becomes unavailable if the host proxy quits or the computer sleeps. YouTube media URLs are bound to the parsing egress IP, so downloads need the same egress. Connecting a proxy does not enable the `/media` relay or supply Instagram's `IG_GRAPHQL_DOC_ID`.
+The server's app container takes the same variables in the `docker compose` app environment, addressed as `http://host.docker.internal:<host-proxy-port>` because `127.0.0.1` inside a container means the container itself. Environment changes require recreating app; Gatus YAML reloading cannot apply them. After approving the brief parsing interruption, run `docker compose up -d --no-deps --no-build app`. This egress disappears if the host proxy quits or the machine sleeps. YouTube media URLs are bound to the parsing egress IP, so downloads need the same egress. Connecting a proxy does not enable the `/media` relay or supply Instagram's `IG_GRAPHQL_DOC_ID`.
 
 ### Upgrading
 
