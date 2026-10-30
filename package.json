@@ -3,8 +3,7 @@
   "version": "2.1.0",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "dev:stack": "bun scripts/dev-stack.ts",
+    "dev": "bun scripts/dev-stack.ts",
     "start": "bun src/index.ts",
     "test": "bun test",
     "test:status": "bun scripts/test-status.ts",

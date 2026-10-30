@@ -33,13 +33,13 @@ Short-video parsing API: give it a share link, get watermark-free video / photo-
 
 ## Quick Start
 
-Prerequisite: [Bun](https://bun.sh) 1.2+.
+Prerequisites: [Bun](https://bun.sh) 1.2+, a running Docker engine, and the Gatus image (`docker pull twinproduction/gatus:stable`).
 
 ```bash
 git clone https://github.com/hey-yx/short-video-extractor.git
 cd short-video-extractor
 bun install
-bun dev          # start the dev server, port 7777 by default
+bun dev          # backend and Gatus dashboard, default ports 7777 / 8080
 curl http://127.0.0.1:7777/health   # {"status":"ok",...} once it is up
 ```
 
@@ -191,16 +191,17 @@ Prometheus text format (hand-rolled renderer, no prom-client):
 ```bash
 bun install
 bun x --no-install puppeteer browsers install chrome  # install test Chrome before the first run
-bun dev          # dev (--watch), default port 7777
-bun run dev:stack    # local service + Gatus in Docker, started and stopped together
+bun dev          # backend + Gatus dashboard, Ctrl-C stops both
 bun test         # offline regression tests, including real Chromium tests
 bun run test:status  # one command for the full state: prettier / tsc / tests / coverage / CI
 bun run typecheck
 ```
 
-Bun is all you need locally. Docker is optional. `bun dev` starts the service and `/health`, `/ready`, `/metrics` respond right away. Reach for Docker when you want the dashboard with history, or the full deployment shape. See [Deployment](#deployment).
+Local development requires Bun and a running Docker engine. `bun dev` starts the backend, waits for it to respond, then starts the independent `sve-gatus-dev` monitoring container at `http://localhost:8080`. Download the image before the first run with `docker pull twinproduction/gatus:stable`. The launcher checks Docker, the container state and the dashboard's response, and keeps checking monitoring availability while running. Ctrl-C, backend exit or a monitoring failure ends development and stops Gatus. History stays in the `sve-gatus-dev-data` volume. Set `PORT` and `GATUS_PORT` to change ports; an existing container must match those values.
 
-`bun run dev:stack` is for setups with local monitoring: it starts the dev process, waits for `/health`, then brings up Gatus in Docker and stops it again on exit. Locally, compose starts only Gatus by default; the `app` service is behind the `docker-app` profile in `docker-compose.override.yml` so it does not duplicate the host process. Use `docker compose --profile docker-app up -d app` to reproduce the container shape locally.
+This repository contains the parser API and the Gatus dashboard, not a separate product frontend. `bun start` runs only the backend, without local monitoring. Docker Compose is for server deployment only, with no local override or development profile.
+
+Normal exit and SIGINT/SIGTERM allow cleanup. Force-killing the launcher, power loss or an unreachable Docker engine can leave the container running. Check `docker ps -a --filter name=sve-gatus-dev` and stop it with `docker stop sve-gatus-dev` in those cases.
 
 > [!TIP]
 > The browser-fallback paths (Douyin risk-control downgrade, Xiaohongshu fallback) need Chrome on the machine (Puppeteer manages it automatically); the pure HTTP channels have no such requirement.
@@ -249,7 +250,7 @@ APP_PORT=7778 GATUS_PORT=8081 docker compose up -d
 
 ### Monitoring (Gatus)
 
-The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apache-2.0) against the parser. Five basic checks live in `gatus/config.yaml`; checks containing user share links live in untracked `gatus/samples.local.yaml`. The local override sets `GATUS_CONFIG_PATH=/config` to load YAML files from that directory and targets the local Bun service. Monitoring configuration saves reload automatically without a container restart, but the dashboard does not update instantly.
+The `gatus` service in compose runs [Gatus](https://github.com/TwiN/gatus) (Apache-2.0) against the parser. Five basic checks live in `gatus/config.yaml`; checks containing user share links live in untracked `gatus/samples.local.yaml`. Server monitoring targets `http://app:7777`; local `bun dev` uses an independent container to reach the host backend. Both set `GATUS_CONFIG_PATH=/config` to load YAML files from that directory. Monitoring configuration saves reload automatically without a container restart, but the dashboard does not update instantly.
 
 The complete Xiaohongshu share token stays in the local sample file, with mode 600 and exclusions from both Git and the Docker build context. Do not publish that file.
 

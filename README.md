@@ -33,13 +33,13 @@
 
 ## 快速开始
 
-前置：装好 [Bun](https://bun.sh)（1.2+）。
+前置：装好 [Bun](https://bun.sh)（1.2+），启动 Docker，并用 `docker pull twinproduction/gatus:stable` 下载监控镜像。
 
 ```bash
 git clone https://github.com/hey-yx/short-video-extractor.git
 cd short-video-extractor
 bun install
-bun dev          # 启动开发服务，默认端口 7777
+bun dev          # 启动后端和 Gatus 监控面板，默认端口 7777 / 8080
 curl http://127.0.0.1:7777/health   # 服务起来了会返回 {"status":"ok",...}
 ```
 
@@ -191,16 +191,17 @@ Prometheus 文本格式（自写渲染，未引 prom-client）：
 ```bash
 bun install
 bun x --no-install puppeteer browsers install chrome  # 首次测试前安装测试用 Chrome
-bun dev          # 开发（--watch），默认端口 7777
-bun run dev:stack    # 本地服务 + Docker 里的 Gatus 一起起停，Ctrl-C 一起收
+bun dev          # 后端 + Gatus 监控面板，Ctrl-C 一起停止
 bun test         # 离线回归，含真实 Chromium 浏览器测试
 bun run test:status  # 一条命令看全状态：格式 / 类型 / 单测 / 覆盖率 / CI
 bun run typecheck
 ```
 
-本地只需要 Bun，不装 Docker 也能跑完整服务：`bun dev` 起进程，`/health`、`/ready`、`/metrics` 直接 curl。想看带历史的监控面板、想复现部署形态时再走 Docker，见[部署](#部署)。
+本地开发需要 Bun 和已运行的 Docker。`bun dev` 启动后端程序，后端就绪后启动独立的 `sve-gatus-dev` 监控容器，面板地址为 `http://localhost:8080`。首次运行前用 `docker pull twinproduction/gatus:stable` 下载监控镜像。启动时检查 Docker、容器运行状态和面板是否响应，运行中继续检查监控可用性。按 Ctrl-C、后端进程退出或监控故障时结束开发并停止监控，历史保存在 `sve-gatus-dev-data` 卷里。端口可通过 `PORT` 与 `GATUS_PORT` 指定，已存在的容器必须与当前端口一致。
 
-`bun run dev:stack` 是给「配了本机监控」的人用的：它起开发进程，等 `/health` 通了再拉起 Docker 里的 Gatus，退出时把 Gatus 停掉。本机形态下 compose 默认只启动 Gatus，`app` 容器在 `docker-compose.override.yml` 里挂了 `docker-app` profile，默认不启动，免得和宿主机进程重复；要在本机复现容器部署形态用 `docker compose --profile docker-app up -d app`。
+当前仓库只有解析 API 和 Gatus 监控面板，没有独立的业务前端。`bun start` 只启动后端，不联动本地监控。Docker Compose 只负责服务端部署，不使用本机覆盖文件或开发 profile。
+
+正常退出与 SIGINT/SIGTERM 可以收尾；强制杀掉启动器、机器断电或 Docker 不可达时无法保证自动停止，需要检查 `docker ps -a --filter name=sve-gatus-dev` 并执行 `docker stop sve-gatus-dev`。
 
 > [!TIP]
 > 浏览器兜底路径（抖音风控降级、小红书降级兜底）需要本机有 Chrome（Puppeteer 自动管理）；纯 HTTP 通道无此要求。
@@ -249,7 +250,7 @@ APP_PORT=7778 GATUS_PORT=8081 docker compose up -d
 
 ### 监控（Gatus）
 
-compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0）探活。五条基础检查在 `gatus/config.yaml`；含用户分享链接的真实解析检查在不提交的 `gatus/samples.local.yaml`。本机覆盖配置设置 `GATUS_CONFIG_PATH=/config`，读取该目录中的 YAML，目标为本机 Bun 服务。保存监控配置后自动重新加载，不需要重启容器，但不是保存瞬间就更新页面。
+compose 里的 `gatus` 用 [Gatus](https://github.com/TwiN/gatus)（Apache-2.0）探活。五条基础检查在 `gatus/config.yaml`；含用户分享链接的真实解析检查在不提交的 `gatus/samples.local.yaml`。服务端监控目标为 `http://app:7777`，本地 `bun dev` 通过独立容器访问宿主机后端，两者都设置 `GATUS_CONFIG_PATH=/config` 读取该目录中的 YAML。保存监控配置后自动重新加载，不需要重启容器，但不是保存瞬间就更新页面。
 
 小红书的完整分享 token 只保存在本地样例文件，文件权限为 600，同时被 Git 和 Docker 构建上下文排除。不要把该文件上传到公开仓库。
 

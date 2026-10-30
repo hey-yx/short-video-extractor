@@ -8,7 +8,7 @@ coverage/
 .env
 .env.*.local
 
-# 本机 Compose 覆盖配置（代理地址和本地端口）
+# 遗留私有覆盖文件仍排除提交；开发入口不读取它
 docker-compose.override.yml
 # 含用户分享凭据的本地监控样例
 gatus/*.local.yaml

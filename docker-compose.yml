@@ -30,6 +30,7 @@ services:
     ports:
       - "${GATUS_PORT:-8080}:8080"
     environment:
+      - GATUS_CONFIG_PATH=/config
       # 容器内走服务名访问 app,不经过宿主机端口
       - SVE_BASE_URL=http://app:7777
     volumes:

@@ -1,108 +1,246 @@
 #!/usr/bin/env bun
-/**
- * 本地开发 + 监控一条命令：起 bun dev，等它 /health 通了再拉起 Docker 里的 Gatus，
- * 退出（Ctrl-C / 编译失败 / SIGTERM）时把 Gatus 一起停掉，Docker 不留在后台空转。
- *
- * 用法：
- *   bun run dev:stack              # 默认 bun --watch src/index.ts
- *   bun run dev:stack -- bun src/index.ts   # 换掉开发进程命令
- *
- * 只动 Gatus 一个容器；app 服务容器在 docker-compose.override.yml 里被 profile 关掉了
- * （要复现容器部署形态时显式 --profile docker-app up -d app）。
- */
 import { join } from 'node:path';
 
 const root = join(import.meta.dir, '..');
-const port = Number(process.env.PORT ?? 7777);
-const healthUrl = `http://127.0.0.1:${port}/health`;
-const HEALTH_TIMEOUT_MS = 30_000;
+const container = 'sve-gatus-dev';
+const image = 'twinproduction/gatus:stable';
+const ownerLabel = 'sve.dev.root';
 
-const passthrough = process.argv.slice(2);
-const devCmd = passthrough.length > 0 ? passthrough : ['bun', '--watch', 'src/index.ts'];
-
-const log = (msg: string) => console.log(`[dev-stack] ${msg}`);
-
-async function composeUp(): Promise<number> {
-  const proc = Bun.spawn({
-    cmd: ['docker', 'compose', 'up', '-d', 'gatus'],
-    cwd: root,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-  const [code, out, err] = await Promise.all([
-    proc.exited,
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-  ]);
-  if (out.trim()) console.log(out.trim());
-  if (err.trim()) console.error(err.trim());
-  return code;
+interface CommandResult {
+  code: number;
+  out: string;
+  err: string;
 }
 
-/** 收尾必须走同步调用：进程一 exit，Bun 会连带杀掉未完成的子进程，异步 stop 会半途夭折。 */
-function composeStopSync(): number {
-  const result = Bun.spawnSync({
-    cmd: ['docker', 'compose', 'stop', 'gatus'],
-    cwd: root,
-    stdout: 'inherit',
-    stderr: 'inherit',
-  });
-  return result.exitCode ?? 1;
+interface DevProcess {
+  exited: Promise<number>;
+  kill(signal?: number): void;
 }
 
-/** 等开发服务自己的 /health 通；进程提前退出或超时都返回 false，不阻塞收尾。 */
-async function waitForHealth(dev: ReturnType<typeof Bun.spawn>): Promise<boolean> {
-  const deadline = Date.now() + HEALTH_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    if (dev.exitCode !== null) return false;
-    try {
-      const res = await fetch(healthUrl, { signal: AbortSignal.timeout(1500) });
-      if (res.ok) return true;
-    } catch {
-      // 还没起来，继续等
+export interface DevRuntime {
+  exec(args: string[]): Promise<CommandResult>;
+  spawn(): DevProcess;
+  healthy(url: string): Promise<boolean>;
+  sleep(ms: number): Promise<void>;
+  now(): number;
+  onSignal(handler: (signal: 'SIGINT' | 'SIGTERM') => void): () => void;
+  log(message: string): void;
+}
+
+export interface DevOptions {
+  port: number;
+  monitorPort: number;
+  root: string;
+}
+
+/** 本地入口只控制独立 Gatus 容器，不使用部署用的 Compose。 */
+export async function runDev(runtime: DevRuntime, options: DevOptions): Promise<number> {
+  const { port, monitorPort, root: projectRoot } = options;
+  if (
+    ![port, monitorPort].every((value) => Number.isInteger(value) && value > 0 && value <= 65535) ||
+    port === monitorPort
+  ) {
+    runtime.log('PORT 与 GATUS_PORT 必须是不同的有效端口');
+    return 1;
+  }
+  const backendUrl = `http://127.0.0.1:${port}/health`;
+  const monitorUrl = `http://127.0.0.1:${monitorPort}/health`;
+  const target = `http://host.docker.internal:${port}`;
+  let dev: DevProcess | undefined;
+  let stopMonitor = false;
+  let exitCode = 0;
+  let finished = false;
+  const abort = new AbortController();
+  const offSignal = runtime.onSignal((signal) => {
+    if (abort.signal.aborted) return;
+    exitCode = signal === 'SIGINT' ? 130 : 143;
+    abort.abort();
+    dev?.kill();
+  });
+
+  async function docker(args: string[]): Promise<string> {
+    const result = await runtime.exec(args);
+    if (result.code !== 0) throw new Error(result.err.trim() || `docker ${args[0]} 失败`);
+    return result.out.trim();
+  }
+
+  async function running(): Promise<boolean> {
+    return (await docker(['inspect', '--format', '{{.State.Running}}', container])) === 'true';
+  }
+
+  async function waitHealthy(url: string): Promise<void> {
+    const deadline = runtime.now() + 30_000;
+    while (!abort.signal.aborted && runtime.now() < deadline) {
+      if (await runtime.healthy(url)) return;
+      await runtime.sleep(200);
     }
-    await Bun.sleep(400);
+    if (!abort.signal.aborted) throw new Error(`${url} 在 30 秒内没有就绪`);
   }
-  return false;
-}
 
-log(`启动开发进程: ${devCmd.join(' ')}（端口 ${port}）`);
-const dev = Bun.spawn({
-  cmd: devCmd,
-  cwd: root,
-  stdin: 'inherit',
-  stdout: 'inherit',
-  stderr: 'inherit',
-  env: process.env,
-});
-
-let gatusUp = false;
-let stopping = false;
-
-async function shutdown(code: number): Promise<never> {
-  if (stopping) process.exit(code);
-  stopping = true;
-  dev.kill();
-  if (gatusUp) {
-    log('开发进程结束，停 Gatus…');
-    if (composeStopSync() !== 0) log('停 Gatus 失败，手动收尾: docker compose stop gatus');
+  try {
+    await docker(['info', '--format', '{{.ServerVersion}}']);
+    if (await runtime.healthy(backendUrl)) throw new Error(`端口 ${port} 已有服务，请先结束原开发进程`);
+    const existing = await docker(['ps', '-a', '--filter', `name=^/${container}$`, '--format', '{{.Names}}']);
+    if (existing) {
+      const identity = await docker([
+        'inspect',
+        '--format',
+        `{{index .Config.Labels "${ownerLabel}"}}|{{index .Config.Labels "sve.dev.ports"}}`,
+        container,
+      ]);
+      if (identity !== `${projectRoot}|${port}:${monitorPort}`) {
+        throw new Error(`${container} 不属于本次开发配置，请检查容器归属及端口，不会自动覆盖`);
+      }
+      if (await running()) throw new Error(`${container} 已在运行，请先结束原开发进程`);
+    } else {
+      await docker(['image', 'inspect', image]);
+      await docker([
+        'create',
+        '--name',
+        container,
+        '--restart=no',
+        '--memory=256m',
+        '--label',
+        `${ownerLabel}=${projectRoot}`,
+        '--label',
+        `sve.dev.ports=${port}:${monitorPort}`,
+        '--publish',
+        `127.0.0.1:${monitorPort}:8080`,
+        '--add-host',
+        'host.docker.internal:host-gateway',
+        '--env',
+        'GATUS_CONFIG_PATH=/config',
+        '--env',
+        `SVE_BASE_URL=${target}`,
+        '--volume',
+        `${join(projectRoot, 'gatus')}:/config:ro`,
+        '--volume',
+        'sve-gatus-dev-data:/data',
+        image,
+      ]);
+    }
+    if (abort.signal.aborted) return exitCode;
+    dev = runtime.spawn();
+    void dev.exited.then((code) => {
+      finished = true;
+      if (!abort.signal.aborted) {
+        exitCode = code;
+        abort.abort();
+      }
+    });
+    await waitHealthy(backendUrl);
+    if (abort.signal.aborted) return exitCode;
+    // 启动命令完成前若收到信号，仍等命令结束后再停止，避免漏掉迟到的容器。
+    stopMonitor = true;
+    await docker(['start', container]);
+    if (abort.signal.aborted) return exitCode;
+    if (!(await running())) throw new Error('Gatus 容器启动后退出，请检查 docker logs sve-gatus-dev');
+    await waitHealthy(monitorUrl);
+    if (abort.signal.aborted) return exitCode;
+    runtime.log(`解析服务 http://localhost:${port}；可用性面板 http://localhost:${monitorPort}`);
+    let failures = 0;
+    while (!abort.signal.aborted) {
+      await runtime.sleep(2000);
+      if (abort.signal.aborted) break;
+      if (!(await running())) throw new Error('Gatus 容器已退出，本地开发同时结束');
+      failures = (await runtime.healthy(monitorUrl)) ? 0 : failures + 1;
+      if (failures >= 3) throw new Error('Gatus 连续三次未响应，本地开发同时结束');
+    }
+  } catch (error) {
+    if (!abort.signal.aborted) {
+      exitCode = 1;
+      runtime.log(`启动或监控失败：${error instanceof Error ? error.message : String(error)}`);
+    }
+  } finally {
+    abort.abort();
+    if (dev && !finished) {
+      dev.kill();
+      await Promise.race([dev.exited, runtime.sleep(3000)]);
+      if (!finished) {
+        dev.kill(9);
+        await dev.exited;
+      }
+    }
+    if (stopMonitor) {
+      try {
+        await docker(['stop', '--time', '5', container]);
+        if (await running()) throw new Error('停止后容器仍在运行');
+        runtime.log('Gatus 已停止，监控历史保留');
+      } catch (error) {
+        exitCode ||= 1;
+        runtime.log(`停止监控失败：${String(error)}。请执行 docker stop sve-gatus-dev`);
+      }
+    }
+    offSignal();
   }
-  process.exit(code);
+  return exitCode;
 }
 
-process.on('SIGINT', () => void shutdown(130));
-process.on('SIGTERM', () => void shutdown(143));
-
-if (await waitForHealth(dev)) {
-  log(`/health 已通，拉起 Gatus: http://localhost:${process.env.GATUS_PORT ?? 8080}`);
-  gatusUp = (await composeUp()) === 0;
-  if (!gatusUp) log('Gatus 没起来（Docker Desktop 没运行？），解析服务继续跑，退出时不会动容器');
-} else if (dev.exitCode === null) {
-  log(
-    `${HEALTH_TIMEOUT_MS / 1000}s 内 /health 没通，先不起 Gatus；服务起好后可另开终端 docker compose up -d gatus`,
-  );
-} else {
-  log('开发进程已退出，不启动 Gatus');
+/** 真实运行时：docker CLI、子进程、HTTP 探测。开发命令可替换，测试用。 */
+export function createBunRuntime(
+  projectRoot: string,
+  devCommand: string[] = ['bun', '--watch', 'src/index.ts'],
+): DevRuntime {
+  return {
+    async exec(args) {
+      const proc = Bun.spawn(['docker', ...args], {
+        cwd: projectRoot,
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+      const timer = setTimeout(() => proc.kill(9), 15_000);
+      try {
+        const [code, out, err] = await Promise.all([
+          proc.exited,
+          new Response(proc.stdout).text(),
+          new Response(proc.stderr).text(),
+        ]);
+        return { code, out, err };
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    spawn: () =>
+      Bun.spawn(devCommand, {
+        cwd: projectRoot,
+        stdin: 'inherit',
+        stdout: 'inherit',
+        stderr: 'inherit',
+        env: process.env,
+      }),
+    async healthy(url) {
+      try {
+        const init: RequestInit & { proxy: null } = {
+          signal: AbortSignal.timeout(1500),
+          proxy: null,
+        };
+        const response = await fetch(url, init);
+        await response.arrayBuffer();
+        return response.ok;
+      } catch {
+        return false;
+      }
+    },
+    sleep: (ms) => Bun.sleep(ms),
+    now: Date.now,
+    onSignal(handler) {
+      const interrupt = () => handler('SIGINT');
+      const terminate = () => handler('SIGTERM');
+      process.on('SIGINT', interrupt);
+      process.on('SIGTERM', terminate);
+      return () => {
+        process.off('SIGINT', interrupt);
+        process.off('SIGTERM', terminate);
+      };
+    },
+    log: (message) => console.log(message),
+  };
 }
 
-await shutdown((await dev.exited) ?? 0);
+if (import.meta.main) {
+  process.exitCode = await runDev(createBunRuntime(root), {
+    port: Number(process.env.PORT ?? 7777),
+    monitorPort: Number(process.env.GATUS_PORT ?? 8080),
+    root,
+  });
+}
