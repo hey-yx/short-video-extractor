@@ -5,7 +5,7 @@ const PORT = Number(process.env.PORT ?? 7777);
 
 const app = createApp();
 app.listen(PORT, () => {
-  logger.info({ port: PORT }, 'sve listening');
+  logger.info({ port: PORT }, 'allparse listening');
 });
 
 // 优雅关闭

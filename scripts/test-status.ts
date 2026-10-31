@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 
 const root = join(import.meta.dir, '..');
-const REPO = 'hey-yx/short-video-extractor';
+const REPO = 'hey-yx/allparse';
 
 interface RunResult {
   code: number | null;
@@ -154,7 +154,7 @@ steps.push(
 );
 
 let coverageLine = 'skip';
-const covDir = mkdtempSync(join(tmpdir(), 'sve-cov-'));
+const covDir = mkdtempSync(join(tmpdir(), 'allparse-cov-'));
 try {
   const r = await run(
     ['bun', 'test', '--coverage', '--coverage-reporter=lcov', '--coverage-dir', covDir],

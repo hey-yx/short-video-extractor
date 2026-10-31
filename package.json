@@ -1,5 +1,5 @@
 {
-  "name": "short-video-extractor",
+  "name": "allparse",
   "version": "2.1.0",
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "test": "bun test",
     "test:status": "bun scripts/test-status.ts",
     "typecheck": "tsc --noEmit",
-    "build:binary": "bun build ./src/index.ts --compile --outfile dist/sve",
+    "build:binary": "bun build ./src/index.ts --compile --outfile dist/allparse",
     "format": "prettier --write src tests scripts"
   },
   "devDependencies": {

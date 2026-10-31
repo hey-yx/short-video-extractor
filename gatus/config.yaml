@@ -1,9 +1,9 @@
-# Gatus 配置：监控 short-video-extractor
+# Gatus 配置：监控 allparse
 #
 # 挂载方式见 docker-compose.yml：整个 gatus/ 目录挂到容器的 /config，
 # 这样编辑器保存（换 inode）也能被热加载，改完不用重启容器。
 #
-# 被监控服务地址由 compose 的 SVE_BASE_URL 传入，容器内走服务名 http://app:7777。
+# 被监控服务地址由 compose 的 APP_BASE_URL 传入，容器内走服务名 http://app:7777。
 # 单独跑 gatus 探宿主机时设成 http://host.docker.internal:7777
 # （Linux 需加 extra_hosts: "host.docker.internal:host-gateway"）。
 #
@@ -23,7 +23,7 @@ endpoints:
   # ── 1. 存活：进程活着就 200，不碰外部依赖。30 秒一次，最快发现进程死 ──
   - name: 存活检查
     group: 核心
-    url: '${SVE_BASE_URL}/health'
+    url: '${APP_BASE_URL}/health'
     interval: 30s
     conditions:
       - '[STATUS] == 200'
@@ -33,7 +33,7 @@ endpoints:
   # ── 2. 就绪：平台注册表必须加载完。9 是当前适配器数量，加平台要同步上调 ──
   - name: 就绪检查
     group: 核心
-    url: '${SVE_BASE_URL}/ready'
+    url: '${APP_BASE_URL}/ready'
     interval: 60s
     conditions:
       - '[STATUS] == 200'
@@ -43,7 +43,7 @@ endpoints:
   # ── 3. 平台清单：平台数不能缩水 ──
   - name: 平台清单
     group: 平台
-    url: '${SVE_BASE_URL}/platforms'
+    url: '${APP_BASE_URL}/platforms'
     interval: 300s
     conditions:
       - '[STATUS] == 200'
@@ -53,7 +53,7 @@ endpoints:
   # available=false 意味着签名通道失效，抖音会全线退到浏览器或 503，单列一条便于定位。
   - name: 抖音签名通道
     group: 平台
-    url: '${SVE_BASE_URL}/platforms'
+    url: '${APP_BASE_URL}/platforms'
     interval: 300s
     conditions:
       - '[BODY].data[0].platform == douyin'
@@ -63,7 +63,7 @@ endpoints:
   # ── 5. 指标端点：解析计数、上游失败、熔断、降级四组指标都得在 ──
   - name: 指标端点
     group: 核心
-    url: '${SVE_BASE_URL}/metrics'
+    url: '${APP_BASE_URL}/metrics'
     interval: 300s
     conditions:
       - '[STATUS] == 200'
@@ -83,7 +83,7 @@ endpoints:
   - name: 中转签名（默认关闭）
     group: 可选
     enabled: false
-    url: '${SVE_BASE_URL}/media?u=https://example.com/a.mp4'
+    url: '${APP_BASE_URL}/media?u=https://example.com/a.mp4'
     interval: 900s
     conditions:
       - '[STATUS] == 501'
@@ -95,7 +95,7 @@ endpoints:
   # 注意：挂了 socket 等于给 gatus 容器宿主机 docker 权限，自己权衡。
   # - name: 容器状态
   #   group: 容器
-  #   url: "docker://short-video-extractor"
+  #   url: "docker://allparse"
   #   interval: 60s
   #   conditions:
   #     - "[CONTAINER_RUNNING] == true"

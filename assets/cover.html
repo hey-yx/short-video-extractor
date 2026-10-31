@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    background: #0b0f0d;
+    color: #fff;
+    position: relative;
+  }
+  /* 背景网格与色块 */
+  .grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.030) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.030) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .block1 { position: absolute; left: 780px; top: 0; width: 200px; height: 130px; background: rgba(46,221,158,0.05); }
+  .block2 { position: absolute; left: 1080px; top: 480px; width: 200px; height: 160px; background: rgba(255,255,255,0.025); }
+  .block3 { position: absolute; left: 0; top: 520px; width: 140px; height: 120px; background: rgba(46,221,158,0.035); }
+
+  .left { position: absolute; left: 72px; top: 96px; width: 560px; }
+
+  .brand { display: flex; align-items: baseline; line-height: 1.02; letter-spacing: -0.02em; }
+  .brand .b1 { font-size: 88px; font-weight: 800; color: #ffffff; }
+  .brand .b2 { font-size: 88px; font-weight: 800; color: #6f7671; }
+
+  .tagline { margin-top: 30px; display: flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 600; color: #e8ecea; }
+  .tagline svg { display: block; }
+
+  .platforms { margin-top: 88px; display: flex; gap: 40px; }
+  .plat { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .plat span { font-size: 17px; color: #c9cfcc; font-weight: 500; }
+  .plat svg { display: block; }
+
+  .right { position: absolute; left: 700px; top: 84px; width: 508px; }
+  .player {
+    position: relative;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: #11161380;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+    height: 300px;
+  }
+  .watermark { position: absolute; left: 22px; top: 18px; font-size: 15px; color: rgba(255,255,255,0.32); }
+  .wm-line { text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.34); text-decoration-thickness: 1.5px; }
+  .badge {
+    position: absolute; right: 18px; top: 16px;
+    border: 1px solid #2edd9e; border-radius: 999px;
+    color: #2edd9e; font-size: 14px; font-weight: 600;
+    padding: 5px 14px;
+  }
+  .play {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 76px; height: 76px; border-radius: 50%;
+    border: 2px solid #2edd9e;
+    box-shadow: 0 0 0 10px rgba(46,221,158,0.10), 0 0 40px rgba(46,221,158,0.25);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .play::after {
+    content: ""; display: block; margin-left: 6px;
+    border-left: 22px solid #2edd9e;
+    border-top: 14px solid transparent;
+    border-bottom: 14px solid transparent;
+  }
+  .progress { position: absolute; left: 22px; right: 22px; bottom: 20px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.14); }
+  .progress .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 85%; border-radius: 3px; background: #2edd9e; }
+  .progress .dot { position: absolute; left: 85%; top: 50%; transform: translate(-50%, -50%); width: 13px; height: 13px; border-radius: 50%; background: #2edd9e; }
+
+  .result-title { margin-top: 34px; font-size: 34px; font-weight: 800; color: #2edd9e; }
+  .result-sub { margin-top: 14px; font-size: 17px; color: #a6adb5; }
+</style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="block1"></div>
+  <div class="block2"></div>
+  <div class="block3"></div>
+
+  <div class="left">
+    <div class="brand"><span class="b1">all</span><span class="b2">parse</span></div>
+    <div class="tagline">分享链接进
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2edd9e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2edd9e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="13 5 20 12 13 19"/></svg>
+    </div>
+    <div class="platforms">
+      <div class="plat">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <span>抖音</span>
+      </div>
+      <div class="plat">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>小红书</span>
+      </div>
+      <div class="plat">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/></svg>
+        <span>快手</span>
+      </div>
+      <div class="plat">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 9 15 12 10 15" fill="#ffffff" stroke="none"/></svg>
+        <span>B站</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="player">
+      <div class="watermark">@作者号 <span class="wm-line">— 水印</span></div>
+      <div class="badge">无水印</div>
+      <div class="play"></div>
+      <div class="progress"><div class="fill"></div><div class="dot"></div></div>
+    </div>
+    <div class="result-title">无水印直链出</div>
+    <div class="result-sub">海外平台经出站代理解析</div>
+  </div>
+</body>
+</html>

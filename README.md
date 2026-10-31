@@ -1,15 +1,15 @@
 <div align="center">
 
-<img src="assets/cover.png" alt="short-video-extractor 封面" width="840" />
+<img src="assets/cover.png" alt="allparse 封面" width="840" />
 
-# short-video-extractor
+# ALLParse
 
 **[简体中文](README.md) | [English](README.en.md)**
 
 *短视频解析 API：给一条分享链接，返回无水印视频 / 图集直链。*
 
-[![CI](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml)
-[![Coverage](https://img.shields.io/coveralls/github/hey-yx/short-video-extractor/main?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/short-video-extractor)
+[![CI](https://github.com/hey-yx/allparse/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/allparse/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/coveralls/github/hey-yx/allparse/main?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/allparse)
 [![Bun](https://img.shields.io/badge/Bun-1.2%2B-000000?style=flat-square&logo=bun&logoColor=white)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-1f6feb?style=flat-square)](LICENSE)
@@ -36,8 +36,8 @@
 前置：装好 [Bun](https://bun.sh)（1.2+）。想看可用性面板再准备 Docker 和 Gatus 镜像（`docker pull twinproduction/gatus:stable`），没有也能开发。
 
 ```bash
-git clone https://github.com/hey-yx/short-video-extractor.git
-cd short-video-extractor
+git clone https://github.com/hey-yx/allparse.git
+cd allparse
 bun install
 bun dev          # 启动后端；Docker 可用时顺带起 Gatus 面板（7777 / 8080）
 curl http://127.0.0.1:7777/health   # 服务起来了会返回 {"status":"ok",...}
@@ -197,11 +197,11 @@ bun run test:status  # 一条命令看全状态：格式 / 类型 / 单测 / 覆
 bun run typecheck
 ```
 
-本地开发需要 Bun；Docker 与 Gatus 镜像可选。`bun dev` 先起后端，再尝试拉监控容器：Docker 没开、镜像没拉、端口被别的服务占着或容器归属不对时，只打印一句「跳过可用性监控」并照常开发，不影响解析服务。容器起来后面板在 `http://localhost:8080`，运行中面板失效也只停监控、不打断后端。按 Ctrl-C 或后端退出则一起收尾，历史留在 `sve-gatus-dev-data` 卷。端口由 `PORT` 与 `GATUS_PORT` 指定。
+本地开发需要 Bun；Docker 与 Gatus 镜像可选。`bun dev` 先起后端，再尝试拉监控容器：Docker 没开、镜像没拉、端口被别的服务占着或容器归属不对时，只打印一句「跳过可用性监控」并照常开发，不影响解析服务。容器起来后面板在 `http://localhost:8080`，运行中面板失效也只停监控、不打断后端。按 Ctrl-C 或后端退出则一起收尾，历史留在 `allparse-gatus-dev-data` 卷。端口由 `PORT` 与 `GATUS_PORT` 指定。
 
 当前仓库只有解析 API 和 Gatus 监控面板，没有独立的业务前端。`bun start` 只起后端，不碰容器。Docker Compose 只负责服务端部署。
 
-正常退出与 SIGINT/SIGTERM 会停掉监控；强制杀掉启动器、机器断电或 Docker 中途不可达时可能残留容器，用 `docker ps -a --filter name=sve-gatus-dev` 查、`docker stop sve-gatus-dev` 收。
+正常退出与 SIGINT/SIGTERM 会停掉监控；强制杀掉启动器、机器断电或 Docker 中途不可达时可能残留容器，用 `docker ps -a --filter name=allparse-gatus-dev` 查、`docker stop allparse-gatus-dev` 收。
 
 > [!TIP]
 > 浏览器兜底路径（抖音风控降级、小红书降级兜底）需要本机有 Chrome（Puppeteer 自动管理）；纯 HTTP 通道无此要求。
@@ -230,9 +230,9 @@ bun run typecheck
 多阶段构建：`oven/bun:alpine` 编译单二进制 → `alpine:3.22` + chromium 运行时（浏览器兜底路径需要真实浏览器内核）。非 root（uid 10001）运行，tini 收僵尸进程，HEALTHCHECK 打 /health。实测体积：arm64 **495MB**、amd64 **527MB**（初始 830MB）；裁剪明细、构建后验收清单与 apk 镜像源切换见 `docs/image-build-notes.md`。apk 源默认走阿里云镜像（官方源实测仅 14KB/s），换官方源：`docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
 
 ```bash
-docker build -t short-video-extractor:v2 .
-docker run -d --name short-video-extractor -p 7777:7777 \
-  --env-file .env --memory 800m --restart unless-stopped short-video-extractor:v2
+docker build -t allparse:v2 .
+docker run -d --name allparse -p 7777:7777 \
+  --env-file .env --memory 800m --restart unless-stopped allparse:v2
 curl http://127.0.0.1:7777/health
 ```
 

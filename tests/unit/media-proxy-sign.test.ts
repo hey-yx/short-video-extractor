@@ -6,7 +6,7 @@ import type { ParseResult } from '@/types/platform';
 /** /parse 响应改写：绑 IP 直链 → 签名 /media 链接（接线回归） */
 
 const NOW = 1_700_000_000;
-const ORIGIN = 'https://sve.example.com';
+const ORIGIN = 'https://allparse.example.com';
 
 function ytResult(): ParseResult {
   return {

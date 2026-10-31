@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "short-video-extractor",
+      "name": "allparse",
       "dependencies": {
         "@elysiajs/cors": "^1.2.0",
         "abogus": "2.1.1",

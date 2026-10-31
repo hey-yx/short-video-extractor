@@ -101,7 +101,7 @@ describe('ops 路由（/health /ready /platforms /metrics）', () => {
     const res = await get('/');
     expect(res.status).toBe(200);
     const body = (await res.json()) as { name: string; version: string; platforms: string[] };
-    expect(body.name).toBe('short-video-extractor');
+    expect(body.name).toBe('allparse');
     expect(typeof body.version).toBe('string');
     expect(Array.isArray(body.platforms)).toBe(true);
     expect(body.platforms.length).toBe(listAdapters().length);

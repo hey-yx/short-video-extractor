@@ -1,6 +1,6 @@
 # 抖音 / TikTok 纯 HTTP API 去水印方案调研（2026-10 版）
 
-> 落地目标：把 `short-video-extractor` 现方案的「headless Chrome 拦截 `/aweme/v1/web/aweme/detail/` 响应」改成**不带浏览器的 HTTP 直连**，把 P95 从 1–3 s 压到 300 ms 量级，并去掉 Chrome 的 200–400 MB 常驻内存。
+> 落地目标：把 `allparse` 现方案的「headless Chrome 拦截 `/aweme/v1/web/aweme/detail/` 响应」改成**不带浏览器的 HTTP 直连**，把 P95 从 1–3 s 压到 300 ms 量级，并去掉 Chrome 的 200–400 MB 常驻内存。
 >
 > 本文所有「实测」均为 2026-10-24 本机真实执行结果（curl / Node / Python），非二手转述。无法确证的地方标「**未核验**」，不写猜测值。
 

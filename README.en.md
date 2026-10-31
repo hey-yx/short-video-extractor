@@ -1,15 +1,15 @@
 <div align="center">
 
-<img src="assets/cover.png" alt="short-video-extractor cover" width="840" />
+<img src="assets/cover.png" alt="allparse cover" width="840" />
 
-# short-video-extractor
+# ALLParse
 
 **[简体中文](README.md) | [English](README.en.md)**
 
 *Short-video parsing API: paste a share link, get watermark-free video / photo-album direct links.*
 
-[![CI](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/short-video-extractor/actions/workflows/test.yml)
-[![Coverage](https://img.shields.io/coveralls/github/hey-yx/short-video-extractor/main?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/short-video-extractor)
+[![CI](https://github.com/hey-yx/allparse/actions/workflows/test.yml/badge.svg)](https://github.com/hey-yx/allparse/actions/workflows/test.yml)
+[![Coverage](https://img.shields.io/coveralls/github/hey-yx/allparse/main?style=flat-square&label=Coverage)](https://coveralls.io/github/hey-yx/allparse)
 [![Bun](https://img.shields.io/badge/Bun-1.2%2B-000000?style=flat-square&logo=bun&logoColor=white)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-1f6feb?style=flat-square)](LICENSE)
@@ -36,8 +36,8 @@ Short-video parsing API: give it a share link, get watermark-free video / photo-
 Prerequisites: [Bun](https://bun.sh) 1.2+. Docker and the Gatus image (`docker pull twinproduction/gatus:stable`) are only needed for the local dashboard.
 
 ```bash
-git clone https://github.com/hey-yx/short-video-extractor.git
-cd short-video-extractor
+git clone https://github.com/hey-yx/allparse.git
+cd allparse
 bun install
 bun dev          # backend, plus the Gatus dashboard when Docker is available (7777 / 8080)
 curl http://127.0.0.1:7777/health   # {"status":"ok",...} once it is up
@@ -197,11 +197,11 @@ bun run test:status  # one command for the full state: prettier / tsc / tests / 
 bun run typecheck
 ```
 
-Local development needs Bun; Docker and the Gatus image are optional. `bun dev` starts the backend, then tries to bring up the monitoring container: if Docker is down, the image is missing, the port is taken by something else, or the container belongs to another config, it prints one "skipping availability monitoring" line and keeps developing. The dashboard lives at `http://localhost:8080` when the container is up, and a dashboard failure later only stops monitoring, never the backend. Ctrl-C or backend exit stops both, with history kept in the `sve-gatus-dev-data` volume. Ports come from `PORT` and `GATUS_PORT`.
+Local development needs Bun; Docker and the Gatus image are optional. `bun dev` starts the backend, then tries to bring up the monitoring container: if Docker is down, the image is missing, the port is taken by something else, or the container belongs to another config, it prints one "skipping availability monitoring" line and keeps developing. The dashboard lives at `http://localhost:8080` when the container is up, and a dashboard failure later only stops monitoring, never the backend. Ctrl-C or backend exit stops both, with history kept in the `allparse-gatus-dev-data` volume. Ports come from `PORT` and `GATUS_PORT`.
 
 This repository contains the parser API and the Gatus dashboard, not a separate product frontend. `bun start` runs the backend only and never touches containers. Docker Compose is for server deployment only.
 
-Normal exit and SIGINT/SIGTERM stop the monitor. Force-killing the launcher, power loss or Docker becoming unreachable can leave the container behind: check `docker ps -a --filter name=sve-gatus-dev` and stop it with `docker stop sve-gatus-dev`.
+Normal exit and SIGINT/SIGTERM stop the monitor. Force-killing the launcher, power loss or Docker becoming unreachable can leave the container behind: check `docker ps -a --filter name=allparse-gatus-dev` and stop it with `docker stop allparse-gatus-dev`.
 
 > [!TIP]
 > The browser-fallback paths (Douyin risk-control downgrade, Xiaohongshu fallback) need Chrome on the machine (Puppeteer manages it automatically); the pure HTTP channels have no such requirement.
@@ -230,9 +230,9 @@ See `.env.example`. The production `.env` stays on the server (chmod 600), never
 Multi-stage build: `oven/bun:alpine` compiles a single binary → `alpine:3.22` + chromium runtime (the browser-fallback paths need a real browser engine). Runs as non-root (uid 10001), tini reaps zombies, HEALTHCHECK hits /health. Measured size: **495MB** on arm64, **527MB** on amd64 (from an initial 830MB); the full slimming breakdown, the post-build acceptance checklist and the apk mirror switch live in `docs/image-build-notes.md`. The apk source defaults to the Aliyun mirror (the official source measured at just 14KB/s); to use the official one: `docker build --build-arg ALPINE_MIRROR=dl-cdn.alpinelinux.org .`
 
 ```bash
-docker build -t short-video-extractor:v2 .
-docker run -d --name short-video-extractor -p 7777:7777 \
-  --env-file .env --memory 800m --restart unless-stopped short-video-extractor:v2
+docker build -t allparse:v2 .
+docker run -d --name allparse -p 7777:7777 \
+  --env-file .env --memory 800m --restart unless-stopped allparse:v2
 curl http://127.0.0.1:7777/health
 ```
 

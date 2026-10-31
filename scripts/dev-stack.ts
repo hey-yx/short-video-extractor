@@ -2,9 +2,9 @@
 import { join } from 'node:path';
 
 const root = join(import.meta.dir, '..');
-const container = 'sve-gatus-dev';
+const container = 'allparse-gatus-dev';
 const image = 'twinproduction/gatus:stable';
-const ownerLabel = 'sve.dev.root';
+const ownerLabel = 'allparse.dev.root';
 
 interface CommandResult {
   code: number;
@@ -96,7 +96,7 @@ export async function runDev(runtime: DevRuntime, options: DevOptions): Promise<
         const identity = await docker([
           'inspect',
           '--format',
-          `{{index .Config.Labels "${ownerLabel}"}}|{{index .Config.Labels "sve.dev.ports"}}`,
+          `{{index .Config.Labels "${ownerLabel}"}}|{{index .Config.Labels "allparse.dev.ports"}}`,
           container,
         ]);
         if (identity !== `${projectRoot}|${port}:${monitorPort}`) {
@@ -115,7 +115,7 @@ export async function runDev(runtime: DevRuntime, options: DevOptions): Promise<
         '--label',
         `${ownerLabel}=${projectRoot}`,
         '--label',
-        `sve.dev.ports=${port}:${monitorPort}`,
+        `allparse.dev.ports=${port}:${monitorPort}`,
         '--publish',
         `127.0.0.1:${monitorPort}:8080`,
         '--add-host',
@@ -123,11 +123,11 @@ export async function runDev(runtime: DevRuntime, options: DevOptions): Promise<
         '--env',
         'GATUS_CONFIG_PATH=/config',
         '--env',
-        `SVE_BASE_URL=${target}`,
+        `APP_BASE_URL=${target}`,
         '--volume',
         `${join(projectRoot, 'gatus')}:/config:ro`,
         '--volume',
-        'sve-gatus-dev-data:/data',
+        'allparse-gatus-dev-data:/data',
         image,
       ]);
       return true;
@@ -142,7 +142,7 @@ export async function runDev(runtime: DevRuntime, options: DevOptions): Promise<
     try {
       await docker(['start', container]);
       if (abort.signal.aborted) return false;
-      if (!(await running())) throw new Error('容器启动后退出，看 docker logs sve-gatus-dev');
+      if (!(await running())) throw new Error('容器启动后退出，看 docker logs allparse-gatus-dev');
       await waitHealthy(monitorUrl);
       runtime.log(`可用性面板 http://localhost:${monitorPort}`);
       return true;
@@ -226,7 +226,7 @@ export async function runDev(runtime: DevRuntime, options: DevOptions): Promise<
         runtime.log('Gatus 已停止，监控历史保留');
       } catch (error) {
         exitCode ||= 1;
-        runtime.log(`停止监控失败：${String(error)}。请执行 docker stop sve-gatus-dev`);
+        runtime.log(`停止监控失败：${String(error)}。请执行 docker stop allparse-gatus-dev`);
       }
     }
     offSignal();

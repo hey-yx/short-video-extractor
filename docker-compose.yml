@@ -8,8 +8,8 @@ services:
   app:
     build:
       context: .
-    image: short-video-extractor:v2.1
-    container_name: short-video-extractor
+    image: allparse:v2.1
+    container_name: allparse
     ports:
       - "${APP_PORT:-7777}:7777"
     restart: unless-stopped
@@ -22,17 +22,17 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - sve
+      - allparse
 
   gatus:
     image: twinproduction/gatus:stable
-    container_name: sve-gatus
+    container_name: allparse-gatus
     ports:
       - "${GATUS_PORT:-8080}:8080"
     environment:
       - GATUS_CONFIG_PATH=/config
       # 容器内走服务名访问 app,不经过宿主机端口
-      - SVE_BASE_URL=http://app:7777
+      - APP_BASE_URL=http://app:7777
     volumes:
       - ./gatus:/config:ro
       - gatus-data:/data
@@ -47,10 +47,10 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - sve
+      - allparse
 
 volumes:
   gatus-data:
 
 networks:
-  sve:
+  allparse:

@@ -48,7 +48,7 @@ function harness(scenario: Scenario = {}) {
         return { code: 1, out: '', err: 'Docker boundary failed' };
       }
       let out = '';
-      if (args[0] === 'ps' && scenario.existing) out = 'sve-gatus-dev';
+      if (args[0] === 'ps' && scenario.existing) out = 'allparse-gatus-dev';
       if (args[0] === 'inspect') {
         out = args[2]?.includes('Labels')
           ? (scenario.identity ?? `${options.root}|7777:8080`)
@@ -136,10 +136,10 @@ describe('开发与独立 Gatus 的生命周期', () => {
     expect(await runDev(h.runtime, options)).toBe(130);
     const create = h.commands.find((command) => command[0] === 'create')!;
     expect(create).toContain('--restart=no');
-    expect(create).toContain('SVE_BASE_URL=http://host.docker.internal:7777');
+    expect(create).toContain('APP_BASE_URL=http://host.docker.internal:7777');
     expect(create).toContain('127.0.0.1:8080:8080');
     expect(h.commands.some((command) => command.includes('compose'))).toBe(false);
-    expect(h.commands.at(-1)).toEqual(['inspect', '--format', '{{.State.Running}}', 'sve-gatus-dev']);
+    expect(h.commands.at(-1)).toEqual(['inspect', '--format', '{{.State.Running}}', 'allparse-gatus-dev']);
     expect(h.messages).toContain('Gatus 已停止，监控历史保留');
     expect(h.killed).toHaveLength(1);
   });

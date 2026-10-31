@@ -71,7 +71,7 @@ export function createApp() {
       return fail('INTERNAL', error instanceof Error ? error.message : '内部错误');
     })
     .get('/', () => ({
-      name: 'short-video-extractor',
+      name: 'allparse',
       version: '2.1.0',
       platforms: listAdapters().map((a) => a.platform),
     }))
