@@ -6,6 +6,7 @@
       "name": "short-video-extractor",
       "dependencies": {
         "@elysiajs/cors": "^1.2.0",
+        "abogus": "2.1.1",
         "elysia": "^1.2.0",
         "lru-cache": "^11.0.0",
         "pino": "^9.5.0",
@@ -44,6 +45,8 @@
     "@types/node": ["@types/node@26.6.5", "https://registry.npmmirror.com/@types/node/-/node-26.6.5.tgz", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg=="],
 
     "@types/yauzl": ["@types/yauzl@2.10.3", "https://registry.npmmirror.com/@types/yauzl/-/yauzl-2.10.3.tgz", { "dependencies": { "@types/node": "*" } }, "sha512-oJoftv0LSuaDZE3Le4DbKX+KS9G36NzOeSap90UIK0yMA/NhKJhqlSGtNDORNRaIbQfzjXDrQa0ytJ6mNRGz/Q=="],
+
+    "abogus": ["abogus@2.1.1", "https://registry.npmmirror.com/abogus/-/abogus-2.1.1.tgz", {}, "sha512-3wJxqPxt0vSNZDgcWQU8T3GZUwcWsUuLXnSImKc2UzO/LipHKmx4xsbTcJeS8j+7TzPwt0HKhgR94GbIsCTt5A=="],
 
     "agent-base": ["agent-base@7.1.4", "https://registry.npmmirror.com/agent-base/-/agent-base-7.1.4.tgz", {}, "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="],
 

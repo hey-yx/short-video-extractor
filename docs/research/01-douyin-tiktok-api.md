@@ -668,4 +668,67 @@ fetch(playUrl, { headers: { Referer: 'https://www.douyin.com/', 'User-Agent': UA
 
 ---
 
-*文档生成时间：2026-10-24；实测样本与命令见 §1、§2.2，可原样复跑验证。*
+## 12. L2 签名通道落地记录（2026-10-27 实测补记）
+
+L1 → L2 → L3 三级降级链已在 `src/platforms/douyin/signing.ts` + `adapter.ts` 落地。以下为预研三项结论、uifid 铸造步骤（供下次复铸）与真机 A/B 证据。
+
+### 12.1 预研三项结论
+
+1. **TS 侧 `x-secsdk-web-signature`**：npm 无独立实现（搜 websign/secsdk/douyin-signature 均无），但 **npm `abogus@2.1.1`（MIT）自带 `signWebUrl()` 与 `SECSDK_WEB_SIGNATURE_SALT`**，与 Evil0ctal `websign.py` 同算法同盐（`md5(uifid_timestamp_盐_query)`）。逐字节 parity 验证：抓真机 SDK 自己发出的 detail 签名 URL，用该公式复算 md5，与它带的 `x-secsdk-web-signature` 32 位十六进制完全一致。因此直接用 abogus，无需移植 websign.py（也没有搬任何 Apache-2.0 代码）。
+2. **abogus API 形态**：§3.3 所述 `abogus()` / `signParams()` / `getTtwid()` / `getValidMsToken()` / `getVerifyFp()` 全部可用（实测过）；`signWebUrl(url, { uifid, timestamp })` 会把 `uifid`/`timestamp`/`x-secsdk-web-signature` 追加到查询串末尾。
+3. **uifid 铸造**：一次性 headless 浏览器可铸，步骤见 §12.2。真机验证：铸出 `UIFID_TEMP` + 同场 `ttwid` 直接请求 detail 接口即 200 全量。
+
+### 12.2 uifid 铸造步骤（复铸手册）
+
+```js
+// 一次性脚本：puppeteer 起 headless Chrome（系统 Chrome 即可），跑完关掉
+const browser = await puppeteer.launch({ headless: true, executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
+const page = await browser.newPage();
+await page.goto('https://www.douyin.com/jingxuan', { waitUntil: 'domcontentloaded' });
+await new Promise((r) => setTimeout(r, 8000));          // 等 __ac_nonce 挑战过完
+const cdp = await page.createCDPSession();
+const { cookies } = await cdp.send('Network.getAllCookies');
+// uifid = name 含 'uifid' 的 cookie（真机名 UIFID_TEMP，150-160 字符 hex）；
+// 同场把 ttwid 一起抄走，配成一对身份
+```
+
+产出两个值配到 env：`DOUYIN_UIFID=<UIFID_TEMP 值>`、`DOUYIN_TTWID=<ttwid 值>`（ttwid 不配也行，服务端会现铸，但同场带出的身份最稳）。`UIFID_TEMP` 可长期复用；签名失效（§7.1 的「Sign Invalid / Uifid Not Found」）时重铸即可。
+
+### 12.3 最终 L2 配方（真机 200 全量，零浏览器）
+
+```
+GET https://www.douyin.com/aweme/v1/web/aweme/detail/?
+    <标准指纹参数集（§2.1 base_params）>&aweme_id=<id>
+    &uifid=<UIFID_TEMP>&timestamp=<秒>&x-secsdk-web-signature=<md5 签名>
+Cookie: ttwid=<ttwid>; UIFID_TEMP=<uifid>
+Headers: User-Agent、Referer: https://www.douyin.com/
+         （uifid / x-secsdk-web-signature / x-secsdk-web-expire 三个头可带可不带，实测无害）
+```
+
+curl 实测（2026-10-27，aweme_id=7142091187963399427）：
+
+```
+HTTP 200  bytes 43259  ttfb 0.333672s
+aweme_detail OK: 7142091187963399427 | 救赎之道 就在心中 | 李子尘 | bit_rate: 4
+```
+
+### 12.4 真机 A/B 修正两个配方细节（重要）
+
+§4.4 把 L2 配方写成「`a_bogus` + `ttwid` + `uifid` + `x-secsdk-web-signature` 四件套」。2026-10-27 真机 A/B（同身份同时刻单变量对照）修正如下：
+
+| query 里的成分 | 实测结果 |
+|---|---|
+| 标准参数 + uifid/timestamp/签名（**无 a_bogus**） | **200 + 42 KB 全量 `aweme_detail`**（10+ 次复验稳定） |
+| 同上 + `a_bogus`（三种构造：裸盖业务参数 / 盖含 uifid 的全查询 / SDK 布局） | **200 + 空 body 静默拒绝**，响应带 `x-vc-bdturing-parameters`（风控挑战头） |
+| 同上 + `msToken`（假/真均试） | 200 + 空 body 静默拒绝 |
+| 同上 + `webid`/`verifyFp`/`fp`/`msToken` 全套 | 200 + 空 body 静默拒绝 |
+| 缺签名参数 | 403 `Blocked by ArgusSecurityPlugin Signature Not Found` |
+| 签名乱写 | 403 `Blocked by ArgusSecurityPlugin Sign Invalid` |
+
+结论：**守门人是 `uifid` + `x-secsdk-web-signature`（§3.1 原判断正确），`a_bogus` 现阶段是毒参数**——带上它请求直接被风控引擎静默拒绝（200 空 body，§2.3 的坑）。注意：21:35-21:53 时段带 a_bogus 也曾放行过 8 次，22:00 后同配方全部被拒，疑似服务端风控配置或 bdms 版本在当晚切换；落地代码不带 `a_bogus`。若日后要重试 a_bogus（比如服务端开始强制校验），先按本节方法 A/B 再开。
+
+「200 + 空 body = 静默拒绝必须当失败」这条坑在 L2 上同样成立，L2 通道把 403 与 200 空 body 都归 `UPSTREAM_CHANGED`（签名失效），与 L1 的 `RISK_CONTROL` 在错误码与 `channel_downgrade_total` 打点上分开。
+
+---
+
+*文档生成时间：2026-10-24；实测样本与命令见 §1、§2.2，可原样复跑验证。§12 为 2026-10-27 L2 签名通道落地实测补记。*

@@ -4,6 +4,7 @@ import { recordHttpRiskControl, shouldSkipHttp } from '@/infra/channel-policy';
 import type { FetchCtx, MatchResult, PlatformAdapter, RawPayload } from '@/types/platform';
 import { hostMatches } from '../hosts';
 import { parseAweme } from './parse';
+import { buildL2DetailRequest, resolveTtwid, type L2Identity } from './signing';
 
 const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
@@ -68,6 +69,41 @@ async function fetchViaHttp(input: MatchResult, ctx: FetchCtx): Promise<RawPaylo
   return { via: 'api', fetchedAt: Math.floor(Date.now() / 1000), body: json, channel: 'http' };
 }
 
+/** 纯 HTTP 签名通道（L2）：标准参数集 + a_bogus + ttwid + uifid + x-secsdk-web-signature（§4.4 配方）。
+ * 失效信号与 L1 不同：403 / 200 空 body 都归 UPSTREAM_CHANGED（签名过期 = bdms 升级或 uifid 过期），
+ * 与 L1 的 RISK_CONTROL 在错误码与降级打点上区分。 */
+async function fetchViaSigned(input: MatchResult, ctx: FetchCtx, identity: L2Identity): Promise<RawPayload> {
+  const { url, headers } = buildL2DetailRequest(input.id, identity);
+  let res: Response;
+  try {
+    res = await fetch(url, { headers, signal: ctx.signal });
+  } catch (err) {
+    if (ctx.signal.aborted) throw err;
+    throw new AppError('UPSTREAM_TIMEOUT', '抖音 L2 签名通道网络错误或超时', { err: String(err).slice(0, 120) });
+  }
+  if (res.status === 403) {
+    const text = await res.text();
+    throw new AppError('UPSTREAM_CHANGED', '抖音 L2 签名失效（403，疑似 bdms 升级或 uifid 过期）', {
+      body: text.slice(0, 120),
+    });
+  }
+  if (res.status !== 200) {
+    throw new AppError('UPSTREAM_ERROR', `抖音 L2 接口 HTTP ${res.status}`);
+  }
+  const text = await res.text();
+  if (!text) {
+    // 200 + 空 body = 静默拒绝，必须当失败（调研文档 §2.3）
+    throw new AppError('UPSTREAM_CHANGED', '抖音 L2 接口返回空 body（静默拒绝）');
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new AppError('UPSTREAM_CHANGED', '抖音 L2 接口返回非 JSON');
+  }
+  return { via: 'api', fetchedAt: Math.floor(Date.now() / 1000), body: json, channel: 'http-l2' };
+}
+
 /** 浏览器兜底通道：真实 Chrome 打开作品页，截页面自己发出的 detail XHR JSON */
 async function fetchViaBrowser(input: MatchResult, url: URL, ctx: FetchCtx): Promise<RawPayload> {
   if (!ctx.browser) {
@@ -94,7 +130,7 @@ async function fetchViaBrowser(input: MatchResult, url: URL, ctx: FetchCtx): Pro
 
 export const douyinAdapter: PlatformAdapter = {
   platform: 'douyin',
-  description: '抖音：零签名 detail 通道 + play 直链（L1 风控时自动降级浏览器）',
+  description: '抖音：零签名 detail 通道 + 签名 L2 通道 + play 直链（L1 风控时逐级降级，浏览器兜底）',
   hosts: ['douyin.com', 'iesdouyin.com'],
   capabilities: { http: true, browser: true, tlsImpersonation: false, kinds: ['video', 'album'] },
 
@@ -129,27 +165,58 @@ export const douyinAdapter: PlatformAdapter = {
   },
 
   async fetch(input: MatchResult, url: URL, ctx: FetchCtx): Promise<RawPayload> {
-    // 熔断粘性：L1 连续被风控期间直接走浏览器，不再每请求先吃一次 403（半开态探针放行 HTTP）
-    if (ctx.browser && shouldSkipHttp('douyin')) {
-      ctx.logger.warn('douyin circuit sticky: skip L1, go browser directly', { id: input.id });
-      return fetchViaBrowser(input, url, ctx);
-    }
-    try {
-      return await fetchViaHttp(input, ctx);
-    } catch (err) {
-      // L1 失效（403 Argus 风控 / 接口侧 5xx/404）→ 自动降级浏览器通道；
-      // 超时与结构变更不降级（交给上层重试/如实报错），无浏览器环境、信号已取消时原样上抛
-      const downgrade =
-        err instanceof AppError && (err.code === 'RISK_CONTROL' || err.code === 'UPSTREAM_ERROR');
-      if (!downgrade || !ctx.browser || ctx.signal.aborted) {
-        throw err;
+    const wantL2 = !!ctx.douyinUifid;
+    let lastErr: AppError | null = null;
+    // 熔断粘性：L1 连续被风控期间不再每请求先吃一次 403（半开态探针放行 L1 试探）；
+    // 粘住后链路变 L2 → 浏览器——L2 仍是零浏览器的纯 HTTP 通道
+    const skipL1 = shouldSkipHttp('douyin') && (wantL2 || !!ctx.browser);
+    if (skipL1) {
+      ctx.logger.warn('douyin circuit sticky: skip L1', { id: input.id, l2: wantL2 });
+    } else {
+      try {
+        return await fetchViaHttp(input, ctx);
+      } catch (err) {
+        // L1 失效（403 Argus 风控 / 接口侧 5xx/504）→ 先试 L2 签名通道再落浏览器；
+        // 超时与结构变更不降级（交给上层重试/如实报错），无后继通道、信号已取消时原样上抛
+        const downgrade =
+          err instanceof AppError && (err.code === 'RISK_CONTROL' || err.code === 'UPSTREAM_ERROR');
+        if (!downgrade || ctx.signal.aborted || (!wantL2 && !ctx.browser)) throw err;
+        lastErr = err as AppError;
       }
-      ctx.logger.warn('douyin L1 risk control, downgrade to browser channel', { id: input.id });
-      recordChannelDowngrade('douyin', 'http', 'browser');
-      // L1 风控进熔断记账：连续达阈值后粘住浏览器（半开态探针由 shouldSkipHttp 控制）
-      recordHttpRiskControl('douyin');
-      return fetchViaBrowser(input, url, ctx);
     }
+
+    // L2：签名通道（纯 HTTP，零浏览器）。ttwid 现铸失败视为通道不可用，直接落 L3
+    let viaL2 = false;
+    if (wantL2) {
+      const ttwid = await resolveTtwid(ctx.douyinTtwid, ctx.signal);
+      if (ttwid) {
+        viaL2 = true;
+        if (!skipL1) {
+          // L1 失效进熔断记账：连续达阈值后粘住 L2/浏览器（半开态探针由 shouldSkipHttp 控制）
+          recordChannelDowngrade('douyin', 'http-l1', 'http-l2');
+          recordHttpRiskControl('douyin');
+        }
+        try {
+          return await fetchViaSigned(input, ctx, { uifid: ctx.douyinUifid!, ttwid });
+        } catch (err) {
+          if (ctx.signal.aborted) throw err;
+          lastErr = err as AppError;
+          ctx.logger.warn('douyin L2 failed, downgrade to browser channel', {
+            id: input.id,
+            code: lastErr.code,
+          });
+        }
+      }
+    }
+
+    // L3：浏览器兜底
+    if (!ctx.browser) throw lastErr ?? new AppError('UPSTREAM_ERROR', '抖音无可用取数通道');
+    if (viaL2) recordChannelDowngrade('douyin', 'http-l2', 'browser');
+    else if (!skipL1) {
+      recordChannelDowngrade('douyin', 'http', 'browser');
+      recordHttpRiskControl('douyin');
+    }
+    return fetchViaBrowser(input, url, ctx);
   },
 
   parse: parseAweme,

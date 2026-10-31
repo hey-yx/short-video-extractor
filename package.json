@@ -17,8 +17,9 @@
     "typescript": "^5.7.0"
   },
   "dependencies": {
-    "elysia": "^1.2.0",
     "@elysiajs/cors": "^1.2.0",
+    "abogus": "2.1.1",
+    "elysia": "^1.2.0",
     "lru-cache": "^11.0.0",
     "pino": "^9.5.0",
     "puppeteer": "^24.1.0"

@@ -68,8 +68,8 @@ export interface ParseResult {
   expiresAt?: number;
   /** 解析时刻（Unix 秒） */
   parsedAt: number;
-  /** 解析通道，指标与降级归因用 */
-  via: 'http' | 'browser';
+  /** 解析通道，指标与降级归因用：http-l2 = 抖音签名通道（L1 风控时的纯 HTTP 降级） */
+  via: 'http' | 'http-l2' | 'browser';
 }
 
 /** 平台声明：能解析什么 URL、走什么通道 */
@@ -130,6 +130,16 @@ export interface FetchCtx {
    * 由 routes 层从 env IG_GRAPHQL_DOC_ID 读出注入；平台包不读 env；未配置时 IG adapter 给可懂报错。
    */
   instagramDocId?: string;
+  /**
+   * 抖音 L2 签名通道的访客身份 uifid（浏览器一次性铸造后配到 env DOUYIN_UIFID）。
+   * 由 routes 层从 env 读出注入；平台包不读 env；未配置时抖音 adapter 跳过 L2 直落浏览器兜底。
+   */
+  douyinUifid?: string;
+  /**
+   * 抖音 L2 的 ttwid（可选，env DOUYIN_TTWID）；缺省由平台侧经 abogus getTtwid() 现铸。
+   * ttwid 与 uifid 同身份体系，铸造 uifid 时的 ttwid 一起配进来最稳。
+   */
+  douyinTtwid?: string;
 }
 
 /** 平台原始载荷：可 JSON 序列化，fixture 才能录制回放 */
@@ -137,8 +147,9 @@ export interface RawPayload {
   via: 'api' | 'html-embedded-json' | 'browser-intercept';
   fetchedAt: number;
   body: unknown;
-  /** 实际取数通道：http = 纯 HTTP，browser = 浏览器兜底（adapter 降级后如实标注） */
-  channel: 'http' | 'browser';
+  /** 实际取数通道：http = 纯 HTTP（L1），http-l2 = 签名通道（L1 风控时的纯 HTTP 降级），
+   * browser = 浏览器兜底（adapter 降级后如实标注） */
+  channel: 'http' | 'http-l2' | 'browser';
 }
 
 /**

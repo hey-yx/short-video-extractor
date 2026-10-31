@@ -30,6 +30,9 @@ const httpCtx = (request: Request, platform: Platform | null): FetchCtx => ({
   proxyUrl: platform ? resolveProxy(platform) : undefined,
   // Instagram 匿名 GraphQL doc_id（轮换配置，平台包不读 env）；未配置时 IG adapter 给可懂报错
   instagramDocId: process.env.IG_GRAPHQL_DOC_ID || undefined,
+  // 抖音 L2 签名通道身份（uifid 浏览器一次性铸造；ttwid 可选，缺省平台侧现铸）；平台包不读 env
+  douyinUifid: process.env.DOUYIN_UIFID || undefined,
+  douyinTtwid: process.env.DOUYIN_TTWID || undefined,
 });
 
 const UPSTREAM_CODES = new Set(['UPSTREAM_ERROR', 'UPSTREAM_CHANGED', 'UPSTREAM_TIMEOUT', 'RISK_CONTROL']);
